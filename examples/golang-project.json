@@ -1,0 +1,41 @@
+{
+  "$schema": "../.mcp-devtools.schema.json",
+  "commands": {
+    "lint": "golangci-lint run",
+    "test": "go test ./...",
+    "build": "go build -v ./...",
+    "clean": "go clean",
+    "depend": "go mod download",
+    "vet": "go vet ./...",
+    "fmt": "gofmt -s -w .",
+    "tidy": "go mod tidy"
+  },
+  "linters": ["golangci-lint", "gofmt", "staticcheck", "markdownlint", "yamllint"],
+  "testRunner": "go",
+  "timeout": 300000,
+  "projectType": "go",
+  "buildSystem": "go",
+  "excludePaths": [
+    "vendor/**",
+    ".git/**",
+    "bin/**",
+    "dist/**"
+  ],
+  "environment": {
+    "GO111MODULE": "on",
+    "CGO_ENABLED": "1"
+  },
+  "parallel": {
+    "makeJobs": 4,
+    "enableTestParallel": true
+  },
+  "security": {
+    "allowedCommands": ["golangci-lint", "gofmt", "staticcheck"],
+    "restrictedPaths": ["/", "/etc", "/usr", "/bin", "/sbin"]
+  },
+  "golang": {
+    "goModule": true,
+    "testFlags": ["-v", "-race", "-coverprofile=coverage.out"],
+    "lintConfig": ".golangci.yml"
+  }
+}

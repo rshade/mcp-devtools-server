@@ -1,0 +1,198 @@
+name: Go Language Enhancement
+description: Improvements specifically for Go language support (HIGHEST PRIORITY)
+title: "[Go] "
+labels: ["go", "priority-critical", "enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        🚀 **Go language support is our HIGHEST PRIORITY!** Thank you for contributing to make this the best DevTools server for Go development.
+        
+  - type: dropdown
+    id: go_area
+    attributes:
+      label: Go Tool Area
+      description: Which Go tooling area needs enhancement?
+      options:
+        - Testing (go test, benchmarks, coverage)
+        - Building (go build, cross-compilation, ldflags)
+        - Linting (golangci-lint, staticcheck, custom rules)
+        - Formatting (gofmt, goimports, code organization)
+        - Modules (go mod, dependency management, workspaces)
+        - Static Analysis (go vet, custom analyzers)
+        - Code Generation (go generate, protobuf, etc.)
+        - Performance (profiling, benchmarking, optimization)
+        - Security (vulnerability scanning, security analysis)
+        - Documentation (godoc, examples, package docs)
+        - IDE Integration (LSP, debugging, IntelliSense)
+        - Other
+    validations:
+      required: true
+
+  - type: dropdown
+    id: project_type
+    attributes:
+      label: Go Project Type
+      description: What type of Go projects should this support?
+      multiple: true
+      options:
+        - Standard Go modules (go.mod)
+        - Legacy GOPATH projects
+        - Go workspaces (go.work)
+        - Microservices & APIs
+        - CLI applications
+        - Libraries & packages
+        - Monorepo structures
+        - Docker/containerized apps
+        - Cloud-native applications
+
+  - type: textarea
+    id: current_gap
+    attributes:
+      label: Current Gap in Go Support
+      description: What Go development workflow is currently missing or inadequate?
+      placeholder: |
+        Describe the specific Go development task that's difficult or impossible:
+        - What go command or tool isn't well supported?
+        - What workflow is clunky or error-prone?
+        - How does this impact productivity with Claude Code?
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposed_enhancement
+    attributes:
+      label: Proposed Go Enhancement
+      description: Detailed description of the Go-specific improvement
+      placeholder: |
+        Describe your proposed Go enhancement:
+        - What new go_* tool should be added?
+        - How should existing Go tools be improved?
+        - What Go-specific configuration is needed?
+        - How should it integrate with existing Go toolchain?
+    validations:
+      required: true
+
+  - type: textarea
+    id: go_commands
+    attributes:
+      label: Go Commands & Examples
+      description: What specific Go commands should this support?
+      placeholder: |
+        ```bash
+        # Example Go commands that should work:
+        go test -v -race -cover ./...
+        go build -ldflags="-s -w" -o bin/app cmd/main.go
+        golangci-lint run --config .golangci.yml
+        go mod tidy && go mod verify
+        ```
+
+  - type: textarea
+    id: mcp_integration
+    attributes:
+      label: MCP Tool Integration
+      description: How should this be exposed through the MCP protocol?
+      placeholder: |
+        ```javascript
+        // Example MCP tool usage:
+        await callTool('go_benchmark', {
+          package: './...',
+          benchmarks: 'BenchmarkMyFunction',
+          count: 5,
+          memprofile: 'mem.prof'
+        });
+        
+        await callTool('go_generate', {
+          directory: './internal/api',
+          tags: ['generate', 'mocks']
+        });
+        ```
+
+  - type: textarea
+    id: go_config
+    attributes:
+      label: Go Configuration Options
+      description: What Go-specific configuration should be supported?
+      placeholder: |
+        ```json
+        {
+          "golang": {
+            "goVersion": "1.21",
+            "modules": true,
+            "testFlags": ["-race", "-count=1"],
+            "buildFlags": ["-trimpath"],
+            "lintConfig": ".golangci.yml",
+            "coverageThreshold": 80,
+            "benchmarkTimeout": "10m"
+          }
+        }
+        ```
+
+  - type: textarea
+    id: error_handling
+    attributes:
+      label: Go-Specific Error Handling
+      description: What Go errors should be handled better?
+      placeholder: |
+        Common Go errors that need better handling:
+        - Module not found errors
+        - Build constraint failures
+        - Import cycle detection
+        - Version conflicts
+        - Missing tools (golangci-lint, etc.)
+
+  - type: textarea
+    id: go_ecosystem
+    attributes:
+      label: Go Ecosystem Integration
+      description: What Go ecosystem tools should be supported?
+      placeholder: |
+        Go ecosystem tools to integrate:
+        - govulncheck (security scanning)
+        - gopls (language server)
+        - golangci-lint (comprehensive linting)
+        - staticcheck (static analysis)
+        - goimports (import management)
+        - Wire (dependency injection)
+        - Protobuf/gRPC tooling
+        - Testing frameworks (testify, ginkgo, etc.)
+
+  - type: dropdown
+    id: go_version
+    attributes:
+      label: Go Version Support
+      description: What Go versions should be supported?
+      multiple: true
+      options:
+        - Go 1.19 (minimum supported)
+        - Go 1.20
+        - Go 1.21 (current stable)
+        - Go 1.22+ (future versions)
+        - All supported versions
+
+  - type: textarea
+    id: performance_impact
+    attributes:
+      label: Performance Considerations
+      description: Any performance requirements for Go tooling?
+      placeholder: |
+        Performance considerations:
+        - Should complete within X seconds for typical projects
+        - Memory usage limits for large codebases
+        - Caching strategies for repeated operations
+        - Parallel execution for multi-package projects
+
+  - type: textarea
+    id: success_criteria
+    attributes:
+      label: Success Criteria
+      description: How will we know this Go enhancement is successful?
+      placeholder: |
+        - [ ] Works with both modules and GOPATH projects
+        - [ ] Supports all major Go project structures
+        - [ ] Provides helpful error messages and suggestions
+        - [ ] Performance is comparable to direct CLI usage
+        - [ ] Integration tests pass on all platforms
+        - [ ] Documentation includes Go-specific examples
+    validations:
+      required: true

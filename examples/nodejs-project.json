@@ -1,0 +1,33 @@
+{
+  "$schema": "../.mcp-devtools.schema.json",
+  "commands": {
+    "lint": "npm run lint",
+    "test": "npm test",
+    "build": "npm run build",
+    "clean": "npm run clean",
+    "depend": "npm install"
+  },
+  "linters": ["eslint", "markdownlint", "yamllint"],
+  "testRunner": "jest",
+  "timeout": 300000,
+  "projectType": "nodejs",
+  "buildSystem": "npm",
+  "excludePaths": [
+    "node_modules/**",
+    "dist/**",
+    "build/**",
+    ".git/**",
+    "coverage/**"
+  ],
+  "environment": {
+    "NODE_ENV": "development"
+  },
+  "parallel": {
+    "makeJobs": 1,
+    "enableTestParallel": false
+  },
+  "security": {
+    "allowedCommands": [],
+    "restrictedPaths": ["/", "/etc", "/usr", "/bin", "/sbin"]
+  }
+}

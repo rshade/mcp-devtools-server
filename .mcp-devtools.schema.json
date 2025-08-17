@@ -1,0 +1,152 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "title": "MCP DevTools Server Configuration Schema",
+  "description": "Schema for MCP DevTools Server project-specific settings",
+  "properties": {
+    "commands": {
+      "type": "object",
+      "description": "Custom command mappings for this project",
+      "properties": {
+        "lint": {
+          "type": "string",
+          "description": "Command to run for linting"
+        },
+        "test": {
+          "type": "string",
+          "description": "Command to run for testing"
+        },
+        "build": {
+          "type": "string",
+          "description": "Command to run for building"
+        },
+        "clean": {
+          "type": "string",
+          "description": "Command to run for cleaning build artifacts"
+        },
+        "depend": {
+          "type": "string",
+          "description": "Command to run for installing dependencies"
+        }
+      },
+      "additionalProperties": {
+        "type": "string"
+      }
+    },
+    "linters": {
+      "type": "array",
+      "description": "List of linters to use for this project",
+      "items": {
+        "type": "string",
+        "enum": ["eslint", "markdownlint", "yamllint", "flake8", "black", "clippy", "rustfmt", "golangci-lint", "gofmt", "staticcheck"]
+      },
+      "uniqueItems": true
+    },
+    "testRunner": {
+      "type": "string",
+      "description": "Preferred test runner for this project",
+      "enum": ["jest", "vitest", "pytest", "go", "cargo", "npm", "make"]
+    },
+    "timeout": {
+      "type": "number",
+      "description": "Default timeout for commands in milliseconds",
+      "minimum": 1000,
+      "maximum": 600000
+    },
+    "projectType": {
+      "type": "string",
+      "description": "Override automatic project type detection",
+      "enum": ["nodejs", "python", "go", "rust", "java", "dotnet", "mixed"]
+    },
+    "buildSystem": {
+      "type": "string",
+      "description": "Override automatic build system detection",
+      "enum": ["make", "npm", "yarn", "pnpm", "pip", "poetry", "go", "cargo", "maven", "gradle", "dotnet"]
+    },
+    "makeTargets": {
+      "type": "array",
+      "description": "Override automatic make target detection",
+      "items": {
+        "type": "string"
+      },
+      "uniqueItems": true
+    },
+    "excludePaths": {
+      "type": "array",
+      "description": "Paths to exclude from file operations (glob patterns)",
+      "items": {
+        "type": "string"
+      }
+    },
+    "environment": {
+      "type": "object",
+      "description": "Environment variables to set for all commands",
+      "additionalProperties": {
+        "type": "string"
+      }
+    },
+    "parallel": {
+      "type": "object",
+      "description": "Parallel execution settings",
+      "properties": {
+        "makeJobs": {
+          "type": "number",
+          "description": "Default number of parallel make jobs",
+          "minimum": 1,
+          "maximum": 16
+        },
+        "enableTestParallel": {
+          "type": "boolean",
+          "description": "Enable parallel test execution when supported"
+        }
+      }
+    },
+    "security": {
+      "type": "object",
+      "description": "Security-related settings",
+      "properties": {
+        "allowedCommands": {
+          "type": "array",
+          "description": "Additional commands to allow (extends default allowlist)",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true
+        },
+        "restrictedPaths": {
+          "type": "array",
+          "description": "Paths that are off-limits for execution",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "golang": {
+      "type": "object",
+      "description": "Go-specific configuration",
+      "properties": {
+        "goPath": {
+          "type": "string",
+          "description": "Custom GOPATH if needed"
+        },
+        "goModule": {
+          "type": "boolean",
+          "description": "Whether to use Go modules"
+        },
+        "testFlags": {
+          "type": "array",
+          "description": "Default flags for go test",
+          "items": {
+            "type": "string"
+          }
+        },
+        "lintConfig": {
+          "type": "string",
+          "description": "Path to golangci-lint config file"
+        }
+      }
+    }
+  },
+  "additionalProperties": false
+}

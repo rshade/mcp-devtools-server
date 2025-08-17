@@ -1,0 +1,38 @@
+{
+  "$schema": "../.mcp-devtools.schema.json",
+  "commands": {
+    "lint": "poetry run flake8",
+    "test": "poetry run pytest",
+    "build": "poetry build",
+    "clean": "rm -rf dist build *.egg-info",
+    "depend": "poetry install",
+    "format": "poetry run black .",
+    "typecheck": "poetry run mypy ."
+  },
+  "linters": ["flake8", "black", "markdownlint", "yamllint"],
+  "testRunner": "pytest",
+  "timeout": 300000,
+  "projectType": "python",
+  "buildSystem": "poetry",
+  "excludePaths": [
+    "__pycache__/**",
+    "*.pyc",
+    ".venv/**",
+    "venv/**",
+    "dist/**",
+    "build/**",
+    ".git/**",
+    ".pytest_cache/**"
+  ],
+  "environment": {
+    "PYTHONDONTWRITEBYTECODE": "1"
+  },
+  "parallel": {
+    "makeJobs": 1,
+    "enableTestParallel": true
+  },
+  "security": {
+    "allowedCommands": ["flake8", "black", "mypy", "poetry"],
+    "restrictedPaths": ["/", "/etc", "/usr", "/bin", "/sbin"]
+  }
+}

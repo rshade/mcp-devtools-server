@@ -1,0 +1,145 @@
+name: Feature Request
+description: Suggest a new feature or enhancement for MCP DevTools Server
+title: "[Feature] "
+labels: ["enhancement", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for suggesting a new feature! Please provide details below.
+        
+  - type: dropdown
+    id: category
+    attributes:
+      label: Feature Category
+      description: What type of feature is this?
+      options:
+        - Go Language Support (highest priority)
+        - New Tool Integration (Python, Rust, Java, etc.)
+        - Plugin Architecture & Extensibility
+        - Performance & Caching
+        - AI/ML Integration & Smart Suggestions
+        - Team Collaboration & Workspace Management
+        - Security & Compliance
+        - User Experience & Configuration
+        - CI/CD & Automation
+        - Documentation & Developer Experience
+        - Other
+    validations:
+      required: true
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priority Level
+      description: How important is this feature?
+      options:
+        - Critical (P0) - Essential for Go support
+        - High (P1) - Important for core functionality
+        - Medium (P2) - Nice to have enhancement
+        - Low (P3) - Future consideration
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem Statement
+      description: What problem does this feature solve?
+      placeholder: |
+        Describe the current limitation or pain point:
+        - What workflow is difficult or impossible?
+        - What inefficiency does this address?
+        - How does this relate to Claude Code integration?
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed Solution
+      description: Detailed description of the feature you'd like to see
+      placeholder: |
+        Describe your proposed solution:
+        - What would the feature do?
+        - How would it work from a user perspective?
+        - What tools or integrations are needed?
+    validations:
+      required: true
+
+  - type: textarea
+    id: api
+    attributes:
+      label: API Design (if applicable)
+      description: How would this feature be exposed through the MCP protocol?
+      placeholder: |
+        ```javascript
+        // Example usage:
+        await callTool('new_feature_name', {
+          parameter1: 'value',
+          parameter2: true
+        });
+        ```
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternative Solutions
+      description: Have you considered any alternative approaches?
+      placeholder: Describe any alternative solutions or workarounds you've considered...
+
+  - type: textarea
+    id: examples
+    attributes:
+      label: Use Cases & Examples
+      description: Provide specific examples of how this would be used
+      placeholder: |
+        Example scenarios:
+        1. When developing a Go microservice...
+        2. When working on a team project...
+        3. When integrating with CI/CD...
+
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance Criteria
+      description: How will we know when this feature is complete?
+      placeholder: |
+        - [ ] Feature works with Go projects
+        - [ ] Proper error handling and suggestions
+        - [ ] Documentation updated
+        - [ ] Tests added
+        - [ ] Performance benchmarks meet requirements
+
+  - type: dropdown
+    id: complexity
+    attributes:
+      label: Implementation Complexity
+      description: What's your estimate of implementation difficulty?
+      options:
+        - Simple - Few lines of code, existing patterns
+        - Moderate - New component, moderate refactoring
+        - Complex - Major architectural changes
+        - Unknown - Need investigation
+    validations:
+      required: true
+
+  - type: textarea
+    id: dependencies
+    attributes:
+      label: Dependencies & Prerequisites
+      description: What other features or tools does this depend on?
+      placeholder: |
+        - Requires Go 1.19+ toolchain
+        - Depends on issue #123
+        - Needs external tool: golangci-lint
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional Context
+      description: Links, references, mockups, or other relevant information
+      placeholder: |
+        - Related issues: #123, #456
+        - External references: https://...
+        - Similar tools that implement this: ...

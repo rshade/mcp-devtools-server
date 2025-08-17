@@ -1,0 +1,15 @@
+{
+  "mcpServers": {
+    "mcp-devtools-server": {
+      "command": "node",
+      "args": ["/Users/your-username/path/to/mcp-devtools-server/dist/index.js"],
+      "env": {
+        "LOG_LEVEL": "info"
+      }
+    },
+    "context7": {
+      "command": "npx",
+      "args": ["-y", "@upstash/context7-mcp"]
+    }
+  }
+}

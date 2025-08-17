@@ -1,0 +1,110 @@
+name: Bug Report
+description: Report a bug or issue with MCP DevTools Server
+title: "[Bug] "
+labels: ["bug", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for reporting a bug! Please fill out the information below to help us investigate.
+        
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priority
+      description: How critical is this issue?
+      options:
+        - Low - Minor issue, workaround available
+        - Medium - Moderate impact, affects some workflows
+        - High - Significant impact, blocks major functionality
+        - Critical - Severe issue, system unusable
+    validations:
+      required: true
+      
+  - type: dropdown
+    id: component
+    attributes:
+      label: Component
+      description: Which component is affected?
+      options:
+        - Go Tools (go_test, go_build, etc.)
+        - Make Tools (make_lint, make_test, etc.)
+        - Linting Tools (eslint, markdownlint, etc.)
+        - Test Tools (run_tests, test framework detection)
+        - Project Detection (project type, configuration)
+        - Shell Execution (command runner, security)
+        - MCP Protocol (server communication)
+        - Configuration (project config, schema)
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Bug Description
+      description: Clear description of what the bug is
+      placeholder: Describe what happened...
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps to Reproduce
+      description: Step-by-step instructions to reproduce the issue
+      placeholder: |
+        1. Configure project with...
+        2. Run command...
+        3. See error...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected Behavior
+      description: What should have happened instead?
+      placeholder: Describe the expected result...
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual Behavior
+      description: What actually happened? Include error messages and logs.
+      placeholder: Include full error messages and relevant logs...
+    validations:
+      required: true
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Please provide environment details
+      placeholder: |
+        - OS: [e.g., Ubuntu 20.04, macOS 13.0, Windows 11]
+        - Node.js version: [e.g., 20.10.0]
+        - Go version (if applicable): [e.g., 1.21.0]
+        - MCP DevTools Server version: [e.g., 1.0.0]
+        - Claude Desktop version (if applicable): [e.g., 1.2.3]
+    validations:
+      required: true
+
+  - type: textarea
+    id: config
+    attributes:
+      label: Configuration
+      description: Relevant configuration files (.mcp-devtools.json, .mcp.json)
+      placeholder: |
+        ```json
+        // Your .mcp-devtools.json or relevant config
+        ```
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional Context
+      description: Any other context, screenshots, or information that might help
+      placeholder: Add any other context about the problem here...
