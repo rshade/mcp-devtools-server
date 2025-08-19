@@ -148,7 +148,7 @@ jobs:
       - name: Setup Go (for Go tools testing)
         uses: actions/setup-go@v5
         with:
-          go-version: '1.21'
+          go-version: '1.25'
           
       - name: Install Go tools (Linux/macOS)
         if: runner.os != 'Windows'
