@@ -29,7 +29,7 @@
   "dependencies": {
     "@modelcontextprotocol/sdk": "^0.6.0",
     "context7": "^1.0.0",
-    "execa": "^8.0.1",
+    "execa": "^9.0.0",
     "glob": "^10.3.10",
     "winston": "^3.11.0",
     "zod": "^3.22.4"
