@@ -27,7 +27,7 @@
   "author": "",
   "license": "Apache-2.0",
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^0.7.0",
+    "@modelcontextprotocol/sdk": "^1.0.0",
     "context7": "^1.0.0",
     "execa": "^8.0.1",
     "glob": "^10.3.10",
