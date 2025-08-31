@@ -1,6 +1,5 @@
 import { z } from 'zod';
 import { glob } from 'glob';
-import * as path from 'path';
 import { ShellExecutor, ExecutionResult } from '../utils/shell-executor.js';
 import { ProjectDetector } from '../utils/project-detector.js';
 
@@ -264,7 +263,7 @@ export class LintTools {
       results,
       totalIssues,
       totalFixed,
-      recommendations: this.generateRecommendations(results, projectInfo.lintingTools)
+      recommendations: this.generateRecommendations(results)
     };
   }
 
@@ -495,7 +494,7 @@ export class LintTools {
   /**
    * Generate recommendations based on lint results
    */
-  private generateRecommendations(results: LintResult[], availableTools: string[]): string[] {
+  private generateRecommendations(results: LintResult[]): string[] {
     const recommendations: string[] = [];
     
     if (results.length === 0) {
