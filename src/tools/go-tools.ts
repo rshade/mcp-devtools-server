@@ -27,7 +27,12 @@ const GoLintArgsSchema = z.object({
   config: z.string().optional().describe('Path to golangci-lint config'),
   fix: z.boolean().optional().describe('Fix issues automatically'),
   enabledLinters: z.array(z.string()).optional().describe('Specific linters to enable'),
-  disabledLinters: z.array(z.string()).optional().describe('Specific linters to disable')
+  disabledLinters: z.array(z.string()).optional().describe('Specific linters to disable'),
+  verbose: z.boolean().optional().describe('Enable verbose output'),
+  format: z.string().optional().describe('Output format (colored-line-number, line-number, json, tab, checkstyle, code-climate, html, junitxml, github-actions)'),
+  concurrency: z.number().optional().describe('Number of CPUs to use for linting'),
+  timeout: z.number().optional().describe('Timeout for linting in seconds'),
+  paths: z.array(z.string()).optional().describe('Specific paths/packages to lint')
 });
 
 export type GoToolArgs = z.infer<typeof GoToolArgsSchema>;
@@ -52,6 +57,15 @@ export interface GoProjectInfo {
   hasTests: boolean;
   testFiles: string[];
   packages: string[];
+  hasGoWork?: boolean;
+  workspaces?: string[];
+  buildTools?: string[];
+  lintConfigs?: string[];
+  targetOS?: string[];
+  targetArch?: string[];
+  vendorMode?: boolean;
+  hasMain?: boolean;
+  mainPackages?: string[];
 }
 
 export class GoTools {
@@ -176,6 +190,26 @@ export class GoTools {
       commandArgs.push('--fix');
     }
     
+    // Add verbose flag
+    if (args.verbose) {
+      commandArgs.push('--verbose');
+    }
+    
+    // Add output format
+    if (args.format) {
+      commandArgs.push('--out-format', args.format);
+    }
+    
+    // Add concurrency setting
+    if (args.concurrency) {
+      commandArgs.push('--concurrency', args.concurrency.toString());
+    }
+    
+    // Add timeout
+    if (args.timeout) {
+      commandArgs.push('--timeout', `${args.timeout}s`);
+    }
+    
     // Enable specific linters
     if (args.enabledLinters && args.enabledLinters.length > 0) {
       for (const linter of args.enabledLinters) {
@@ -190,10 +224,17 @@ export class GoTools {
       }
     }
     
+    // Add specific paths/packages to lint
+    if (args.paths && args.paths.length > 0) {
+      commandArgs.push(...args.paths);
+    } else {
+      commandArgs.push('./...');
+    }
+    
     const result = await this.executor.execute('golangci-lint', {
       cwd: args.directory,
       args: commandArgs,
-      timeout: 300000
+      timeout: (args.timeout ? args.timeout * 1000 : 300000) + 30000 // Add buffer to executor timeout
     });
     
     return this.processGoResult(result, 'golangci-lint');
@@ -285,7 +326,12 @@ export class GoTools {
       dependencies: [],
       hasTests: false,
       testFiles: [],
-      packages: []
+      packages: [],
+      buildTools: [],
+      lintConfigs: [],
+      targetOS: [],
+      targetArch: [],
+      mainPackages: []
     };
     
     try {
@@ -309,6 +355,68 @@ export class GoTools {
       } catch {
         // No go.mod file
       }
+
+      // Check for go.work (workspace support)
+      const goWorkPath = path.join(dir, 'go.work');
+      try {
+        await fs.access(goWorkPath);
+        info.hasGoWork = true;
+        
+        const goWorkContent = await fs.readFile(goWorkPath, 'utf8');
+        const useMatches = goWorkContent.match(/^use\s+(.+)$/gm);
+        if (useMatches) {
+          info.workspaces = useMatches.map(match => match.replace(/^use\s+/, '').trim());
+        }
+      } catch {
+        // No go.work file
+      }
+
+      // Check for vendor directory
+      const vendorPath = path.join(dir, 'vendor');
+      try {
+        await fs.access(vendorPath);
+        info.vendorMode = true;
+      } catch {
+        info.vendorMode = false;
+      }
+
+      // Detect lint configuration files
+      const lintConfigFiles = [
+        '.golangci.yml',
+        '.golangci.yaml',
+        'golangci.yml',
+        'golangci.yaml'
+      ];
+      
+      for (const configFile of lintConfigFiles) {
+        try {
+          await fs.access(path.join(dir, configFile));
+          info.lintConfigs!.push(configFile);
+        } catch {
+          // File doesn't exist
+        }
+      }
+
+      // Detect build tools (Makefile, Dockerfile, etc.)
+      const buildFiles = [
+        'Makefile',
+        'makefile',
+        'Dockerfile',
+        'docker-compose.yml',
+        'docker-compose.yaml',
+        '.github/workflows',
+        'Taskfile.yml',
+        'justfile'
+      ];
+      
+      for (const buildFile of buildFiles) {
+        try {
+          await fs.access(path.join(dir, buildFile));
+          info.buildTools!.push(buildFile);
+        } catch {
+          // File doesn't exist
+        }
+      }
       
       // List dependencies
       if (info.hasGoMod) {
@@ -325,21 +433,29 @@ export class GoTools {
         }
       }
       
-      // Find test files
+      // Find test files and main packages
       const testResult = await this.executor.execute('go', {
         cwd: dir,
-        args: ['list', '-f', '{{.TestGoFiles}}', './...']
+        args: ['list', '-f', '{{.ImportPath}},{{.TestGoFiles}},{{.Name}}', './...']
       });
       
       if (testResult.success) {
-        const testFiles = testResult.stdout
-          .split('\n')
-          .filter(line => line && line !== '[]')
-          .map(line => line.replace(/[\[\]]/g, '').split(' '))
-          .flat()
-          .filter(file => file);
+        const lines = testResult.stdout.split('\n').filter(line => line);
+        for (const line of lines) {
+          const [importPath, testFiles, pkgName] = line.split(',');
+          
+          if (testFiles && testFiles !== '[]') {
+            const files = testFiles.replace(/[\[\]]/g, '').split(' ').filter(f => f);
+            info.testFiles.push(...files);
+          }
+          
+          if (pkgName === 'main') {
+            info.mainPackages!.push(importPath);
+            info.hasMain = true;
+          }
+        }
         
-        info.testFiles = [...new Set(testFiles)];
+        info.testFiles = [...new Set(info.testFiles)];
         info.hasTests = info.testFiles.length > 0;
       }
       
@@ -354,6 +470,18 @@ export class GoTools {
           .split('\n')
           .filter(line => line)
           .map(line => line.trim());
+      }
+
+      // Get build constraints and supported platforms
+      const envResult = await this.executor.execute('go', {
+        cwd: dir,
+        args: ['env', 'GOOS', 'GOARCH']
+      });
+      
+      if (envResult.success) {
+        const [goos, goarch] = envResult.stdout.trim().split('\n');
+        info.targetOS = [goos];
+        info.targetArch = [goarch];
       }
       
     } catch (error) {
