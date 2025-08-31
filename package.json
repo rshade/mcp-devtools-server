@@ -11,7 +11,7 @@
     "build": "tsc",
     "start": "node dist/index.js",
     "dev": "tsx src/index.ts",
-    "lint": "eslint src --ext .ts",
+    "lint": "eslint src",
     "lint:md": "markdownlint '**/*.md' --ignore node_modules",
     "lint:yaml": "yamllint '**/*.yml' '**/*.yaml' || echo 'YAML linting skipped - yamllint not available'",
     "lint:changelog": "grep -q 'Keep a Changelog' CHANGELOG.md && echo 'CHANGELOG.md follows Keep a Changelog format'",

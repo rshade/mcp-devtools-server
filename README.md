@@ -1,16 +1,21 @@
 # MCP DevTools Server
 
-An MCP (Model Context Protocol) server that standardizes and binds specific patterns for development tools, enabling Claude Code to generate code more efficiently with fewer errors and better autocorrection capabilities.
+An MCP (Model Context Protocol) server that standardizes and binds specific patterns for development
+tools, enabling Claude Code to generate code more efficiently with fewer errors and better
+autocorrection capabilities.
 
 ## 🚧 Project Status
 
 **Alpha** - This project is in early development and actively evolving.
 
-**🎯 Current Priority: Enhanced Go Language Support** - Go development toolchain integration is the highest priority feature. We're building comprehensive support for Go testing, building, linting, and formatting to make this the best DevTools server for Go development.
+**🎯 Current Priority: Enhanced Go Language Support** - Go development toolchain integration is the
+highest priority feature. We're building comprehensive support for Go testing, building, linting,
+and formatting to make this the best DevTools server for Go development.
 
 ## Overview
 
-This MCP server creates a standardized interface between development tools and AI assistants like Claude Code. By establishing consistent patterns and best practices, it helps:
+This MCP server creates a standardized interface between development tools and AI assistants like
+Claude Code. By establishing consistent patterns and best practices, it helps:
 
 - Reduce code generation errors
 - Enable better autocorrection of common issues
@@ -22,6 +27,7 @@ This MCP server creates a standardized interface between development tools and A
 ### Core Tools
 
 #### Make-based Commands
+
 - **make_lint** - Run `make lint` with optional directory and target specification
 - **make_test** - Run `make test` with optional test patterns/targets
 - **make_depend** - Run `make depend` or equivalent dependency installation
@@ -29,6 +35,7 @@ This MCP server creates a standardized interface between development tools and A
 - **make_clean** - Run `make clean`
 
 #### Go Language Support 🚀 **PRIORITY**
+
 - **go_test** - Run Go tests with coverage and race detection
 - **go_build** - Build Go packages with custom flags and tags
 - **go_fmt** - Format Go code using gofmt
@@ -37,12 +44,14 @@ This MCP server creates a standardized interface between development tools and A
 - **go_mod_tidy** - Tidy Go module dependencies
 
 #### General Linting
+
 - **markdownlint** - Run markdownlint on markdown files
 - **yamllint** - Run yamllint on YAML files
 - **eslint** - Run ESLint on JavaScript/TypeScript files
 - **lint_all** - Run all available linters based on project type
 
 #### Testing & Status
+
 - **run_tests** - Run tests using the detected test framework
 - **project_status** - Get overall project health (lint + test summary)
 - **test_status** - Get project test status and recommendations
@@ -65,7 +74,7 @@ This MCP server creates a standardized interface between development tools and A
 
 ### Prerequisites
 
-- Node.js 18+ 
+- Node.js 18+
 - TypeScript
 - **Go 1.19+** (for Go language support - **PRIORITY**)
 - Make (for make-based commands)
@@ -75,22 +84,26 @@ This MCP server creates a standardized interface between development tools and A
 ### Installation
 
 1. Clone the repository:
+
 ```bash
 git clone https://github.com/rshade/mcp-devtools-server.git
 cd mcp-devtools-server
 ```
 
-2. Install dependencies:
+1. Install dependencies:
+
 ```bash
 npm install
 ```
 
-3. Build the project:
+1. Build the project:
+
 ```bash
 npm run build
 ```
 
-4. Start the server:
+1. Start the server:
+
 ```bash
 npm start
 ```
@@ -116,6 +129,7 @@ npm run clean
 ### Claude Desktop Integration
 
 1. **Build the project first:**
+
    ```bash
    npm run build
    ```
@@ -328,30 +342,38 @@ This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENS
 
 ## Acknowledgments
 
-This project represents an ongoing effort to improve the developer experience when working with AI-powered coding assistants. All feedback and contributions help shape better development practices for the community.
+This project represents an ongoing effort to improve the developer experience when working with
+AI-powered coding assistants. All feedback and contributions help shape better development
+practices for the community.
 
 ## Roadmap
 
 Our development is organized into quarterly milestones with clear priorities:
 
 ### 2025-Q1 - Go Support & Core Foundation 🎯 **CURRENT FOCUS**
-**Priority: HIGHEST (P0)**
+
+#### Priority: HIGHEST (P0)
+
 - [x] Enhanced Go language support (go_test, go_build, go_fmt, go_lint, go_vet, go_mod_tidy)
-- [ ] Complete Go toolchain integration 
+- [ ] Complete Go toolchain integration
 - [ ] golangci-lint and staticcheck integration
 - [ ] Go project analysis and recommendations
 - [ ] Go-specific configuration options
 
 ### 2025-Q2 - Plugin Architecture & Performance
-**Priority: HIGH (P1)**
+
+#### Priority: HIGH (P1)
+
 - [ ] Extensible plugin architecture framework
 - [ ] Intelligent caching system (10x performance improvement)
 - [ ] Advanced telemetry and observability
 - [ ] Resource management and concurrency control
 - [ ] Event-driven architecture
 
-### 2025-Q3 - User Experience & AI Integration  
-**Priority: HIGH (P1)**
+### 2025-Q3 - User Experience & AI Integration
+
+#### Priority: HIGH (P1)
+
 - [ ] Zero-configuration onboarding wizard
 - [ ] AI-powered smart suggestions and failure analysis
 - [ ] Workflow templates and patterns
@@ -359,7 +381,9 @@ Our development is organized into quarterly milestones with clear priorities:
 - [ ] Integration ecosystem (VS Code, GitHub Actions)
 
 ### 2025-Q4 - Team Collaboration & Enterprise
-**Priority: MEDIUM (P2)**  
+
+#### Priority: MEDIUM (P2)
+
 - [ ] Team workspace management
 - [ ] Shared configuration and standards enforcement
 - [ ] Enterprise features (SSO, RBAC, audit logging)
@@ -367,9 +391,12 @@ Our development is organized into quarterly milestones with clear priorities:
 - [ ] Multi-tenant support
 
 ### Long-term Vision
+
 - [ ] Predictive analytics and failure prediction
 - [ ] Auto-remediation and self-healing workflows
 - [ ] Natural language interface ("Run the deployment checklist")
 - [ ] Cross-project learning and global best practices
 
-See our [GitHub Issues](https://github.com/rshade/mcp-devtools-server/issues) and [Milestones](https://github.com/rshade/mcp-devtools-server/milestones) for detailed tracking and progress updates.
+See our [GitHub Issues](https://github.com/rshade/mcp-devtools-server/issues) and
+[Milestones](https://github.com/rshade/mcp-devtools-server/milestones) for detailed tracking and
+progress updates.

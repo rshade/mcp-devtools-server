@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { glob } from 'glob';
 import { ShellExecutor, ExecutionResult } from '../utils/shell-executor.js';
-import { ProjectDetector, ProjectType, BuildSystem } from '../utils/project-detector.js';
+import { ProjectDetector, ProjectType, BuildSystem, ProjectInfo, ConfigFile } from '../utils/project-detector.js';
 
 // Schema for test tool arguments
 const TestToolArgsSchema = z.object({
@@ -392,7 +392,7 @@ export class TestTools {
   /**
    * Find test configuration files
    */
-  private findTestConfigFiles(configFiles: any[]): any[] {
+  private findTestConfigFiles(configFiles: ConfigFile[]): ConfigFile[] {
     return configFiles.filter(cf => cf.type === 'test');
   }
 
@@ -588,7 +588,7 @@ export class TestTools {
   /**
    * Generate recommendations for test setup
    */
-  private generateTestRecommendations(projectInfo: any, testFileCount: number): string[] {
+  private generateTestRecommendations(projectInfo: ProjectInfo, testFileCount: number): string[] {
     const recommendations: string[] = [];
     
     if (!projectInfo.hasTests) {
