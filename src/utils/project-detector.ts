@@ -66,11 +66,11 @@ export class ProjectDetector {
     
     const configFiles = await this.findConfigFiles();
     const projectType = this.detectProjectType(configFiles);
-    const language = this.detectLanguage(projectType, configFiles);
+    const language = this.detectLanguage(projectType);
     const buildSystem = this.detectBuildSystem(configFiles);
     const hasTests = await this.detectTests();
     const testFramework = await this.detectTestFramework(projectType);
-    const lintingTools = await this.detectLintingTools(projectType);
+    const lintingTools = await this.detectLintingTools();
     const makeTargets = await this.extractMakeTargets();
     const packageManager = this.detectPackageManager(configFiles);
     const framework = await this.detectFramework(projectType, configFiles);
@@ -179,7 +179,7 @@ export class ProjectDetector {
     return scores[0].type;
   }
 
-  private detectLanguage(projectType: ProjectType, configFiles: ConfigFile[]): string {
+  private detectLanguage(projectType: ProjectType): string {
     const typeToLanguage = {
       [ProjectType.NodeJS]: 'JavaScript/TypeScript',
       [ProjectType.Python]: 'Python',
@@ -270,12 +270,12 @@ export class ProjectDetector {
     for (const framework of candidates) {
       try {
         // Check for framework-specific config files or dependencies
-        const patterns = [
-          `**/${framework}.config.*`,
-          `**/package.json`, // Will check dependencies separately
-          `**/pyproject.toml`,
-          `**/Cargo.toml`
-        ];
+        // const patterns = [
+        //   `**/${framework}.config.*`,
+        //   `**/package.json`, // Will check dependencies separately
+        //   `**/pyproject.toml`,
+        //   `**/Cargo.toml`
+        // ];
         
         // For now, return the first likely candidate
         // This could be enhanced to actually parse config files
@@ -288,7 +288,7 @@ export class ProjectDetector {
     return undefined;
   }
 
-  private async detectLintingTools(projectType: ProjectType): Promise<string[]> {
+  private async detectLintingTools(): Promise<string[]> {
     const tools: string[] = [];
     
     const toolPatterns = {

@@ -726,8 +726,7 @@ class MCPDevToolsServer {
 
           // Status tools
           case 'project_status': {
-            const validatedArgs = MakeTools.validateStatusArgs(args);
-            const result = await this.makeTools.getProjectStatus(validatedArgs);
+            const result = await this.makeTools.getProjectStatus();
             return {
               content: [
                 {

@@ -1,6 +1,5 @@
 import { z } from 'zod';
 import { glob } from 'glob';
-import * as path from 'path';
 import { ShellExecutor, ExecutionResult } from '../utils/shell-executor.js';
 import { ProjectDetector, ProjectType, BuildSystem } from '../utils/project-detector.js';
 
@@ -81,7 +80,7 @@ export class TestTools {
       timeout: args.timeout || 300000 // 5 minutes default
     });
 
-    return this.processTestResult(result, 'make', args);
+    return this.processTestResult(result, 'make');
   }
 
   /**
@@ -131,7 +130,7 @@ export class TestTools {
       timeout: args.timeout || 300000
     });
 
-    return this.processTestResult(result, 'npm', args);
+    return this.processTestResult(result, 'npm');
   }
 
   /**
@@ -166,7 +165,7 @@ export class TestTools {
       timeout: args.timeout || 300000
     });
 
-    return this.processTestResult(result, 'jest', args);
+    return this.processTestResult(result, 'jest');
   }
 
   /**
@@ -197,7 +196,7 @@ export class TestTools {
       timeout: args.timeout || 300000
     });
 
-    return this.processTestResult(result, 'pytest', args);
+    return this.processTestResult(result, 'pytest');
   }
 
   /**
@@ -234,7 +233,7 @@ export class TestTools {
       timeout: args.timeout || 300000
     });
 
-    return this.processTestResult(result, 'go', args);
+    return this.processTestResult(result, 'go');
   }
 
   /**
@@ -261,7 +260,7 @@ export class TestTools {
       timeout: args.timeout || 300000
     });
 
-    return this.processTestResult(result, 'cargo', args);
+    return this.processTestResult(result, 'cargo');
   }
 
   /**
@@ -400,7 +399,7 @@ export class TestTools {
   /**
    * Process test command result into structured format
    */
-  private processTestResult(result: ExecutionResult, runner: string, args: TestToolArgs): TestResult {
+  private processTestResult(result: ExecutionResult, runner: string): TestResult {
     const output = this.formatTestOutput(result.stdout, result.stderr);
     const stats = this.parseTestStats(output, runner);
     const coverage = this.parseCoverage(output, runner);
@@ -419,7 +418,7 @@ export class TestTools {
 
     if (!result.success) {
       testResult.error = result.error;
-      testResult.suggestions = this.generateTestSuggestions(runner, result, args);
+      testResult.suggestions = this.generateTestSuggestions(runner, result);
     }
 
     return testResult;
@@ -549,7 +548,7 @@ export class TestTools {
   /**
    * Generate suggestions based on test failures
    */
-  private generateTestSuggestions(runner: string, result: ExecutionResult, args: TestToolArgs): string[] {
+  private generateTestSuggestions(runner: string, result: ExecutionResult): string[] {
     const suggestions: string[] = [];
     
     if (result.stderr.includes('command not found')) {

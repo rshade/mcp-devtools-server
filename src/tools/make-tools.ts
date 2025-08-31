@@ -136,7 +136,7 @@ export class MakeTools {
   /**
    * Get project status and available make targets
    */
-  async getProjectStatus(args: MakeStatusArgs): Promise<MakeStatusResponse> {
+  async getProjectStatus(): Promise<MakeStatusResponse> {
     try {
       const projectInfo = await this.detector.detectProject();
       const context = await this.detector.getProjectContext();
@@ -202,7 +202,7 @@ export class MakeTools {
       suggestions.push(`Target '${target}' not found in Makefile`);
       
       try {
-        const status = await this.getProjectStatus({});
+        const status = await this.getProjectStatus();
         if (status.availableTargets.length > 0) {
           suggestions.push(`Available targets: ${status.availableTargets.join(', ')}`);
         }

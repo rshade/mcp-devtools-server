@@ -1,6 +1,5 @@
 import { z } from 'zod';
 import { ShellExecutor, ExecutionResult } from '../utils/shell-executor.js';
-import { ProjectDetector } from '../utils/project-detector.js';
 import * as path from 'path';
 import * as fs from 'fs/promises';
 
@@ -57,13 +56,11 @@ export interface GoProjectInfo {
 
 export class GoTools {
   private executor: ShellExecutor;
-  private detector: ProjectDetector;
   private projectRoot: string;
 
   constructor(projectRoot?: string) {
     this.projectRoot = projectRoot || process.cwd();
     this.executor = new ShellExecutor(this.projectRoot);
-    this.detector = new ProjectDetector(this.projectRoot);
   }
 
   /**
