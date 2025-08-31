@@ -4,7 +4,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is an MCP (Model Context Protocol) DevTools server project built with Node.js/TypeScript. The server provides standardized development tool integration for AI assistants, with **Go language support as the highest priority**.
+This is an MCP (Model Context Protocol) DevTools server project built with Node.js/TypeScript.
+The server provides standardized development tool integration for AI assistants, with
+**Go language support as the highest priority**.
 
 ## 🎯 Current Priority: Enhanced Go Language Support
 
@@ -75,6 +77,7 @@ npm run clean
 ## Go-Specific Development Notes
 
 When working on Go support:
+
 1. Update `ALLOWED_COMMANDS` in `shell-executor.ts` for new Go tools
 2. Add Go-specific configuration options to the schema
 3. Test with both Go modules and legacy GOPATH projects
@@ -89,11 +92,13 @@ See [README.md](README.md#roadmap) for detailed quarterly milestones. Current fo
 ### Critical Implementation Details
 
 #### MCP Protocol Integration
+
 - The `.mcp.json` file MUST use the `mcpServers` key (not `mcp`) for Claude Desktop integration
 - Each server entry needs `command` and `args` arrays, not a single command array
 - Context7 integration enhances project understanding and should remain enabled
 
 #### Go Tool Integration Specifics
+
 - Always add new Go tools to `ALLOWED_COMMANDS` in `shell-executor.ts`
 - Go test coverage extraction regex: `/coverage: ([\d.]+)% of statements/`
 - Support both Go modules and GOPATH projects for backward compatibility
@@ -101,11 +106,13 @@ See [README.md](README.md#roadmap) for detailed quarterly milestones. Current fo
 - Race detection flags significantly increase test execution time
 
 #### Package Management
+
 - The project uses both npm scripts and could benefit from a Makefile
 - Added `markdownlint-cli` and `js-yaml-cli` as dev dependencies for linting
 - Consider using `npm run lint:md` and `npm run lint:yaml` for documentation quality
 
 #### GitHub Project Management
+
 - Always use year-first format for milestones (YYYY-Q[1-4]) for proper sorting
 - Create labels before creating issues that reference them
 - Use heredocs for multi-line issue/PR bodies with `gh` CLI
@@ -113,6 +120,7 @@ See [README.md](README.md#roadmap) for detailed quarterly milestones. Current fo
 ### Missing Critical Components
 
 #### Testing Infrastructure 🚨
+
 - **No tests written yet** - Jest is configured but no test files exist
 - Need unit tests for: ShellExecutor, ProjectDetector, all tool classes
 - Need integration tests for tool interactions
@@ -120,41 +128,48 @@ See [README.md](README.md#roadmap) for detailed quarterly milestones. Current fo
 - Consider test fixtures for different project types
 
 #### CI/CD Pipeline 📦
+
 - **No GitHub Actions workflow** - Need automated testing and building
 - Should include: lint, test, build, and release workflows
 - Need semantic versioning and automated releases
 - Consider publishing to npm registry
 
 #### Development Tooling
+
 - **No Makefile** for the project itself (ironic for a make-tools server!)
 - **No pre-commit hooks** - Should run linting and tests
 - **No commitlint configuration** - Despite having it as a dependency
 - Consider using Husky for git hooks
 
 #### Error Handling Patterns
+
 - MCP protocol errors need consistent handling
 - Tool timeout errors should provide recovery suggestions
 - Network errors for Context7 should fail gracefully
 - File system errors need better user messaging
 
 #### Performance Considerations
+
 - No rate limiting on command execution
 - No command queuing for long-running operations
 - Cache invalidation strategies not fully implemented
 - Resource limits not configurable per tool
 
 #### Security Enhancements
+
 - Environment variable sanitization needed
 - Secrets should never appear in logs
 - Consider adding audit logging for all commands
 - Need configurable resource limits (CPU, memory, timeout)
 
 #### Platform Compatibility
+
 - Windows path handling needs testing (especially spaces in paths)
 - Shell command differences between platforms not documented
 - Go tool behavior varies between OS (especially file paths)
 
 #### Documentation Gaps
+
 - No CONTRIBUTING.md file
 - No issue/PR templates in .github/
 - No SECURITY.md for vulnerability reporting
@@ -164,6 +179,7 @@ See [README.md](README.md#roadmap) for detailed quarterly milestones. Current fo
 ### Development Workflow Recommendations
 
 1. **Always run before committing:**
+
    ```bash
    npm run lint
    npm run lint:md  

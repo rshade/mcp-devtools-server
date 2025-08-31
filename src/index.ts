@@ -9,10 +9,10 @@ import {
 import winston from 'winston';
 
 // Import tool classes
-import { MakeTools } from './tools/make-tools.js';
-import { LintTools } from './tools/lint-tools.js';
-import { TestTools } from './tools/test-tools.js';
-import { GoTools } from './tools/go-tools.js';
+import { MakeTools, MakeToolResponse, MakeStatusResponse } from './tools/make-tools.js';
+import { LintTools, LintResult, LintSummary } from './tools/lint-tools.js';
+import { TestTools, TestResult, ProjectTestStatus } from './tools/test-tools.js';
+import { GoTools, GoToolResult } from './tools/go-tools.js';
 
 // Configure logger
 const logger = winston.createLogger({
@@ -850,7 +850,7 @@ class MCPDevToolsServer {
     });
   }
 
-  private formatToolResult(toolName: string, result: any): string {
+  private formatToolResult(toolName: string, result: MakeToolResponse): string {
     let output = `## ${toolName} Results\n\n`;
     output += `**Status:** ${result.success ? '✅ Success' : '❌ Failed'}\n`;
     output += `**Duration:** ${result.duration}ms\n\n`;
@@ -877,7 +877,7 @@ class MCPDevToolsServer {
     return output;
   }
 
-  private formatLintResult(toolName: string, result: any): string {
+  private formatLintResult(toolName: string, result: LintResult): string {
     let output = `## ${toolName} Results\n\n`;
     output += `**Status:** ${result.success ? '✅ Success' : '❌ Failed'}\n`;
     output += `**Files Checked:** ${result.filesChecked}\n`;
@@ -907,7 +907,7 @@ class MCPDevToolsServer {
     return output;
   }
 
-  private formatLintSummary(result: any): string {
+  private formatLintSummary(result: LintSummary): string {
     let output = `## Lint Summary\n\n`;
     output += `**Overall Status:** ${result.overallSuccess ? '✅ All Passed' : '❌ Issues Found'}\n`;
     output += `**Total Issues:** ${result.totalIssues}\n`;
@@ -933,7 +933,7 @@ class MCPDevToolsServer {
     return output;
   }
 
-  private formatTestResult(toolName: string, result: any): string {
+  private formatTestResult(toolName: string, result: TestResult): string {
     let output = `## ${toolName} Results\n\n`;
     output += `**Status:** ${result.success ? '✅ Success' : '❌ Failed'}\n`;
     output += `**Runner:** ${result.runner}\n`;
@@ -969,7 +969,7 @@ class MCPDevToolsServer {
     return output;
   }
 
-  private formatProjectStatus(result: any): string {
+  private formatProjectStatus(result: MakeStatusResponse): string {
     let output = `## Project Status\n\n`;
     output += `**Has Makefile:** ${result.hasMakefile ? '✅ Yes' : '❌ No'}\n\n`;
     
@@ -998,7 +998,7 @@ class MCPDevToolsServer {
     return output;
   }
 
-  private formatTestStatus(result: any): string {
+  private formatTestStatus(result: ProjectTestStatus): string {
     let output = `## Test Status\n\n`;
     output += `**Has Tests:** ${result.hasTests ? '✅ Yes' : '❌ No'}\n`;
     
@@ -1027,7 +1027,7 @@ class MCPDevToolsServer {
     return output;
   }
 
-  private formatGoResult(toolName: string, result: any): string {
+  private formatGoResult(toolName: string, result: GoToolResult): string {
     let output = `## ${toolName} Results\n\n`;
     output += `**Status:** ${result.success ? '✅ Success' : '❌ Failed'}\n`;
     output += `**Duration:** ${result.duration}ms\n`;

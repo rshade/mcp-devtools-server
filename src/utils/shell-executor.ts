@@ -187,7 +187,7 @@ export class ShellExecutor {
         success: exitCode === 0,
         stdout: stdout || '',
         stderr: stderr || '',
-        exitCode,
+        exitCode: exitCode ?? -1,
         duration,
         command: `${baseCommand} ${sanitizedArgs.join(' ')}`
       };
