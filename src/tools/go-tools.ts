@@ -486,6 +486,8 @@ export class GoTools {
       
     } catch (error) {
       console.error('Error getting Go project info:', error);
+      // Return partial results instead of empty object to provide useful info
+      // even when some operations fail
     }
     
     return info;

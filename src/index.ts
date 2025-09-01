@@ -938,7 +938,7 @@ class MCPDevToolsServer {
           }
 
           case 'go_project_info': {
-            const directory = args?.directory as string;
+            const directory = (args?.directory as string) || process.cwd();
             const result = await this.goTools.getProjectInfo(directory);
             return {
               content: [
