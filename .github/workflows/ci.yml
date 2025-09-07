@@ -146,7 +146,7 @@ jobs:
           cache: 'npm'
           
       - name: Setup Go (for Go tools testing)
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@v6
         with:
           go-version: '1.25'
           
