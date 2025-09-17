@@ -473,7 +473,7 @@ class MCPDevToolsServer {
           },
           {
             name: 'go_lint',
-            description: 'Lint Go code using golangci-lint',
+            description: 'Lint Go code using golangci-lint with comprehensive configuration options',
             inputSchema: {
               type: 'object',
               properties: {
@@ -483,21 +483,46 @@ class MCPDevToolsServer {
                 },
                 config: {
                   type: 'string',
-                  description: 'Path to golangci-lint config',
+                  description: 'Path to golangci-lint config file (.golangci.yml)',
                 },
                 fix: {
                   type: 'boolean',
-                  description: 'Fix issues automatically',
+                  description: 'Fix issues automatically where possible',
+                },
+                verbose: {
+                  type: 'boolean',
+                  description: 'Enable verbose output',
+                },
+                format: {
+                  type: 'string',
+                  description: 'Output format (colored-line-number, line-number, json, tab, checkstyle, code-climate, html, junitxml, github-actions)',
+                },
+                concurrency: {
+                  type: 'number',
+                  minimum: 1,
+                  maximum: 32,
+                  description: 'Number of CPUs to use for linting',
+                },
+                timeout: {
+                  type: 'number',
+                  minimum: 1,
+                  maximum: 3600,
+                  description: 'Timeout for linting in seconds',
                 },
                 enabledLinters: {
                   type: 'array',
                   items: { type: 'string' },
-                  description: 'Specific linters to enable',
+                  description: 'Specific linters to enable (e.g., golint, gofmt, ineffassign)',
                 },
                 disabledLinters: {
                   type: 'array',
                   items: { type: 'string' },
                   description: 'Specific linters to disable',
+                },
+                paths: {
+                  type: 'array',
+                  items: { type: 'string' },
+                  description: 'Specific paths or packages to lint (defaults to ./...)',
                 },
               },
             },
@@ -537,6 +562,63 @@ class MCPDevToolsServer {
                 verbose: {
                   type: 'boolean',
                   description: 'Enable verbose output',
+                },
+              },
+            },
+          },
+          {
+            name: 'go_mod_download',
+            description: 'Download Go module dependencies',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                directory: {
+                  type: 'string',
+                  description: 'Working directory',
+                },
+                verbose: {
+                  type: 'boolean',
+                  description: 'Enable verbose output',
+                },
+                args: {
+                  type: 'array',
+                  items: { type: 'string' },
+                  description: 'Additional arguments',
+                },
+              },
+            },
+          },
+          {
+            name: 'staticcheck',
+            description: 'Run staticcheck for enhanced Go static analysis',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                directory: {
+                  type: 'string',
+                  description: 'Working directory',
+                },
+                package: {
+                  type: 'string',
+                  description: 'Go package to analyze (e.g., ./...)',
+                },
+                args: {
+                  type: 'array',
+                  items: { type: 'string' },
+                  description: 'Additional arguments',
+                },
+              },
+            },
+          },
+          {
+            name: 'go_project_info',
+            description: 'Get comprehensive Go project information and analysis',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                directory: {
+                  type: 'string',
+                  description: 'Working directory to analyze',
                 },
               },
             },
@@ -829,6 +911,45 @@ class MCPDevToolsServer {
             };
           }
 
+          case 'go_mod_download': {
+            const validatedArgs = GoTools.validateArgs(args);
+            const result = await this.goTools.goModDownload(validatedArgs);
+            return {
+              content: [
+                {
+                  type: 'text',
+                  text: this.formatGoResult('Go Mod Download', result),
+                },
+              ],
+            };
+          }
+
+          case 'staticcheck': {
+            const validatedArgs = GoTools.validateArgs(args);
+            const result = await this.goTools.staticCheck(validatedArgs);
+            return {
+              content: [
+                {
+                  type: 'text',
+                  text: this.formatGoResult('Staticcheck', result),
+                },
+              ],
+            };
+          }
+
+          case 'go_project_info': {
+            const directory = (args?.directory as string) || process.cwd();
+            const result = await this.goTools.getProjectInfo(directory);
+            return {
+              content: [
+                {
+                  type: 'text',
+                  text: this.formatGoProjectInfo(result),
+                },
+              ],
+            };
+          }
+
           default:
             throw new Error(`Unknown tool: ${name}`);
         }
@@ -1050,6 +1171,88 @@ class MCPDevToolsServer {
       output += `**Suggestions:**\n`;
       for (const suggestion of result.suggestions) {
         output += `- ${suggestion}\n`;
+      }
+    }
+    
+    return output;
+  }
+
+  private formatGoProjectInfo(info: any): string {
+    let output = `## Go Project Information\n\n`;
+    
+    // Basic project info
+    output += `**Go Module:** ${info.hasGoMod ? '✅ Yes' : '❌ No'}\n`;
+    if (info.moduleName) {
+      output += `**Module Name:** ${info.moduleName}\n`;
+    }
+    if (info.goVersion) {
+      output += `**Go Version:** ${info.goVersion}\n`;
+    }
+    
+    // Workspace info
+    if (info.hasGoWork) {
+      output += `**Go Workspace:** ✅ Yes\n`;
+      if (info.workspaces && info.workspaces.length > 0) {
+        output += `**Workspace Modules:** ${info.workspaces.join(', ')}\n`;
+      }
+    }
+    
+    // Vendor mode
+    if (info.vendorMode) {
+      output += `**Vendor Mode:** ✅ Enabled\n`;
+    }
+    
+    output += `\n`;
+    
+    // Package and test info
+    output += `**Packages Found:** ${info.packages.length}\n`;
+    output += `**Has Tests:** ${info.hasTests ? '✅ Yes' : '❌ No'}\n`;
+    output += `**Test Files:** ${info.testFiles.length}\n`;
+    
+    if (info.hasMain) {
+      output += `**Main Packages:** ${info.mainPackages.length}\n`;
+      if (info.mainPackages.length > 0) {
+        output += `  - ${info.mainPackages.join('\n  - ')}\n`;
+      }
+    }
+    
+    output += `\n`;
+    
+    // Build tools and configs
+    if (info.buildTools && info.buildTools.length > 0) {
+      output += `**Build Tools Found:**\n`;
+      for (const tool of info.buildTools) {
+        output += `  - ${tool}\n`;
+      }
+      output += `\n`;
+    }
+    
+    if (info.lintConfigs && info.lintConfigs.length > 0) {
+      output += `**Lint Configurations:**\n`;
+      for (const config of info.lintConfigs) {
+        output += `  - ${config}\n`;
+      }
+      output += `\n`;
+    }
+    
+    // Platform info
+    if (info.targetOS && info.targetOS.length > 0) {
+      output += `**Target OS:** ${info.targetOS.join(', ')}\n`;
+    }
+    if (info.targetArch && info.targetArch.length > 0) {
+      output += `**Target Architecture:** ${info.targetArch.join(', ')}\n`;
+    }
+    
+    // Dependencies
+    if (info.dependencies.length > 0) {
+      output += `\n**Dependencies (${info.dependencies.length}):**\n`;
+      const maxDeps = 10;
+      const displayDeps = info.dependencies.slice(0, maxDeps);
+      for (const dep of displayDeps) {
+        output += `  - ${dep}\n`;
+      }
+      if (info.dependencies.length > maxDeps) {
+        output += `  ... and ${info.dependencies.length - maxDeps} more\n`;
       }
     }
     
