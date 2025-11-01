@@ -93,7 +93,7 @@ jobs:
         run: timeout 10s node dist/index.js || test $? -eq 124
         
       - name: Upload build artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: build-artifacts
           path: dist/
