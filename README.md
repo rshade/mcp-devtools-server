@@ -59,16 +59,33 @@ Claude Code. By establishing consistent patterns and best practices, it helps:
 #### File Validation
 
 - **ensure_newline** - Validate and fix POSIX newline compliance
-  - **Modes:**
-    - `check` - Report files without trailing newlines (read-only)
-    - `fix` - Automatically add missing newlines to files
-    - `validate` - Exit with error if non-compliant (CI/CD mode)
-  - **Features:**
-    - Pure Node.js implementation (no external binaries)
-    - Detects and preserves line ending style (LF vs CRLF)
-    - Binary file detection and skipping
-    - Configurable file size limits
-    - Glob pattern support for file selection
+
+  Ensures text files end with a proper newline character, as required by POSIX standards. This
+  addresses a common pain point where AI coding assistants frequently create or modify files
+  without proper trailing newlines, causing linting failures and git diff noise.
+
+  **Modes:**
+
+  - `check` - Report files without trailing newlines (read-only, non-destructive)
+  - `fix` - Automatically add missing newlines to files (safe, preserves line ending style)
+  - `validate` - Exit with error if non-compliant files found (CI/CD mode)
+
+  **Key Features:**
+
+  - Pure Node.js implementation using Buffer operations (no shell commands like `tail` or `od`)
+  - Cross-platform compatibility (Windows, macOS, Linux)
+  - Smart line ending detection - automatically detects and preserves LF vs CRLF style
+  - Binary file detection and automatic skipping
+  - Configurable file size limits for safety
+  - Flexible glob pattern support for file selection
+  - Exclusion patterns for node_modules, build artifacts, etc.
+
+  **Why This Matters:**
+
+  - **POSIX Compliance:** Text files should end with a newline character per POSIX definition
+  - **Linting:** Many linters (ESLint, markdownlint, golangci-lint) enforce trailing newlines
+  - **Git Diffs:** Missing newlines create "No newline at end of file" warnings
+  - **AI Assistants:** Common issue when AI tools generate or modify files
 
 ### Security Features
 
@@ -247,6 +264,46 @@ await callTool('go_vet', { package: "./..." });
 await callTool('go_mod_tidy', { verbose: true });
 ```
 
+### File Validation Usage
+
+```javascript
+// Check all TypeScript and JavaScript files for missing newlines
+await callTool('ensure_newline', {
+  patterns: ['src/**/*.ts', 'src/**/*.js'],
+  mode: 'check',
+  exclude: ['node_modules/**', 'dist/**']
+});
+
+// Fix all markdown files (automatically adds trailing newlines)
+await callTool('ensure_newline', {
+  patterns: ['**/*.md'],
+  mode: 'fix',
+  exclude: ['node_modules/**']
+});
+
+// Validate in CI/CD pipeline (exits with error if non-compliant)
+await callTool('ensure_newline', {
+  patterns: ['**/*'],
+  mode: 'validate',
+  exclude: ['node_modules/**', '.git/**', 'dist/**', '*.min.js'],
+  maxFileSizeMB: 5
+});
+
+// Check specific file types only
+await callTool('ensure_newline', {
+  patterns: ['**/*'],
+  fileTypes: ['*.ts', '*.go', '*.md', '*.json'],
+  mode: 'check'
+});
+
+// Fix files after AI code generation
+await callTool('ensure_newline', {
+  patterns: ['src/**/*.ts', 'test/**/*.ts'],
+  mode: 'fix',
+  skipBinary: true  // default: true
+});
+```
+
 ### Advanced Usage
 
 ```javascript
@@ -264,6 +321,61 @@ await callTool('markdownlint', {
 
 // Build with parallel jobs
 await callTool('make_build', { parallel: 4 });
+```
+
+### CI/CD Integration
+
+#### GitHub Actions Example
+
+Add EOL validation to your GitHub Actions workflow:
+
+```yaml
+name: Lint
+on: [push, pull_request]
+
+jobs:
+  validate-eol:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - name: Install MCP DevTools Server
+        run: |
+          git clone https://github.com/rshade/mcp-devtools-server.git
+          cd mcp-devtools-server
+          npm install
+          npm run build
+
+      - name: Validate EOL compliance
+        run: |
+          # Use the ensure_newline tool in validate mode
+          # This will exit with error if any files lack trailing newlines
+          node mcp-devtools-server/dist/index.js ensure_newline \
+            --patterns "**/*.ts" "**/*.js" "**/*.md" \
+            --mode validate \
+            --exclude "node_modules/**" "dist/**"
+```
+
+#### Pre-commit Hook
+
+Add to your `.git/hooks/pre-commit` or use with [Husky](https://typicode.github.io/husky/):
+
+```bash
+#!/bin/bash
+# Automatically fix missing newlines before commit
+
+npx mcp-devtools-server ensure_newline \
+  --patterns "**/*.ts" "**/*.js" "**/*.go" "**/*.md" \
+  --mode fix \
+  --exclude "node_modules/**" "vendor/**" "dist/**"
+
+# Stage any files that were fixed
+git add -u
 ```
 
 ## Architecture
@@ -342,6 +454,13 @@ Contributions are welcome! This project is built on continuous learning and impr
    - Optimize slow operations
    - Check system resources
 
+4. **EOL/Newline validation issues**
+   - Files created by AI often miss trailing newlines
+   - Use `ensure_newline` with `mode: 'fix'` to automatically correct
+   - Binary files are automatically skipped - check file encoding if issues persist
+   - CRLF vs LF is automatically detected and preserved
+   - Use `validate` mode in CI/CD to catch issues before commit
+
 ### Debug Mode
 
 Enable debug logging:
@@ -369,6 +488,7 @@ Our development is organized into quarterly milestones with clear priorities:
 #### Priority: HIGHEST (P0)
 
 - [x] Enhanced Go language support (go_test, go_build, go_fmt, go_lint, go_vet, go_mod_tidy)
+- [x] POSIX newline compliance validation (ensure_newline tool)
 - [ ] Complete Go toolchain integration
 - [ ] golangci-lint and staticcheck integration
 - [ ] Go project analysis and recommendations
