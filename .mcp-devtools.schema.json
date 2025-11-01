@@ -146,6 +146,44 @@
           "description": "Path to golangci-lint config file"
         }
       }
+    },
+    "fileValidation": {
+      "type": "object",
+      "description": "File validation and compliance settings",
+      "properties": {
+        "newline": {
+          "type": "object",
+          "description": "POSIX newline compliance settings",
+          "properties": {
+            "enabled": {
+              "type": "boolean",
+              "description": "Enable newline validation",
+              "default": true
+            },
+            "autoFix": {
+              "type": "boolean",
+              "description": "Automatically fix files on check",
+              "default": false
+            },
+            "exclude": {
+              "type": "array",
+              "description": "Patterns to exclude from checking",
+              "items": {
+                "type": "string"
+              },
+              "default": ["node_modules/**", "dist/**", "*.min.js"]
+            },
+            "fileTypes": {
+              "type": "array",
+              "description": "File extensions to check",
+              "items": {
+                "type": "string"
+              },
+              "default": ["*.ts", "*.js", "*.go", "*.md", "*.json", "*.yaml"]
+            }
+          }
+        }
+      }
     }
   },
   "additionalProperties": false

@@ -59,6 +59,10 @@ npm run clean
   - `src/tools/lint-tools.ts` - Linting tool integration
   - `src/tools/test-tools.ts` - Test framework integration
   - `src/tools/go-tools.ts` - **Go language support (PRIORITY)**
+  - `src/tools/file-validation-tools.ts` - File validation (EOL, etc.)
+- **Utility Classes**:
+  - `src/utils/newline-checker.ts` - Pure Node.js POSIX newline compliance checker
+  - `src/utils/file-scanner.ts` - Glob-based file pattern matching
 - **Main Server** (`src/index.ts`) - MCP server implementation with tool registration
 
 ## Configuration
@@ -82,6 +86,34 @@ When working on Go support:
 2. Add Go-specific configuration options to the schema
 3. Test with both Go modules and legacy GOPATH projects
 4. Ensure proper error handling and user-friendly suggestions
+
+## File Validation Tools
+
+The `ensure_newline` tool provides POSIX newline compliance validation:
+
+- **Pure Node.js** - Uses Buffer operations, no external commands (tail, od, etc.)
+- **Cross-platform** - Works on Windows, macOS, and Linux
+- **Smart detection** - Automatically detects and preserves line ending style (LF vs CRLF)
+- **Safe** - Skips binary files automatically, respects file size limits
+
+**Usage:**
+
+```typescript
+// Check files
+ensure_newline({ patterns: ['src/**/*.ts'], mode: 'check' })
+
+// Fix files
+ensure_newline({ patterns: ['**/*.md'], mode: 'fix' })
+
+// Validate in CI/CD
+ensure_newline({ patterns: ['**/*'], mode: 'validate', exclude: ['node_modules/**'] })
+```
+
+**When to use:**
+
+- Before committing files created by AI assistants
+- In CI/CD pipelines to enforce compliance
+- When debugging linting failures related to missing newlines
 
 ## Project Roadmap
 

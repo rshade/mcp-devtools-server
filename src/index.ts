@@ -13,6 +13,7 @@ import { MakeTools, MakeToolResponse, MakeStatusResponse } from './tools/make-to
 import { LintTools, LintResult, LintSummary } from './tools/lint-tools.js';
 import { TestTools, TestResult, ProjectTestStatus } from './tools/test-tools.js';
 import { GoTools, GoToolResult } from './tools/go-tools.js';
+import { FileValidationTools, EnsureNewlineResult } from './tools/file-validation-tools.js';
 
 // Configure logger
 const logger = winston.createLogger({
@@ -38,6 +39,7 @@ class MCPDevToolsServer {
   private lintTools: LintTools;
   private testTools: TestTools;
   private goTools: GoTools;
+  private fileValidationTools: FileValidationTools;
 
   constructor() {
     this.server = new Server(
@@ -58,6 +60,7 @@ class MCPDevToolsServer {
     this.lintTools = new LintTools(projectRoot);
     this.testTools = new TestTools(projectRoot);
     this.goTools = new GoTools(projectRoot);
+    this.fileValidationTools = new FileValidationTools();
 
     this.setupHandlers();
   }
@@ -651,6 +654,52 @@ class MCPDevToolsServer {
               },
             },
           },
+
+          // File validation tools
+          {
+            name: 'ensure_newline',
+            description: 'Validate and fix POSIX newline compliance. Checks if files end with proper ' +
+              'newline characters. Modes: check (report only), fix (auto-correct), ' +
+              'validate (error if non-compliant for CI/CD).',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                patterns: {
+                  type: 'array',
+                  items: { type: 'string' },
+                  description: 'Glob patterns for files to check (e.g., [\'src/**/*.ts\', \'*.md\'])',
+                },
+                mode: {
+                  type: 'string',
+                  enum: ['check', 'fix', 'validate'],
+                  description: 'check=report only, fix=auto-correct, validate=error if non-compliant',
+                },
+                exclude: {
+                  type: 'array',
+                  items: { type: 'string' },
+                  description: 'Patterns to exclude (e.g., [\'node_modules/**\', \'*.min.js\'])',
+                },
+                fileTypes: {
+                  type: 'array',
+                  items: { type: 'string' },
+                  description: 'File types to process (e.g., [\'*.ts\', \'*.go\', \'*.md\'])',
+                },
+                cwd: {
+                  type: 'string',
+                  description: 'Working directory (defaults to project root)',
+                },
+                skipBinary: {
+                  type: 'boolean',
+                  description: 'Skip binary files automatically (default: true)',
+                },
+                maxFileSizeMB: {
+                  type: 'number',
+                  description: 'Maximum file size to process in MB (default: 10)',
+                },
+              },
+              required: ['patterns', 'mode'],
+            },
+          },
         ],
       };
     });
@@ -950,6 +999,19 @@ class MCPDevToolsServer {
             };
           }
 
+          // File validation tools
+          case 'ensure_newline': {
+            const result = await this.fileValidationTools.ensureNewline(args as never);
+            return {
+              content: [
+                {
+                  type: 'text',
+                  text: this.formatEnsureNewlineResult(result),
+                },
+              ],
+            };
+          }
+
           default:
             throw new Error(`Unknown tool: ${name}`);
         }
@@ -1152,28 +1214,81 @@ class MCPDevToolsServer {
     let output = `## ${toolName} Results\n\n`;
     output += `**Status:** ${result.success ? '✅ Success' : '❌ Failed'}\n`;
     output += `**Duration:** ${result.duration}ms\n`;
-    
+
     if (result.coverage !== undefined) {
       output += `**Coverage:** ${result.coverage}%\n`;
     }
-    
+
     output += `\n`;
-    
+
     if (result.output) {
       output += `**Output:**\n\`\`\`\n${result.output}\n\`\`\`\n\n`;
     }
-    
+
     if (result.error) {
       output += `**Error:** ${result.error}\n\n`;
     }
-    
+
     if (result.suggestions && result.suggestions.length > 0) {
       output += `**Suggestions:**\n`;
       for (const suggestion of result.suggestions) {
         output += `- ${suggestion}\n`;
       }
     }
-    
+
+    return output;
+  }
+
+  private formatEnsureNewlineResult(result: EnsureNewlineResult): string {
+    let output = `## EOL Validation Results\n\n`;
+    output += `**Status:** ${result.exitCode === 0 ? '✅ Success' : result.exitCode === 1 ? '⚠️  Non-compliant files found' : '❌ Errors occurred'}\n`;
+    output += `**Summary:** ${result.summary}\n\n`;
+
+    output += `**Files Checked:** ${result.totalFiles}\n`;
+    output += `**Files Without Newline:** ${result.filesWithoutNewline.length}\n`;
+
+    if (result.filesFixed.length > 0) {
+      output += `**Files Fixed:** ${result.filesFixed.length}\n`;
+    }
+
+    if (result.filesSkipped.length > 0) {
+      output += `**Files Skipped:** ${result.filesSkipped.length}\n`;
+    }
+
+    output += `\n`;
+
+    if (result.filesWithoutNewline.length > 0) {
+      output += `**Files Without Trailing Newlines:**\n`;
+      for (const file of result.filesWithoutNewline) {
+        output += `- ${file}\n`;
+      }
+      output += `\n`;
+    }
+
+    if (result.filesFixed.length > 0) {
+      output += `**Files Fixed:**\n`;
+      for (const file of result.filesFixed) {
+        output += `- ${file}\n`;
+      }
+      output += `\n`;
+    }
+
+    if (result.filesSkipped.length > 0 && result.filesSkipped.length <= 10) {
+      output += `**Files Skipped:**\n`;
+      for (const skip of result.filesSkipped) {
+        output += `- ${skip.file} (${skip.reason})\n`;
+      }
+      output += `\n`;
+    }
+
+    if (result.errors.length > 0) {
+      output += `**Errors:**\n`;
+      for (const error of result.errors) {
+        output += `- ${error.file}: ${error.error}\n`;
+      }
+      output += `\n`;
+    }
+
     return output;
   }
 

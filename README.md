@@ -56,6 +56,20 @@ Claude Code. By establishing consistent patterns and best practices, it helps:
 - **project_status** - Get overall project health (lint + test summary)
 - **test_status** - Get project test status and recommendations
 
+#### File Validation
+
+- **ensure_newline** - Validate and fix POSIX newline compliance
+  - **Modes:**
+    - `check` - Report files without trailing newlines (read-only)
+    - `fix` - Automatically add missing newlines to files
+    - `validate` - Exit with error if non-compliant (CI/CD mode)
+  - **Features:**
+    - Pure Node.js implementation (no external binaries)
+    - Detects and preserves line ending style (LF vs CRLF)
+    - Binary file detection and skipping
+    - Configurable file size limits
+    - Glob pattern support for file selection
+
 ### Security Features
 
 - Input sanitization to prevent command injection
