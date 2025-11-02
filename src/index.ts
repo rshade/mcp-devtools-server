@@ -12,8 +12,9 @@ import winston from 'winston';
 import { MakeTools, MakeToolResponse, MakeStatusResponse } from './tools/make-tools.js';
 import { LintTools, LintResult, LintSummary } from './tools/lint-tools.js';
 import { TestTools, TestResult, ProjectTestStatus } from './tools/test-tools.js';
-import { GoTools, GoToolResult } from './tools/go-tools.js';
+import { GoTools, GoToolResult, GoProjectInfo } from './tools/go-tools.js';
 import { FileValidationTools, EnsureNewlineResult } from './tools/file-validation-tools.js';
+import { ActionlintTools, ActionlintResult } from './tools/actionlint-tools.js';
 
 // Configure logger
 const logger = winston.createLogger({
@@ -40,6 +41,7 @@ class MCPDevToolsServer {
   private testTools: TestTools;
   private goTools: GoTools;
   private fileValidationTools: FileValidationTools;
+  private actionlintTools: ActionlintTools;
 
   constructor() {
     this.server = new Server(
@@ -61,6 +63,7 @@ class MCPDevToolsServer {
     this.testTools = new TestTools(projectRoot);
     this.goTools = new GoTools(projectRoot);
     this.fileValidationTools = new FileValidationTools();
+    this.actionlintTools = new ActionlintTools(projectRoot);
 
     this.setupHandlers();
   }
@@ -655,6 +658,65 @@ class MCPDevToolsServer {
             },
           },
 
+          // GitHub Actions validation
+          {
+            name: 'actionlint',
+            description: 'Validate GitHub Actions workflow files for syntax errors, invalid parameters, and best practices',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                directory: {
+                  type: 'string',
+                  description: 'Working directory for the command',
+                },
+                files: {
+                  type: 'array',
+                  items: { type: 'string' },
+                  description: 'Specific workflow files to lint (supports glob patterns)',
+                },
+                format: {
+                  type: 'string',
+                  enum: ['default', 'json', 'sarif'],
+                  description: 'Output format for validation results',
+                },
+                shellcheck: {
+                  type: 'boolean',
+                  description: 'Enable shellcheck integration for run: blocks (default: true)',
+                },
+                pyflakes: {
+                  type: 'boolean',
+                  description: 'Enable pyflakes for Python run: blocks (default: false)',
+                },
+                verbose: {
+                  type: 'boolean',
+                  description: 'Enable verbose output',
+                },
+                color: {
+                  type: 'boolean',
+                  description: 'Enable colored output',
+                },
+                noColor: {
+                  type: 'boolean',
+                  description: 'Disable colored output',
+                },
+                ignore: {
+                  type: 'array',
+                  items: { type: 'string' },
+                  description: 'Ignore rules by glob pattern',
+                },
+                args: {
+                  type: 'array',
+                  items: { type: 'string' },
+                  description: 'Additional arguments',
+                },
+                timeout: {
+                  type: 'number',
+                  description: 'Command timeout in milliseconds',
+                },
+              },
+            },
+          },
+
           // File validation tools
           {
             name: 'ensure_newline',
@@ -999,6 +1061,20 @@ class MCPDevToolsServer {
             };
           }
 
+          // GitHub Actions validation
+          case 'actionlint': {
+            const validatedArgs = ActionlintTools.validateArgs(args);
+            const result = await this.actionlintTools.actionlint(validatedArgs);
+            return {
+              content: [
+                {
+                  type: 'text',
+                  text: this.formatActionlintResult(result),
+                },
+              ],
+            };
+          }
+
           // File validation tools
           case 'ensure_newline': {
             const result = await this.fileValidationTools.ensureNewline(args as never);
@@ -1239,6 +1315,32 @@ class MCPDevToolsServer {
     return output;
   }
 
+  private formatActionlintResult(result: ActionlintResult): string {
+    let output = `## Actionlint Results\n\n`;
+    output += `**Status:** ${result.success ? '✅ Success' : '❌ Failed'}\n`;
+    output += `**Files Checked:** ${result.filesChecked}\n`;
+    output += `**Issues Found:** ${result.issuesFound}\n`;
+    output += `**Duration:** ${result.duration}ms\n\n`;
+
+    if (result.output) {
+      output += `**Output:**\n\`\`\`\n${result.output}\n\`\`\`\n\n`;
+    }
+
+    if (result.error) {
+      output += `**Error:** ${result.error}\n\n`;
+    }
+
+    if (result.suggestions && result.suggestions.length > 0) {
+      output += `**Suggestions:**\n`;
+      for (const suggestion of result.suggestions) {
+        output += `- ${suggestion}\n`;
+      }
+      output += `\n`;
+    }
+
+    return output;
+  }
+
   private formatEnsureNewlineResult(result: EnsureNewlineResult): string {
     let output = `## EOL Validation Results\n\n`;
     output += `**Status:** ${result.exitCode === 0 ? '✅ Success' : result.exitCode === 1 ? '⚠️  Non-compliant files found' : '❌ Errors occurred'}\n`;
@@ -1292,7 +1394,7 @@ class MCPDevToolsServer {
     return output;
   }
 
-  private formatGoProjectInfo(info: any): string {
+  private formatGoProjectInfo(info: GoProjectInfo): string {
     let output = `## Go Project Information\n\n`;
     
     // Basic project info
@@ -1324,7 +1426,7 @@ class MCPDevToolsServer {
     output += `**Has Tests:** ${info.hasTests ? '✅ Yes' : '❌ No'}\n`;
     output += `**Test Files:** ${info.testFiles.length}\n`;
     
-    if (info.hasMain) {
+    if (info.hasMain && info.mainPackages) {
       output += `**Main Packages:** ${info.mainPackages.length}\n`;
       if (info.mainPackages.length > 0) {
         output += `  - ${info.mainPackages.join('\n  - ')}\n`;

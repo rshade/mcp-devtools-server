@@ -54,6 +54,7 @@ const ALLOWED_COMMANDS = new Set([
   'gofmt',
   'golangci-lint',
   'staticcheck',
+  'actionlint',
   'cargo',
   'mvn',
   'gradle',
