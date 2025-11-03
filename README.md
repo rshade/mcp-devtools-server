@@ -36,12 +36,24 @@ Claude Code. By establishing consistent patterns and best practices, it helps:
 
 #### Go Language Support 🚀 **PRIORITY**
 
+**Core Tools:**
+
 - **go_test** - Run Go tests with coverage and race detection
-- **go_build** - Build Go packages with custom flags and tags
+- **go_build** - Build Go packages with cross-compilation, custom ldflags, and build tags
 - **go_fmt** - Format Go code using gofmt
-- **go_lint** - Lint Go code using golangci-lint
+- **go_lint** - Lint Go code using golangci-lint with comprehensive configuration
 - **go_vet** - Examine Go source code for suspicious constructs
 - **go_mod_tidy** - Tidy Go module dependencies
+- **go_mod_download** - Download Go module dependencies
+
+**Advanced Features:**
+
+- **go_benchmark** - Run Go benchmarks with memory profiling and CPU scaling
+- **go_generate** - Execute code generation directives
+- **go_work** - Manage Go workspaces (go.work files)
+- **go_vulncheck** - Scan for known vulnerabilities using govulncheck
+- **staticcheck** - Enhanced static analysis
+- **go_project_info** - Comprehensive Go project analysis and detection
 
 #### General Linting
 
@@ -99,6 +111,44 @@ Claude Code. By establishing consistent patterns and best practices, it helps:
   .github/workflows/ci.yml:25:15: property "timeout" not defined in action 'actions/checkout@v4' [action]
   .github/workflows/ci.yml:42:9: shellcheck reported issue SC2086: Double quote to prevent globbing [shellcheck]
   ```
+
+#### Git and Code Review
+
+- **code_review** - Automated code review analysis on Git changes
+
+  Analyzes Git diffs to identify potential issues in code changes including security vulnerabilities,
+  performance concerns, and maintainability problems. Provides severity-based categorization and
+  actionable feedback.
+
+  **Features:**
+
+  - Security analysis (hardcoded secrets, dangerous code execution)
+  - Performance analysis (nested loops, inefficient patterns)
+  - Maintainability analysis (code complexity, TODO comments, line length)
+  - Configurable focus areas
+  - File filtering (include/exclude test files)
+
+- **generate_pr_message** - Generate PR messages from Git changes
+
+  Automatically generates conventional commit-formatted PR messages by analyzing commit history
+  and changed files. Supports GitHub PR templates for consistent documentation.
+
+  **Features:**
+
+  - Analyzes commit history to determine type (feat, fix, etc.)
+  - Extracts scope from commit patterns
+  - Lists all changes with file statistics
+  - Supports conventional commit format
+  - Includes issue reference support
+  - Breaking changes section
+  - **GitHub PR template integration** - Automatically detects and uses templates from:
+    - `.github/pull_request_template.md`
+    - `.github/PULL_REQUEST_TEMPLATE.md`
+    - `.github/PULL_REQUEST_TEMPLATE/pull_request_template.md`
+    - `docs/pull_request_template.md`
+    - `PULL_REQUEST_TEMPLATE.md`
+  - Smart placeholder replacement in templates
+  - Falls back to generated format if no template found
 
 #### File Validation
 
@@ -306,6 +356,39 @@ await callTool('go_vet', { package: "./..." });
 
 // Tidy Go modules
 await callTool('go_mod_tidy', { verbose: true });
+
+// Run benchmarks with memory profiling
+await callTool('go_benchmark', {
+  benchmem: true,
+  benchtime: '10s',
+  cpu: [1, 2, 4]
+});
+
+// Execute code generation
+await callTool('go_generate', {
+  run: 'mockgen',
+  verbose: true
+});
+
+// Cross-compile for different platforms
+await callTool('go_build', {
+  goos: 'linux',
+  goarch: 'arm64',
+  ldflags: '-X main.version=1.0.0',
+  output: './bin/app-linux-arm64'
+});
+
+// Manage Go workspaces
+await callTool('go_work', {
+  command: 'use',
+  modules: ['./moduleA', './moduleB']
+});
+
+// Scan for vulnerabilities
+await callTool('go_vulncheck', {
+  mode: 'source',
+  json: true
+});
 ```
 
 ### File Validation Usage

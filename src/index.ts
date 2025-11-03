@@ -15,6 +15,7 @@ import { TestTools, TestResult, ProjectTestStatus } from './tools/test-tools.js'
 import { GoTools, GoToolResult, GoProjectInfo } from './tools/go-tools.js';
 import { FileValidationTools, EnsureNewlineResult } from './tools/file-validation-tools.js';
 import { ActionlintTools, ActionlintResult } from './tools/actionlint-tools.js';
+import { GitTools, CodeReviewResult, PRMessageResult } from './tools/git-tools.js';
 
 // Configure logger
 const logger = winston.createLogger({
@@ -42,6 +43,7 @@ class MCPDevToolsServer {
   private goTools: GoTools;
   private fileValidationTools: FileValidationTools;
   private actionlintTools: ActionlintTools;
+  private gitTools: GitTools;
 
   constructor() {
     this.server = new Server(
@@ -64,6 +66,7 @@ class MCPDevToolsServer {
     this.goTools = new GoTools(projectRoot);
     this.fileValidationTools = new FileValidationTools();
     this.actionlintTools = new ActionlintTools(projectRoot);
+    this.gitTools = new GitTools(projectRoot);
 
     this.setupHandlers();
   }
@@ -418,7 +421,7 @@ class MCPDevToolsServer {
           },
           {
             name: 'go_build',
-            description: 'Build Go packages',
+            description: 'Build Go packages with cross-compilation and custom build flags support',
             inputSchema: {
               type: 'object',
               properties: {
@@ -428,7 +431,28 @@ class MCPDevToolsServer {
                 },
                 package: {
                   type: 'string',
-                  description: 'Go package to build (e.g., ./...)',
+                  description: 'Go package to build',
+                },
+                output: {
+                  type: 'string',
+                  description: 'Output binary path',
+                },
+                ldflags: {
+                  type: 'string',
+                  description: 'Link flags to pass to the linker (e.g., -X main.version=1.0.0)',
+                },
+                buildFlags: {
+                  type: 'array',
+                  items: { type: 'string' },
+                  description: 'Additional build flags',
+                },
+                goos: {
+                  type: 'string',
+                  description: 'Target operating system (linux, darwin, windows, etc.)',
+                },
+                goarch: {
+                  type: 'string',
+                  description: 'Target architecture (amd64, arm64, 386, etc.)',
                 },
                 verbose: {
                   type: 'boolean',
@@ -447,6 +471,10 @@ class MCPDevToolsServer {
                   type: 'array',
                   items: { type: 'string' },
                   description: 'Additional arguments',
+                },
+                timeout: {
+                  type: 'number',
+                  description: 'Command timeout in milliseconds',
                 },
               },
             },
@@ -617,6 +645,163 @@ class MCPDevToolsServer {
             },
           },
           {
+            name: 'go_benchmark',
+            description: 'Run Go benchmarks to measure code performance',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                directory: {
+                  type: 'string',
+                  description: 'Working directory',
+                },
+                package: {
+                  type: 'string',
+                  description: 'Go package to benchmark (e.g., ./...)',
+                },
+                benchmarks: {
+                  type: 'string',
+                  description: 'Benchmark pattern to run (e.g., BenchmarkFoo)',
+                },
+                benchtime: {
+                  type: 'string',
+                  description: 'Benchmark duration (e.g., 10s, 100x)',
+                },
+                benchmem: {
+                  type: 'boolean',
+                  description: 'Print memory allocation statistics',
+                },
+                cpu: {
+                  type: 'array',
+                  items: { type: 'number' },
+                  description: 'CPU counts to test (e.g., [1, 2, 4])',
+                },
+                count: {
+                  type: 'number',
+                  description: 'Run each benchmark n times',
+                },
+                args: {
+                  type: 'array',
+                  items: { type: 'string' },
+                  description: 'Additional arguments',
+                },
+                timeout: {
+                  type: 'number',
+                  description: 'Command timeout in milliseconds',
+                },
+              },
+            },
+          },
+          {
+            name: 'go_generate',
+            description: 'Run go generate to execute code generation directives',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                directory: {
+                  type: 'string',
+                  description: 'Working directory',
+                },
+                package: {
+                  type: 'string',
+                  description: 'Go package to run generate on (e.g., ./...)',
+                },
+                run: {
+                  type: 'string',
+                  description: 'Only run generate directives matching this regex',
+                },
+                skip: {
+                  type: 'string',
+                  description: 'Skip generate directives matching this regex',
+                },
+                verbose: {
+                  type: 'boolean',
+                  description: 'Enable verbose output',
+                },
+                dryRun: {
+                  type: 'boolean',
+                  description: 'Print commands without running them',
+                },
+                args: {
+                  type: 'array',
+                  items: { type: 'string' },
+                  description: 'Additional arguments',
+                },
+                timeout: {
+                  type: 'number',
+                  description: 'Command timeout in milliseconds',
+                },
+              },
+            },
+          },
+          {
+            name: 'go_work',
+            description: 'Manage Go workspaces (go.work files)',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                directory: {
+                  type: 'string',
+                  description: 'Working directory',
+                },
+                command: {
+                  type: 'string',
+                  enum: ['init', 'use', 'sync', 'edit'],
+                  description: 'Workspace command: init (create), use (add modules), sync (sync deps), edit (edit go.work)',
+                },
+                modules: {
+                  type: 'array',
+                  items: { type: 'string' },
+                  description: 'Module paths for use command',
+                },
+                args: {
+                  type: 'array',
+                  items: { type: 'string' },
+                  description: 'Additional arguments',
+                },
+              },
+              required: ['command'],
+            },
+          },
+          {
+            name: 'go_vulncheck',
+            description: 'Scan for known vulnerabilities using govulncheck',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                directory: {
+                  type: 'string',
+                  description: 'Working directory',
+                },
+                package: {
+                  type: 'string',
+                  description: 'Go package or binary path to check',
+                },
+                mode: {
+                  type: 'string',
+                  enum: ['source', 'binary'],
+                  description: 'Analysis mode: source (analyze source code) or binary (analyze compiled binary)',
+                },
+                json: {
+                  type: 'boolean',
+                  description: 'Output results in JSON format',
+                },
+                verbose: {
+                  type: 'boolean',
+                  description: 'Enable verbose output',
+                },
+                args: {
+                  type: 'array',
+                  items: { type: 'string' },
+                  description: 'Additional arguments',
+                },
+                timeout: {
+                  type: 'number',
+                  description: 'Command timeout in milliseconds',
+                },
+              },
+            },
+          },
+          {
             name: 'go_project_info',
             description: 'Get comprehensive Go project information and analysis',
             inputSchema: {
@@ -760,6 +945,76 @@ class MCPDevToolsServer {
                 },
               },
               required: ['patterns', 'mode'],
+            },
+          },
+
+          // Git and Code Review tools
+          {
+            name: 'code_review',
+            description: 'Perform automated code review analysis on Git changes',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                directory: {
+                  type: 'string',
+                  description: 'Working directory for the command',
+                },
+                base: {
+                  type: 'string',
+                  description: 'Base branch to compare against (default: main)',
+                },
+                includeTests: {
+                  type: 'boolean',
+                  description: 'Include test files in review',
+                },
+                maxFiles: {
+                  type: 'number',
+                  description: 'Maximum number of files to review',
+                },
+                focus: {
+                  type: 'string',
+                  enum: ['security', 'performance', 'maintainability', 'all'],
+                  description: 'Focus area for review',
+                },
+              },
+            },
+          },
+          {
+            name: 'generate_pr_message',
+            description: 'Generate a PR message based on Git changes',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                directory: {
+                  type: 'string',
+                  description: 'Working directory for the command',
+                },
+                base: {
+                  type: 'string',
+                  description: 'Base branch to compare against (default: main)',
+                },
+                type: {
+                  type: 'string',
+                  enum: ['feat', 'fix', 'docs', 'style', 'refactor', 'perf', 'test', 'chore'],
+                  description: 'Commit type (conventional commits)',
+                },
+                scope: {
+                  type: 'string',
+                  description: 'Commit scope',
+                },
+                includeBreaking: {
+                  type: 'boolean',
+                  description: 'Include breaking changes section',
+                },
+                includeIssue: {
+                  type: 'string',
+                  description: 'Issue number to reference (e.g., "123")',
+                },
+                useTemplate: {
+                  type: 'boolean',
+                  description: 'Use GitHub PR template if available (default: true)',
+                },
+              },
             },
           },
         ],
@@ -958,7 +1213,7 @@ class MCPDevToolsServer {
           }
 
           case 'go_build': {
-            const validatedArgs = GoTools.validateArgs(args);
+            const validatedArgs = GoTools.validateBuildArgs(args);
             const result = await this.goTools.goBuild(validatedArgs);
             return {
               content: [
@@ -1048,6 +1303,58 @@ class MCPDevToolsServer {
             };
           }
 
+          case 'go_benchmark': {
+            const validatedArgs = GoTools.validateBenchmarkArgs(args);
+            const result = await this.goTools.goBenchmark(validatedArgs);
+            return {
+              content: [
+                {
+                  type: 'text',
+                  text: this.formatGoResult('Go Benchmark', result),
+                },
+              ],
+            };
+          }
+
+          case 'go_generate': {
+            const validatedArgs = GoTools.validateGenerateArgs(args);
+            const result = await this.goTools.goGenerate(validatedArgs);
+            return {
+              content: [
+                {
+                  type: 'text',
+                  text: this.formatGoResult('Go Generate', result),
+                },
+              ],
+            };
+          }
+
+          case 'go_work': {
+            const validatedArgs = GoTools.validateWorkArgs(args);
+            const result = await this.goTools.goWork(validatedArgs);
+            return {
+              content: [
+                {
+                  type: 'text',
+                  text: this.formatGoResult('Go Work', result),
+                },
+              ],
+            };
+          }
+
+          case 'go_vulncheck': {
+            const validatedArgs = GoTools.validateVulncheckArgs(args);
+            const result = await this.goTools.goVulncheck(validatedArgs);
+            return {
+              content: [
+                {
+                  type: 'text',
+                  text: this.formatGoResult('Go Vulncheck', result),
+                },
+              ],
+            };
+          }
+
           case 'go_project_info': {
             const directory = (args?.directory as string) || process.cwd();
             const result = await this.goTools.getProjectInfo(directory);
@@ -1083,6 +1390,33 @@ class MCPDevToolsServer {
                 {
                   type: 'text',
                   text: this.formatEnsureNewlineResult(result),
+                },
+              ],
+            };
+          }
+
+          // Git and Code Review tools
+          case 'code_review': {
+            const validatedArgs = GitTools.validateCodeReviewArgs(args);
+            const result = await this.gitTools.codeReview(validatedArgs);
+            return {
+              content: [
+                {
+                  type: 'text',
+                  text: this.formatCodeReviewResult(result),
+                },
+              ],
+            };
+          }
+
+          case 'generate_pr_message': {
+            const validatedArgs = GitTools.validatePRMessageArgs(args);
+            const result = await this.gitTools.generatePRMessage(validatedArgs);
+            return {
+              content: [
+                {
+                  type: 'text',
+                  text: this.formatPRMessageResult(result),
                 },
               ],
             };
@@ -1473,6 +1807,82 @@ class MCPDevToolsServer {
       }
     }
     
+    return output;
+  }
+
+  private formatCodeReviewResult(result: CodeReviewResult): string {
+    let output = `## Code Review Results\n\n`;
+    output += `**Status:** ${result.success ? '✅ Success' : '❌ Failed'}\n`;
+    output += `**Files Reviewed:** ${result.filesReviewed}\n`;
+    output += `**Duration:** ${result.duration}ms\n\n`;
+
+    output += `**Summary:** ${result.summary}\n\n`;
+
+    if (result.concerns.length > 0) {
+      // Group concerns by severity
+      const high = result.concerns.filter(c => c.severity === 'high');
+      const medium = result.concerns.filter(c => c.severity === 'medium');
+      const low = result.concerns.filter(c => c.severity === 'low');
+
+      if (high.length > 0) {
+        output += `### 🔴 High Severity Issues (${high.length})\n\n`;
+        for (const concern of high) {
+          output += `**${concern.file}**`;
+          if (concern.line) output += `:${concern.line}`;
+          output += ` - ${concern.category}\n`;
+          output += `  ${concern.message}\n\n`;
+        }
+      }
+
+      if (medium.length > 0) {
+        output += `### 🟡 Medium Severity Issues (${medium.length})\n\n`;
+        for (const concern of medium) {
+          output += `**${concern.file}**`;
+          if (concern.line) output += `:${concern.line}`;
+          output += ` - ${concern.category}\n`;
+          output += `  ${concern.message}\n\n`;
+        }
+      }
+
+      if (low.length > 0) {
+        output += `### 🟢 Low Severity Issues (${low.length})\n\n`;
+        for (const concern of low) {
+          output += `**${concern.file}**`;
+          if (concern.line) output += `:${concern.line}`;
+          output += ` - ${concern.category}\n`;
+          output += `  ${concern.message}\n\n`;
+        }
+      }
+    } else {
+      output += `✅ No concerns detected!\n\n`;
+    }
+
+    if (result.error) {
+      output += `**Error:** ${result.error}\n\n`;
+    }
+
+    if (result.suggestions && result.suggestions.length > 0) {
+      output += `**Suggestions:**\n`;
+      for (const suggestion of result.suggestions) {
+        output += `- ${suggestion}\n`;
+      }
+    }
+
+    return output;
+  }
+
+  private formatPRMessageResult(result: PRMessageResult): string {
+    let output = `## Generated PR Message\n\n`;
+    output += `**Status:** ${result.success ? '✅ Success' : '❌ Failed'}\n\n`;
+
+    if (result.success) {
+      output += `### Title\n\n\`\`\`\n${result.title}\n\`\`\`\n\n`;
+      output += `### Message Body\n\n\`\`\`markdown\n${result.body}\n\`\`\`\n\n`;
+      output += `### Full Message\n\n\`\`\`markdown\n${result.message}\n\`\`\`\n`;
+    } else {
+      output += `**Error:** ${result.error}\n`;
+    }
+
     return output;
   }
 
