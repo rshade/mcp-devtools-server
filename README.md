@@ -56,6 +56,50 @@ Claude Code. By establishing consistent patterns and best practices, it helps:
 - **project_status** - Get overall project health (lint + test summary)
 - **test_status** - Get project test status and recommendations
 
+#### GitHub Actions Validation
+
+- **actionlint** - Validate GitHub Actions workflow files for syntax errors and best practices
+
+  A comprehensive linter for GitHub Actions workflow files that helps catch errors before pushing
+  to GitHub. Validates workflow syntax, action parameters, expression syntax, and shell scripts
+  within run blocks.
+
+  **Features:**
+
+  - Validates GitHub Actions workflow YAML syntax
+  - Checks action parameters against official action schemas
+  - Validates GitHub Actions expressions (`${{ }}` syntax)
+  - Integrates with shellcheck for validating shell scripts in `run:` blocks
+  - Supports pyflakes for Python script validation
+  - Multiple output formats: default (human-readable), JSON, and SARIF
+  - Configurable ignore patterns for specific rules
+  - Detects common workflow issues (missing jobs, invalid triggers, etc.)
+
+  **Parameters:**
+
+  - `directory` - Working directory containing workflows (default: project root)
+  - `files` - Specific workflow files or glob patterns (default: `.github/workflows/*.{yml,yaml}`)
+  - `format` - Output format: `default`, `json`, or `sarif`
+  - `shellcheck` - Enable shellcheck integration (default: true)
+  - `pyflakes` - Enable pyflakes for Python (default: false)
+  - `verbose` - Enable verbose output
+  - `ignore` - Array of rule patterns to ignore
+  - `timeout` - Command timeout in milliseconds (default: 60000)
+
+  **Common Use Cases:**
+
+  - Pre-commit validation of workflow changes
+  - CI/CD integration to catch workflow errors
+  - Debugging workflow failures due to syntax issues
+  - Ensuring workflows follow GitHub Actions best practices
+
+  **Example Output:**
+
+  ```text
+  .github/workflows/ci.yml:25:15: property "timeout" not defined in action 'actions/checkout@v4' [action]
+  .github/workflows/ci.yml:42:9: shellcheck reported issue SC2086: Double quote to prevent globbing [shellcheck]
+  ```
+
 #### File Validation
 
 - **ensure_newline** - Validate and fix POSIX newline compliance

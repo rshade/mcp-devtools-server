@@ -1,0 +1,16 @@
+name: Syntax Error
+on: push
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # Missing job dependency reference
+      - name: Run tests
+        needs: nonexistent-job
+        run: npm test
+      # Invalid expression syntax
+      - name: Check condition
+        if: ${{ github.event.name = 'push' }}
+        run: echo "Pushed"

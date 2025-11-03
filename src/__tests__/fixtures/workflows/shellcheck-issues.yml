@@ -1,0 +1,20 @@
+name: Shell Script Issues
+on: push
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run script with issues
+        run: |
+          # Missing quotes around variable - SC2086
+          echo $MY_VAR
+
+          # Unquoted expansion - SC2046
+          for file in $(ls *.txt); do
+            echo $file
+          done
+
+          # Variable not assigned - SC2154
+          echo $UNDEFINED_VAR

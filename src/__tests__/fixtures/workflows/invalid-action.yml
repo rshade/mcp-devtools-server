@@ -1,0 +1,14 @@
+name: Invalid Action Properties
+on: push
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # This property doesn't exist in actions/checkout
+          invalid-property: true
+          timeout: 300
+      - name: Run tests
+        run: npm test
