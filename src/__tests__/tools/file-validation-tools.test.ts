@@ -1,5 +1,6 @@
 import { FileValidationTools } from '../../tools/file-validation-tools';
 import { promises as fs } from 'fs';
+import os from 'os';
 import path from 'path';
 
 const fixturesDir = path.join(__dirname, '..', 'fixtures');
@@ -10,12 +11,18 @@ describe('FileValidationTools', () => {
 
   beforeEach(async () => {
     tools = new FileValidationTools();
-    tempDir = path.join(fixturesDir, 'temp');
-    await fs.mkdir(tempDir, { recursive: true });
+    // Use OS temp directory for better CI compatibility
+    tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'file-validation-test-'));
   });
 
   afterEach(async () => {
-    await fs.rm(tempDir, { recursive: true, force: true });
+    // Clean up temp directory
+    try {
+      await fs.rm(tempDir, { recursive: true, force: true });
+    } catch (error) {
+      // Ignore cleanup errors
+      console.warn('Failed to clean up temp directory:', error);
+    }
   });
 
   describe('ensureNewline - check mode', () => {

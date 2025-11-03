@@ -35,9 +35,69 @@ const GoLintArgsSchema = z.object({
   paths: z.array(z.string()).optional().describe('Specific paths/packages to lint')
 });
 
+const GoBenchmarkArgsSchema = z.object({
+  directory: z.string().optional().describe('Working directory'),
+  package: z.string().optional().describe('Go package to benchmark (e.g., ./...)'),
+  benchmarks: z.string().optional().describe('Benchmark pattern to run (e.g., BenchmarkFoo)'),
+  benchtime: z.string().optional().describe('Benchmark time (e.g., 10s, 100x)'),
+  benchmem: z.boolean().optional().describe('Print memory allocation statistics'),
+  cpu: z.array(z.number()).optional().describe('CPU counts to test (e.g., [1, 2, 4])'),
+  count: z.number().optional().describe('Run each benchmark n times'),
+  args: z.array(z.string()).optional().describe('Additional arguments'),
+  timeout: z.number().optional().describe('Command timeout in milliseconds')
+});
+
+const GoBuildArgsSchema = z.object({
+  directory: z.string().optional().describe('Working directory'),
+  package: z.string().optional().describe('Go package to build'),
+  output: z.string().optional().describe('Output binary path'),
+  ldflags: z.string().optional().describe('Link flags to pass to the linker'),
+  buildFlags: z.array(z.string()).optional().describe('Additional build flags'),
+  goos: z.string().optional().describe('Target operating system (linux, darwin, windows, etc.)'),
+  goarch: z.string().optional().describe('Target architecture (amd64, arm64, 386, etc.)'),
+  tags: z.array(z.string()).optional().describe('Build tags to include'),
+  verbose: z.boolean().optional().describe('Enable verbose output'),
+  race: z.boolean().optional().describe('Enable race condition detection'),
+  args: z.array(z.string()).optional().describe('Additional arguments'),
+  timeout: z.number().optional().describe('Command timeout in milliseconds')
+});
+
+const GoGenerateArgsSchema = z.object({
+  directory: z.string().optional().describe('Working directory'),
+  package: z.string().optional().describe('Go package to run generate on (e.g., ./...)'),
+  run: z.string().optional().describe('Only run generate directives matching this regex'),
+  skip: z.string().optional().describe('Skip generate directives matching this regex'),
+  verbose: z.boolean().optional().describe('Enable verbose output'),
+  dryRun: z.boolean().optional().describe('Print commands without running them'),
+  args: z.array(z.string()).optional().describe('Additional arguments'),
+  timeout: z.number().optional().describe('Command timeout in milliseconds')
+});
+
+const GoWorkArgsSchema = z.object({
+  directory: z.string().optional().describe('Working directory'),
+  command: z.enum(['init', 'use', 'sync', 'edit']).describe('Workspace command to run'),
+  modules: z.array(z.string()).optional().describe('Module paths for use command'),
+  args: z.array(z.string()).optional().describe('Additional arguments')
+});
+
+const GoVulncheckArgsSchema = z.object({
+  directory: z.string().optional().describe('Working directory'),
+  package: z.string().optional().describe('Go package to check (e.g., ./...)'),
+  mode: z.enum(['source', 'binary']).optional().describe('Analysis mode (source or binary)'),
+  json: z.boolean().optional().describe('Output results in JSON format'),
+  verbose: z.boolean().optional().describe('Enable verbose output'),
+  args: z.array(z.string()).optional().describe('Additional arguments'),
+  timeout: z.number().optional().describe('Command timeout in milliseconds')
+});
+
 export type GoToolArgs = z.infer<typeof GoToolArgsSchema>;
 export type GoFormatArgs = z.infer<typeof GoFormatArgsSchema>;
 export type GoLintArgs = z.infer<typeof GoLintArgsSchema>;
+export type GoBenchmarkArgs = z.infer<typeof GoBenchmarkArgsSchema>;
+export type GoBuildArgs = z.infer<typeof GoBuildArgsSchema>;
+export type GoGenerateArgs = z.infer<typeof GoGenerateArgsSchema>;
+export type GoWorkArgs = z.infer<typeof GoWorkArgsSchema>;
+export type GoVulncheckArgs = z.infer<typeof GoVulncheckArgsSchema>;
 
 export interface GoToolResult {
   success: boolean;
@@ -114,37 +174,60 @@ export class GoTools {
   }
 
   /**
-   * Run go build
+   * Run go build with enhanced cross-compilation and ldflags support
    */
-  async goBuild(args: GoToolArgs): Promise<GoToolResult> {
+  async goBuild(args: GoBuildArgs): Promise<GoToolResult> {
     const commandArgs: string[] = ['build'];
-    
-    // Add package specification
-    const pkg = args.package || './...';
-    
+
+    // Add output file
+    if (args.output) {
+      commandArgs.push('-o', args.output);
+    }
+
+    // Add ldflags
+    if (args.ldflags) {
+      commandArgs.push('-ldflags', args.ldflags);
+    }
+
+    // Add build flags
+    if (args.buildFlags && args.buildFlags.length > 0) {
+      commandArgs.push(...args.buildFlags);
+    }
+
     // Add flags
     if (args.verbose) commandArgs.push('-v');
     if (args.race) commandArgs.push('-race');
-    
+
     // Add build tags
     if (args.tags && args.tags.length > 0) {
       commandArgs.push('-tags', args.tags.join(','));
     }
-    
+
     // Add additional arguments
     if (args.args) {
       commandArgs.push(...args.args);
     }
-    
+
     // Add package at the end
+    const pkg = args.package || '.';
     commandArgs.push(pkg);
-    
+
+    // Set cross-compilation environment variables
+    const env: Record<string, string> = {};
+    if (args.goos) {
+      env.GOOS = args.goos;
+    }
+    if (args.goarch) {
+      env.GOARCH = args.goarch;
+    }
+
     const result = await this.executor.execute('go', {
       cwd: args.directory,
       args: commandArgs,
+      env: Object.keys(env).length > 0 ? env : undefined,
       timeout: args.timeout || 300000
     });
-    
+
     return this.processGoResult(result, 'go build');
   }
 
@@ -302,18 +385,176 @@ export class GoTools {
    */
   async staticCheck(args: GoToolArgs): Promise<GoToolResult> {
     const commandArgs: string[] = [];
-    
+
     // Add package specification
     const pkg = args.package || './...';
     commandArgs.push(pkg);
-    
+
     const result = await this.executor.execute('staticcheck', {
       cwd: args.directory,
       args: commandArgs,
       timeout: 300000
     });
-    
+
     return this.processGoResult(result, 'staticcheck');
+  }
+
+  /**
+   * Run Go benchmarks
+   */
+  async goBenchmark(args: GoBenchmarkArgs): Promise<GoToolResult> {
+    const commandArgs: string[] = ['test', '-bench'];
+
+    // Add benchmark pattern
+    const benchPattern = args.benchmarks || '.';
+    commandArgs.push(benchPattern);
+
+    // Add benchtime
+    if (args.benchtime) {
+      commandArgs.push('-benchtime', args.benchtime);
+    }
+
+    // Add benchmem
+    if (args.benchmem) {
+      commandArgs.push('-benchmem');
+    }
+
+    // Add CPU counts
+    if (args.cpu && args.cpu.length > 0) {
+      commandArgs.push('-cpu', args.cpu.join(','));
+    }
+
+    // Add count
+    if (args.count) {
+      commandArgs.push('-count', args.count.toString());
+    }
+
+    // Add additional arguments
+    if (args.args) {
+      commandArgs.push(...args.args);
+    }
+
+    // Add package at the end
+    const pkg = args.package || './...';
+    commandArgs.push(pkg);
+
+    const result = await this.executor.execute('go', {
+      cwd: args.directory,
+      args: commandArgs,
+      timeout: args.timeout || 600000 // Benchmarks can take longer
+    });
+
+    return this.processGoResult(result, 'go test -bench');
+  }
+
+  /**
+   * Run go generate
+   */
+  async goGenerate(args: GoGenerateArgs): Promise<GoToolResult> {
+    const commandArgs: string[] = ['generate'];
+
+    // Add run pattern
+    if (args.run) {
+      commandArgs.push('-run', args.run);
+    }
+
+    // Add skip pattern
+    if (args.skip) {
+      commandArgs.push('-skip', args.skip);
+    }
+
+    // Add verbose flag
+    if (args.verbose) {
+      commandArgs.push('-v');
+    }
+
+    // Add dry-run flag
+    if (args.dryRun) {
+      commandArgs.push('-n');
+    }
+
+    // Add additional arguments
+    if (args.args) {
+      commandArgs.push(...args.args);
+    }
+
+    // Add package at the end
+    const pkg = args.package || './...';
+    commandArgs.push(pkg);
+
+    const result = await this.executor.execute('go', {
+      cwd: args.directory,
+      args: commandArgs,
+      timeout: args.timeout || 300000
+    });
+
+    return this.processGoResult(result, 'go generate');
+  }
+
+  /**
+   * Run Go workspace commands
+   */
+  async goWork(args: GoWorkArgs): Promise<GoToolResult> {
+    const commandArgs: string[] = ['work', args.command];
+
+    // Add modules for 'use' command
+    if (args.command === 'use' && args.modules && args.modules.length > 0) {
+      commandArgs.push(...args.modules);
+    }
+
+    // Add additional arguments
+    if (args.args) {
+      commandArgs.push(...args.args);
+    }
+
+    const result = await this.executor.execute('go', {
+      cwd: args.directory,
+      args: commandArgs
+    });
+
+    return this.processGoResult(result, `go work ${args.command}`);
+  }
+
+  /**
+   * Run govulncheck for vulnerability scanning
+   */
+  async goVulncheck(args: GoVulncheckArgs): Promise<GoToolResult> {
+    const commandArgs: string[] = [];
+
+    // Add mode flag
+    if (args.mode === 'binary') {
+      // For binary mode, package should be path to binary
+      if (args.package) {
+        commandArgs.push(args.package);
+      }
+    } else {
+      // Source mode (default)
+      const pkg = args.package || './...';
+      commandArgs.push(pkg);
+    }
+
+    // Add JSON flag
+    if (args.json) {
+      commandArgs.push('-json');
+    }
+
+    // Add verbose flag
+    if (args.verbose) {
+      commandArgs.push('-v');
+    }
+
+    // Add additional arguments
+    if (args.args) {
+      commandArgs.push(...args.args);
+    }
+
+    const result = await this.executor.execute('govulncheck', {
+      cwd: args.directory,
+      args: commandArgs,
+      timeout: args.timeout || 300000
+    });
+
+    return this.processGoResult(result, 'govulncheck');
   }
 
   /**
@@ -596,5 +837,40 @@ export class GoTools {
    */
   static validateLintArgs(args: unknown): GoLintArgs {
     return GoLintArgsSchema.parse(args);
+  }
+
+  /**
+   * Validate Go benchmark arguments
+   */
+  static validateBenchmarkArgs(args: unknown): GoBenchmarkArgs {
+    return GoBenchmarkArgsSchema.parse(args);
+  }
+
+  /**
+   * Validate Go build arguments
+   */
+  static validateBuildArgs(args: unknown): GoBuildArgs {
+    return GoBuildArgsSchema.parse(args);
+  }
+
+  /**
+   * Validate Go generate arguments
+   */
+  static validateGenerateArgs(args: unknown): GoGenerateArgs {
+    return GoGenerateArgsSchema.parse(args);
+  }
+
+  /**
+   * Validate Go work arguments
+   */
+  static validateWorkArgs(args: unknown): GoWorkArgs {
+    return GoWorkArgsSchema.parse(args);
+  }
+
+  /**
+   * Validate Go vulncheck arguments
+   */
+  static validateVulncheckArgs(args: unknown): GoVulncheckArgs {
+    return GoVulncheckArgsSchema.parse(args);
   }
 }
