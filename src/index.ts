@@ -17,6 +17,8 @@ import { FileValidationTools, EnsureNewlineResult } from './tools/file-validatio
 import { ActionlintTools, ActionlintResult } from './tools/actionlint-tools.js';
 import { GitTools, CodeReviewResult, PRMessageResult } from './tools/git-tools.js';
 import { SmartSuggestionsTools, AnalyzeCommandResult, AnalyzeResultResult, KnowledgeBaseStatsResult, RecommendMCPServersResult } from './tools/smart-suggestions-tools.js';
+import { OnboardingTools, OnboardingResult, ProjectProfileResult, GenerateConfigResult, RollbackResult } from './tools/onboarding-tools.js';
+import { ValidationResult } from './utils/onboarding-wizard.js';
 
 // Configure logger
 const logger = winston.createLogger({
@@ -46,6 +48,7 @@ class MCPDevToolsServer {
   private actionlintTools: ActionlintTools;
   private gitTools: GitTools;
   private smartSuggestionsTools: SmartSuggestionsTools;
+  private onboardingTools: OnboardingTools;
 
   constructor() {
     this.server = new Server(
@@ -70,6 +73,7 @@ class MCPDevToolsServer {
     this.actionlintTools = new ActionlintTools(projectRoot);
     this.gitTools = new GitTools(projectRoot);
     this.smartSuggestionsTools = new SmartSuggestionsTools(projectRoot);
+    this.onboardingTools = new OnboardingTools(projectRoot);
 
     this.setupHandlers();
   }
@@ -1154,6 +1158,110 @@ class MCPDevToolsServer {
               },
             },
           },
+
+          // Onboarding tools
+          {
+            name: 'onboarding_wizard',
+            description: 'Run intelligent zero-configuration onboarding wizard to detect project type, generate configuration, verify tools, and validate setup',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                directory: {
+                  type: 'string',
+                  description: 'Working directory to analyze (defaults to current directory)',
+                },
+                interactive: {
+                  type: 'boolean',
+                  description: 'Enable interactive prompts for customization (default: false)',
+                },
+                autoInstall: {
+                  type: 'boolean',
+                  description: 'Automatically install missing tools (default: false)',
+                },
+                generateConfig: {
+                  type: 'boolean',
+                  description: 'Generate .mcp-devtools.json configuration file (default: true)',
+                },
+                validateSetup: {
+                  type: 'boolean',
+                  description: 'Run validation after setup (default: true)',
+                },
+                backupExisting: {
+                  type: 'boolean',
+                  description: 'Backup existing configuration before overwriting (default: true)',
+                },
+                dryRun: {
+                  type: 'boolean',
+                  description: 'Preview changes without writing files (default: false)',
+                },
+                skipToolVerification: {
+                  type: 'boolean',
+                  description: 'Skip tool installation checks (default: false)',
+                },
+              },
+            },
+          },
+          {
+            name: 'detect_project',
+            description: 'Analyze project and generate comprehensive profile including type, language, framework, build system, and tooling',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                directory: {
+                  type: 'string',
+                  description: 'Working directory to analyze (defaults to current directory)',
+                },
+              },
+            },
+          },
+          {
+            name: 'generate_config',
+            description: 'Generate MCP DevTools configuration preview based on project detection without writing to file',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                directory: {
+                  type: 'string',
+                  description: 'Working directory to analyze (defaults to current directory)',
+                },
+              },
+            },
+          },
+          {
+            name: 'validate_setup',
+            description: 'Validate existing MCP DevTools configuration and setup, checking commands, tools, and configuration validity',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                directory: {
+                  type: 'string',
+                  description: 'Working directory containing configuration (defaults to current directory)',
+                },
+                configPath: {
+                  type: 'string',
+                  description: 'Path to configuration file (defaults to .mcp-devtools.json)',
+                },
+              },
+            },
+          },
+          {
+            name: 'rollback_setup',
+            description: 'Rollback to a previous configuration from backup',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                backupPath: {
+                  type: 'string',
+                  description: 'Path to backup file to restore from',
+                },
+                directory: {
+                  type: 'string',
+                  description: 'Working directory (defaults to current directory)',
+                },
+              },
+              required: ['backupPath'],
+            },
+          },
         ],
       };
     });
@@ -1607,6 +1715,72 @@ class MCPDevToolsServer {
                 {
                   type: 'text',
                   text: this.formatRecommendMCPServersResult(result),
+                },
+              ],
+            };
+          }
+
+          // Onboarding tools
+          case 'onboarding_wizard': {
+            const validatedArgs = OnboardingTools.validateOnboardingArgs(args);
+            const result = await this.onboardingTools.runOnboardingWizard(validatedArgs);
+            return {
+              content: [
+                {
+                  type: 'text',
+                  text: this.formatOnboardingResult(result),
+                },
+              ],
+            };
+          }
+
+          case 'detect_project': {
+            const validatedArgs = OnboardingTools.validateDetectArgs(args);
+            const result = await this.onboardingTools.detectProject(validatedArgs);
+            return {
+              content: [
+                {
+                  type: 'text',
+                  text: this.formatProjectProfileResult(result),
+                },
+              ],
+            };
+          }
+
+          case 'generate_config': {
+            const validatedArgs = OnboardingTools.validateGenerateConfigArgs(args);
+            const result = await this.onboardingTools.generateConfigPreview(validatedArgs);
+            return {
+              content: [
+                {
+                  type: 'text',
+                  text: this.formatGenerateConfigResult(result),
+                },
+              ],
+            };
+          }
+
+          case 'validate_setup': {
+            const validatedArgs = OnboardingTools.validateValidateSetupArgs(args);
+            const result = await this.onboardingTools.validateSetup(validatedArgs);
+            return {
+              content: [
+                {
+                  type: 'text',
+                  text: this.formatValidationResult(result),
+                },
+              ],
+            };
+          }
+
+          case 'rollback_setup': {
+            const validatedArgs = OnboardingTools.validateRollbackArgs(args);
+            const result = await this.onboardingTools.rollbackSetup(validatedArgs);
+            return {
+              content: [
+                {
+                  type: 'text',
+                  text: this.formatRollbackResult(result),
                 },
               ],
             };
@@ -2217,6 +2391,223 @@ class MCPDevToolsServer {
     if (result.mcpConfig) {
       output += `### Complete .mcp.json Configuration\n\n`;
       output += `\`\`\`json\n${JSON.stringify(result.mcpConfig, null, 2)}\n\`\`\`\n`;
+    }
+
+    return output;
+  }
+
+  private formatOnboardingResult(result: OnboardingResult): string {
+    let output = `## Onboarding Wizard Results\n\n`;
+    output += `**Status:** ${result.success ? '✅ Success' : '❌ Failed'}\n`;
+    output += `**Duration:** ${result.duration}ms\n\n`;
+
+    if (result.error) {
+      output += `**Error:** ${result.error}\n\n`;
+      return output;
+    }
+
+    if (result.configPath) {
+      output += `**Configuration:** ${result.configPath}\n`;
+    }
+
+    if (result.backupPath) {
+      output += `**Backup:** ${result.backupPath}\n`;
+    }
+
+    output += `\n`;
+
+    if (result.installedTools.length > 0) {
+      output += `### ✅ Installed Tools (${result.installedTools.length})\n\n`;
+      for (const tool of result.installedTools) {
+        output += `- ${tool}\n`;
+      }
+      output += `\n`;
+    }
+
+    if (result.skippedTools.length > 0) {
+      output += `### ⚠️  Skipped Tools (${result.skippedTools.length})\n\n`;
+      for (const tool of result.skippedTools) {
+        output += `- ${tool}\n`;
+      }
+      output += `\n`;
+    }
+
+    if (result.recommendations.length > 0) {
+      output += `### 💡 Recommendations\n\n`;
+
+      const high = result.recommendations.filter(r => r.priority === 'high');
+      const medium = result.recommendations.filter(r => r.priority === 'medium');
+      const low = result.recommendations.filter(r => r.priority === 'low');
+
+      if (high.length > 0) {
+        output += `#### High Priority\n\n`;
+        for (const rec of high) {
+          output += `- **${rec.title}** (${rec.category})\n`;
+          output += `  ${rec.description}\n`;
+        }
+        output += `\n`;
+      }
+
+      if (medium.length > 0) {
+        output += `#### Medium Priority\n\n`;
+        for (const rec of medium) {
+          output += `- **${rec.title}** (${rec.category})\n`;
+        }
+        output += `\n`;
+      }
+
+      if (low.length > 0) {
+        output += `#### Low Priority\n\n`;
+        for (const rec of low) {
+          output += `- ${rec.title}\n`;
+        }
+        output += `\n`;
+      }
+    }
+
+    if (result.validationResults) {
+      output += `### Validation\n\n`;
+      output += `**Score:** ${result.validationResults.score}/100\n`;
+      output += `**Errors:** ${result.validationResults.errors.length}\n`;
+      output += `**Warnings:** ${result.validationResults.warnings.length}\n`;
+    }
+
+    return output;
+  }
+
+  private formatProjectProfileResult(result: ProjectProfileResult): string {
+    let output = `## Project Profile\n\n`;
+    output += `**Status:** ${result.success ? '✅ Success' : '❌ Failed'}\n\n`;
+
+    output += `**Project Type:** ${result.projectType}\n`;
+    output += `**Language:** ${result.language}\n`;
+    if (result.framework) {
+      output += `**Framework:** ${result.framework}\n`;
+    }
+    output += `**Build System:** ${result.buildSystem}\n`;
+    if (result.packageManager) {
+      output += `**Package Manager:** ${result.packageManager}\n`;
+    }
+
+    output += `\n### Testing\n\n`;
+    output += `**Has Tests:** ${result.hasTests ? '✅ Yes' : '❌ No'}\n`;
+    if (result.testFramework) {
+      output += `**Test Framework:** ${result.testFramework}\n`;
+    }
+
+    if (result.lintingTools.length > 0) {
+      output += `\n### Linting Tools\n\n`;
+      for (const tool of result.lintingTools) {
+        output += `- ${tool}\n`;
+      }
+    }
+
+    if (result.makeTargets && result.makeTargets.length > 0) {
+      output += `\n### Make Targets\n\n`;
+      for (const target of result.makeTargets) {
+        output += `- ${target}\n`;
+      }
+    }
+
+    if (result.configFiles.length > 0) {
+      output += `\n### Configuration Files (${result.configFiles.length})\n\n`;
+      const maxFiles = 10;
+      const displayFiles = result.configFiles.slice(0, maxFiles);
+      for (const file of displayFiles) {
+        output += `- ${file}\n`;
+      }
+      if (result.configFiles.length > maxFiles) {
+        output += `... and ${result.configFiles.length - maxFiles} more\n`;
+      }
+    }
+
+    return output;
+  }
+
+  private formatGenerateConfigResult(result: GenerateConfigResult): string {
+    let output = `## Generated Configuration\n\n`;
+    output += `**Status:** ${result.success ? '✅ Success' : '❌ Failed'}\n\n`;
+
+    output += `**Validation:** ${result.validation.valid ? '✅ Valid' : '❌ Invalid'}\n`;
+
+    if (result.validation.errors.length > 0) {
+      output += `**Errors:** ${result.validation.errors.length}\n`;
+      for (const error of result.validation.errors) {
+        output += `  - ${error}\n`;
+      }
+    }
+
+    if (result.validation.warnings.length > 0) {
+      output += `**Warnings:** ${result.validation.warnings.length}\n`;
+      for (const warning of result.validation.warnings) {
+        output += `  - ${warning}\n`;
+      }
+    }
+
+    output += `\n### Configuration Preview\n\n`;
+    output += `\`\`\`json\n${JSON.stringify(result.config, null, 2)}\n\`\`\`\n`;
+
+    return output;
+  }
+
+  private formatValidationResult(result: ValidationResult): string {
+    let output = `## Setup Validation\n\n`;
+    output += `**Status:** ${result.success ? '✅ Passed' : '❌ Failed'}\n`;
+    output += `**Score:** ${result.score}/100\n\n`;
+
+    const passed = result.validations.filter(v => v.passed).length;
+    const failed = result.validations.filter(v => !v.passed).length;
+
+    output += `### Summary\n\n`;
+    output += `- **Validations:** ${result.validations.length} total (${passed} passed, ${failed} failed)\n`;
+    output += `- **Errors:** ${result.errors.length}\n`;
+    output += `- **Warnings:** ${result.warnings.length}\n\n`;
+
+    if (result.errors.length > 0) {
+      output += `### ❌ Errors (${result.errors.length})\n\n`;
+      for (const error of result.errors) {
+        output += `- **[${error.category}]** ${error.message}\n`;
+      }
+      output += `\n`;
+    }
+
+    if (result.warnings.length > 0) {
+      output += `### ⚠️  Warnings (${result.warnings.length})\n\n`;
+      for (const warning of result.warnings) {
+        output += `- **[${warning.category}]** ${warning.message}\n`;
+        if (warning.suggestion) {
+          output += `  Suggestion: ${warning.suggestion}\n`;
+        }
+      }
+      output += `\n`;
+    }
+
+    // Group validations by category
+    const categories = new Set(result.validations.map(v => v.category));
+
+    for (const category of categories) {
+      const categoryValidations = result.validations.filter(v => v.category === category);
+      const categoryPassed = categoryValidations.filter(v => v.passed).length;
+
+      output += `### ${category.charAt(0).toUpperCase() + category.slice(1)} (${categoryPassed}/${categoryValidations.length})\n\n`;
+
+      for (const validation of categoryValidations) {
+        const icon = validation.passed ? '✅' : '❌';
+        output += `${icon} **${validation.name}** - ${validation.message}\n`;
+      }
+      output += `\n`;
+    }
+
+    return output;
+  }
+
+  private formatRollbackResult(result: RollbackResult): string {
+    let output = `## Rollback\n\n`;
+    output += `**Status:** ${result.success ? '✅ Success' : '❌ Failed'}\n`;
+    output += `**Message:** ${result.message}\n`;
+
+    if (result.error) {
+      output += `**Error:** ${result.error}\n`;
     }
 
     return output;

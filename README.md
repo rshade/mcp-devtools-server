@@ -31,6 +31,109 @@ Claude Code. By establishing consistent patterns and best practices, it helps:
 
 ## Features
 
+### 🎯 Zero-Configuration Onboarding Wizard
+
+The onboarding wizard automatically detects your project type and generates optimal MCP DevTools configuration with
+zero user input required.
+
+**Quick Start:**
+
+```bash
+# Run complete onboarding (auto-detects everything)
+mcp-devtools onboarding_wizard
+
+# Preview changes without writing files
+mcp-devtools onboarding_wizard --dry-run true
+
+# Detect project type only
+mcp-devtools detect_project
+```
+
+**Available Tools:**
+
+- **onboarding_wizard** - Complete automated setup workflow
+  - Detects project type (Node.js, Python, Go, Rust, Java, .NET, Mixed)
+  - Identifies framework (React, Express, Django, Gin, etc.)
+  - Discovers build system (Make, npm, go, cargo, etc.)
+  - Generates `.mcp-devtools.json` configuration
+  - Verifies tool availability
+  - Creates backup of existing config
+  - Provides actionable recommendations
+
+- **detect_project** - Analyze project characteristics
+  - Returns comprehensive project profile
+  - Lists detected configuration files
+  - Identifies linting tools and test frameworks
+  - Shows Make targets if available
+
+- **generate_config** - Preview configuration without writing
+  - Generates configuration based on detection
+  - Validates against schema
+  - Shows warnings and errors
+
+- **validate_setup** - Validate existing configuration
+  - Checks command availability
+  - Verifies tool installation
+  - Validates configuration schema
+  - Provides health score (0-100)
+  - Lists errors, warnings, and recommendations
+
+- **rollback_setup** - Restore previous configuration
+  - Rollback from automatic backup
+  - Backups stored in `.mcp-devtools-backups/`
+
+**Example Output:**
+
+```text
+## Onboarding Wizard Results
+
+**Status:** ✅ Success
+**Duration:** 2847ms
+
+**Configuration:** /path/to/project/.mcp-devtools.json
+**Backup:** /path/to/project/.mcp-devtools-backups/2025-11-04T10-30-00.json
+
+### ⚠️  Skipped Tools (2)
+
+- eslint
+- markdownlint-cli
+
+### 💡 Recommendations
+
+#### High Priority
+
+- **Install missing required tools** (tool)
+  Install eslint and markdownlint-cli for complete linting support
+
+### Validation
+
+**Score:** 95/100
+**Errors:** 0
+**Warnings:** 2
+```
+
+**Configuration Options:**
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `directory` | string | `cwd` | Working directory to analyze |
+| `interactive` | boolean | `false` | Enable interactive prompts (planned) |
+| `autoInstall` | boolean | `false` | Automatically install missing tools (planned) |
+| `generateConfig` | boolean | `true` | Generate .mcp-devtools.json file |
+| `validateSetup` | boolean | `true` | Run validation after setup |
+| `backupExisting` | boolean | `true` | Backup existing config before overwriting |
+| `dryRun` | boolean | `false` | Preview changes without writing files |
+| `skipToolVerification` | boolean | `false` | Skip tool installation checks |
+
+**Safety Features:**
+
+- ✅ **Automatic Backups** - Existing configs backed up before changes
+- ✅ **Rollback Support** - Restore previous config anytime
+- ✅ **Dry-Run Mode** - Preview all changes before applying
+- ✅ **Path Validation** - Prevents path traversal attacks
+- ✅ **Input Sanitization** - All inputs validated and sanitized
+- ✅ **Non-Destructive** - Never deletes files, only creates/updates
+
 ### Core Tools
 
 #### Make-based Commands
