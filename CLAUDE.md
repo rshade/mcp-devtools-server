@@ -5,19 +5,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Project Overview
 
 This is an MCP (Model Context Protocol) DevTools server project built with Node.js/TypeScript.
-The server provides standardized development tool integration for AI assistants, with
-**Go language support as the highest priority**.
+The server provides standardized development tool integration for AI assistants.
 
-## 🎯 Current Priority: Enhanced Go Language Support
-
-Go development toolchain integration is the **highest priority (P0)**. The project includes comprehensive Go tools:
-
-- `go_test` - Run Go tests with coverage and race detection
-- `go_build` - Build Go packages with custom flags and tags  
-- `go_fmt` - Format Go code using gofmt
-- `go_lint` - Lint Go code using golangci-lint
-- `go_vet` - Examine Go source code for suspicious constructs
-- `go_mod_tidy` - Tidy Go module dependencies
+**Current Work:** See [GitHub Issues](https://github.com/rshade/mcp-devtools-server/issues) and [Milestones](https://github.com/rshade/mcp-devtools-server/milestones) for active development priorities.
 
 ## Build and Test Commands
 
@@ -45,30 +35,43 @@ npm run clean
 
 ## Development Workflow
 
-1. **Go Support First** - When adding new features, prioritize Go language support
-2. **Security-First** - All shell commands go through secure validation in `ShellExecutor`
-3. **Plugin Architecture** - Design new tools with future plugin system in mind
-4. **Comprehensive Testing** - Add tests for all new tools and utilities
+1. **Security-First** - All shell commands go through secure validation in `ShellExecutor`
+2. **Comprehensive Testing** - Add tests for all new tools and utilities (90%+ coverage goal)
+3. **Documentation** - Include JSDoc comments for all public APIs
+4. **Linting** - Run `npm run lint`, `npm run lint:md`, `npm run lint:yaml` before committing
 
 ## Architecture Overview
 
+### Core Components
+
 - **Shell Executor** (`src/utils/shell-executor.ts`) - Secure command execution with validation
 - **Project Detector** (`src/utils/project-detector.ts`) - Auto-detection of project types and tools
-- **Tool Classes** - Specialized handlers:
-  - `src/tools/make-tools.ts` - Make command integration
-  - `src/tools/lint-tools.ts` - Linting tool integration
-  - `src/tools/test-tools.ts` - Test framework integration
-  - `src/tools/go-tools.ts` - **Go language support (PRIORITY)**
-  - `src/tools/file-validation-tools.ts` - File validation (EOL, etc.)
-- **Utility Classes**:
-  - `src/utils/newline-checker.ts` - Pure Node.js POSIX newline compliance checker
-  - `src/utils/file-scanner.ts` - Glob-based file pattern matching
-- **Main Server** (`src/index.ts`) - MCP server implementation with tool registration
+- **Main Server** (`src/index.ts`) - MCP server implementation with 40+ tool registrations
+
+### Tool Classes (Specialized Handlers)
+
+- `src/tools/make-tools.ts` - Make command integration (lint, test, build, clean, depend)
+- `src/tools/lint-tools.ts` - Multi-linter support (ESLint, markdownlint, yamllint, commitlint)
+- `src/tools/test-tools.ts` - Test framework integration with coverage reporting
+- `src/tools/go-tools.ts` - Comprehensive Go language support (13 tools)
+- `src/tools/git-tools.ts` - **NEW** Git workflow tools (code review, PR generation)
+- `src/tools/actionlint-tools.ts` - **NEW** GitHub Actions workflow validation
+- `src/tools/file-validation-tools.ts` - File validation (POSIX newline compliance)
+- `src/tools/smart-suggestions-tools.ts` - **NEW** AI-powered command analysis and suggestions
+
+### Utility Classes
+
+- `src/utils/newline-checker.ts` - Pure Node.js POSIX newline compliance checker
+- `src/utils/file-scanner.ts` - Glob-based file pattern matching
+- `src/utils/failure-analyzer.ts` - **NEW** Error pattern analysis (15+ built-in patterns)
+- `src/utils/knowledge-base.ts` - **NEW** Smart suggestions database by category
+- `src/utils/suggestion-engine.ts` - **NEW** Context-aware recommendation engine
+- `src/utils/mcp-recommendations.ts` - **NEW** MCP server recommendations
 
 ## Configuration
 
 - `.mcp-devtools.json` - Project-specific configuration
-- `examples/` - Configuration examples for different project types (Node.js, Python, **Go**)
+- `examples/` - Configuration examples for different project types (Node.js, Python, Go)
 - `.mcp-devtools.schema.json` - JSON Schema for configuration validation
 
 ## Security Model
@@ -78,14 +81,26 @@ npm run clean
 - Working directories restricted to project boundaries
 - All operations have configurable timeouts
 
-## Go-Specific Development Notes
+## Development Notes
 
-When working on Go support:
+### Plugin System
 
-1. Update `ALLOWED_COMMANDS` in `shell-executor.ts` for new Go tools
-2. Add Go-specific configuration options to the schema
-3. Test with both Go modules and legacy GOPATH projects
-4. Ensure proper error handling and user-friendly suggestions
+When implementing plugins:
+
+1. All plugins must use shared `ShellExecutor` for security
+2. Plugin tools are automatically namespaced (e.g., `git_spice_branch_create`)
+3. Plugins declare required external commands in metadata
+4. 90%+ test coverage for plugin manager, 85%+ for individual plugins
+5. Comprehensive JSDoc documentation required
+
+### Go Language Support
+
+When working with Go tools:
+
+1. Go commands must be in `ALLOWED_COMMANDS` in `shell-executor.ts`
+2. Go-specific configuration goes in `.mcp-devtools.schema.json`
+3. Support both Go modules and legacy GOPATH projects
+4. Provide user-friendly error messages with actionable suggestions
 
 ## File Validation Tools
 
@@ -117,7 +132,7 @@ ensure_newline({ patterns: ['**/*'], mode: 'validate', exclude: ['node_modules/*
 
 ## Project Roadmap
 
-See [README.md](README.md#roadmap) for detailed quarterly milestones. Current focus is Q1 2025: Go Support & Core Foundation.
+See [README.md](README.md#roadmap) for detailed quarterly milestones and [GitHub Milestones](https://github.com/rshade/mcp-devtools-server/milestones) for current progress.
 
 ## Session Learnings & Important Notes
 
@@ -149,22 +164,26 @@ See [README.md](README.md#roadmap) for detailed quarterly milestones. Current fo
 - Create labels before creating issues that reference them
 - Use heredocs for multi-line issue/PR bodies with `gh` CLI
 
-### Missing Critical Components
+### Missing Critical Components (Status Updated: 2025-11-03)
 
-#### Testing Infrastructure 🚨
+#### Testing Infrastructure ⚠️ **PARTIALLY ADDRESSED**
 
-- **No tests written yet** - Jest is configured but no test files exist
-- Need unit tests for: ShellExecutor, ProjectDetector, all tool classes
-- Need integration tests for tool interactions
-- Need E2E tests for MCP protocol compliance
-- Consider test fixtures for different project types
+- ✅ **Test suite established** - Multiple test files now exist with comprehensive coverage
+- ✅ Tests added for: Git tools, Go tools, File validation, Actionlint, Smart suggestions
+- ✅ Test fixtures created for different scenarios (workflows, binary files, text files)
+- ⏳ **Still needed**: More unit tests for ShellExecutor, ProjectDetector
+- ⏳ **Still needed**: E2E tests for MCP protocol compliance
+- **Current Coverage**: Growing but not yet at 80%+ target
 
-#### CI/CD Pipeline 📦
+#### CI/CD Pipeline ✅ **IMPLEMENTED**
 
-- **No GitHub Actions workflow** - Need automated testing and building
-- Should include: lint, test, build, and release workflows
-- Need semantic versioning and automated releases
-- Consider publishing to npm registry
+- ✅ **GitHub Actions workflow exists** - Comprehensive CI pipeline in place
+- ✅ Multi-job workflow: lint, test, build, security, integration
+- ✅ Multi-version Node.js testing (18, 20, 22)
+- ✅ Cross-platform testing (Ubuntu, Windows, macOS)
+- ✅ Security auditing (npm audit, Snyk)
+- ✅ Code coverage upload (Codecov)
+- ⏳ **Still needed**: Automated releases to npm registry
 
 #### Development Tooling
 
@@ -202,11 +221,13 @@ See [README.md](README.md#roadmap) for detailed quarterly milestones. Current fo
 
 #### Documentation Gaps
 
-- No CONTRIBUTING.md file
-- No issue/PR templates in .github/
-- No SECURITY.md for vulnerability reporting
+- No CONTRIBUTING.md file (in project root)
+- ✅ **PR template exists** - `.github/pull_request_template.md`
+- ✅ **Issue templates exist** - `.github/ISSUE_TEMPLATE/`
+- No SECURITY.md for vulnerability reporting (in project root)
 - No CODE_OF_CONDUCT.md
 - API documentation could use TypeDoc generation
+- ✅ **Comprehensive analysis** - `codebase_analysis.md` added (1,869 lines)
 
 ### Development Workflow Recommendations
 
@@ -247,16 +268,27 @@ See [README.md](README.md#roadmap) for detailed quarterly milestones. Current fo
 - **Retry logic** for transient failures
 - **Circuit breaker** pattern for external dependencies
 
-### Next Session Priorities
+### Next Session Priorities (Updated 2025-11-03)
 
-1. Create comprehensive test suite
-2. Set up GitHub Actions CI/CD pipeline
-3. Add Makefile for project development
-4. Configure pre-commit hooks with Husky
-5. Create .github/ templates for issues and PRs
-6. Implement rate limiting and resource management
-7. Add Docker support for containerized deployment
-8. Create performance benchmarking suite
+#### Completed ✅
+
+1. ~~Create comprehensive test suite~~ - **DONE** (3,700+ lines of tests added)
+2. ~~Set up GitHub Actions CI/CD pipeline~~ - **DONE** (Full CI with multi-platform testing)
+3. ~~Create .github/ templates for issues and PRs~~ - **DONE** (Templates exist)
+
+#### High Priority (P1)
+
+1. **Increase test coverage to 80%+** - Add more unit tests for core utilities
+2. **Configure pre-commit hooks with Husky** - Prevent broken commits
+3. **Add Makefile for project development** - Standardize commands
+4. **Implement rate limiting and resource management** - Prevent abuse
+
+#### Medium Priority (P2)
+
+5. **Add Docker support for containerized deployment** - Container images
+6. **Create performance benchmarking suite** - Track performance over time
+7. **Add CONTRIBUTING.md and SECURITY.md** - Community guidelines
+8. **TypeDoc generation** - Auto-generated API documentation
 
 ### Known Issues & Workarounds
 
@@ -264,5 +296,92 @@ See [README.md](README.md#roadmap) for detailed quarterly milestones. Current fo
 - Context7 integration may timeout on first run (cold start)
 - Go module detection fails if go.mod is in subdirectory
 - Parallel make jobs (-j) can cause output interleaving
+
+## Recent Major Updates (2025-11-03)
+
+### New Features Added
+
+#### 1. AI-Powered Smart Suggestions System
+
+- **Tools Added**: `analyze_command`, `analyze_result`, `get_knowledge_base_stats`, `recommend_mcp_servers`
+- **New Files**:
+  - `src/tools/smart-suggestions-tools.ts` (312 lines)
+  - `src/utils/failure-analyzer.ts` (298 lines)
+  - `src/utils/knowledge-base.ts` (382 lines)
+  - `src/utils/suggestion-engine.ts` (358 lines)
+  - `src/utils/mcp-recommendations.ts` (416 lines)
+- **Features**:
+  - Automatic failure pattern recognition (15+ built-in patterns)
+  - Context-aware suggestions based on project type and language
+  - Security vulnerability detection
+  - Performance issue identification
+  - Workflow optimization recommendations
+  - Confidence scoring and priority assignment
+  - MCP server recommendations (Sequential Thinking, Context7, Playwright, etc.)
+
+#### 2. Git Workflow Integration
+
+- **Tools Added**: `code_review`, `generate_pr_message`
+- **New File**: `src/tools/git-tools.ts` (813 lines)
+- **Features**:
+  - Automated code review analysis on Git changes
+  - Security, performance, and maintainability analysis
+  - Severity-based issue categorization (high, medium, low)
+  - PR message generation with conventional commit format
+  - GitHub PR template integration (auto-detects templates)
+  - Breaking changes and issue reference support
+
+#### 3. GitHub Actions Validation
+
+- **Tool Added**: `actionlint`
+- **New File**: `src/tools/actionlint-tools.ts` (360 lines)
+- **Features**:
+  - Validates GitHub Actions workflow files
+  - Syntax error detection
+  - Action parameter validation
+  - shellcheck integration for run blocks
+  - pyflakes support for Python scripts
+  - Multiple output formats (default, JSON, SARIF)
+
+### Test Coverage Improvements
+
+New test files added with comprehensive coverage:
+
+- `src/__tests__/tools/smart-suggestions-tools.test.ts` (498 lines)
+- `src/__tests__/tools/git-tools.test.ts` (817 lines)
+- `src/__tests__/tools/actionlint-tools.test.ts` (362 lines)
+- `src/__tests__/utils/failure-analyzer.test.ts` (278 lines)
+- `src/__tests__/utils/knowledge-base.test.ts` (169 lines)
+- `src/__tests__/utils/suggestion-engine.test.ts` (348 lines)
+- `src/__tests__/utils/mcp-recommendations.test.ts` (408 lines)
+
+**Total new test lines**: ~3,700+ lines of test code added
+
+### CI/CD Updates
+
+- Updated to Node.js 24 in CI pipeline
+- Updated GitHub Actions:
+  - `actions/setup-node@v6`
+  - `actions/upload-artifact@v5`
+- Updated dependencies via Renovate:
+  - `@modelcontextprotocol/sdk@1.21.0`
+  - `eslint@9.39.1`
+  - `@typescript-eslint/*@8.46.3`
+  - `@commitlint/*@20.0.0`
+
+### Documentation Enhancements
+
+- Comprehensive codebase analysis document added (`codebase_analysis.md` - 1,869 lines)
+- README.md significantly expanded with:
+  - Smart suggestions documentation
+  - Git tools usage examples
+  - Actionlint usage guide
+  - File validation examples
+
+### Tool Count Growth
+
+- **Previous**: ~30 tools
+- **Current**: 40+ tools registered in index.ts
+- **New categories**: AI-powered analysis, Git workflows, CI/CD validation
 
 Remember: This project prioritizes Go support, security, and developer experience in that order.
