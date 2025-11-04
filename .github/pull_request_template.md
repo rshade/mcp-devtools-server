@@ -166,7 +166,6 @@
 ---
 
 **Reviewer Guidelines:**
-- Focus on Go language support quality (highest priority)
 - Verify security implications of shell command changes
 - Check for proper error handling and user experience
 - Ensure documentation is updated appropriately
