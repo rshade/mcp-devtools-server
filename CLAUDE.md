@@ -43,8 +43,16 @@ npm run docs
 1. **Security-First** - All shell commands go through secure validation in `ShellExecutor`
 2. **Comprehensive Testing** - Add tests for all new tools and utilities (90%+ coverage goal)
 3. **Documentation** - Include JSDoc comments for all public APIs
-4. **Linting** - Run `npm run lint`, `npm run lint:md`, `npm run lint:yaml` before committing
+4. **Linting** - **ALWAYS RUN BEFORE FINISHING ANY TASK**:
+   - `npm run lint` - TypeScript/JavaScript linting
+   - `npm run lint:md` - Markdown linting (REQUIRED for all .md file changes)
+   - `npm run lint:yaml` - YAML linting
+   - `npm test` - Full test suite
+   - `npm run build` - Verify build passes
 5. **Community Guidelines** - Follow [CONTRIBUTING.md](CONTRIBUTING.md) for all contributions
+
+**CRITICAL**: If you edit ANY markdown file (*.md), you MUST run `npm run lint:md` before considering the
+task complete. Do not claim success until all linting passes.
 
 ## Community Documentation
 
