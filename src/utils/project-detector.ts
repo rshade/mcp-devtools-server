@@ -1,13 +1,8 @@
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import { glob } from 'glob';
-import winston from 'winston';
-
-const logger = winston.createLogger({
-  level: process.env.LOG_LEVEL || 'info',
-  format: winston.format.simple(),
-  transports: [new winston.transports.Console()]
-});
+import { getCacheManager } from './cache-manager.js';
+import { logger } from './logger.js';
 
 export interface ProjectInfo {
   type: ProjectType;
@@ -56,14 +51,26 @@ export interface ConfigFile {
 
 export class ProjectDetector {
   private projectRoot: string;
+  private cacheManager = getCacheManager();
 
   constructor(projectRoot?: string) {
     this.projectRoot = projectRoot || process.cwd();
   }
 
   async detectProject(): Promise<ProjectInfo> {
+    // Generate cache key based on absolute project path
+    const cacheKey = `project:${path.resolve(this.projectRoot)}`;
+
+    // Try to get from cache
+    const cached = this.cacheManager.get<ProjectInfo>('projectDetection', cacheKey);
+    if (cached) {
+      logger.debug(`Cache HIT for project detection: ${this.projectRoot}`);
+      return cached;
+    }
+
     logger.info(`Detecting project in: ${this.projectRoot}`);
-    
+    logger.debug(`Cache MISS for project detection: ${this.projectRoot}`);
+
     const configFiles = await this.findConfigFiles();
     const projectType = this.detectProjectType(configFiles);
     const language = this.detectLanguage(projectType);
@@ -75,7 +82,7 @@ export class ProjectDetector {
     const packageManager = this.detectPackageManager(configFiles);
     const framework = await this.detectFramework(projectType, configFiles);
 
-    return {
+    const result: ProjectInfo = {
       type: projectType,
       language,
       framework,
@@ -87,6 +94,11 @@ export class ProjectDetector {
       makeTargets,
       packageManager
     };
+
+    // Store in cache
+    this.cacheManager.set('projectDetection', cacheKey, result);
+
+    return result;
   }
 
   private async findConfigFiles(): Promise<ConfigFile[]> {

@@ -184,6 +184,144 @@
           }
         }
       }
+    },
+    "cache": {
+      "type": "object",
+      "description": "In-process cache configuration for performance optimization",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "description": "Enable caching system",
+          "default": true
+        },
+        "maxMemoryMB": {
+          "type": "number",
+          "description": "Maximum cache memory usage in megabytes",
+          "minimum": 10,
+          "maximum": 1000,
+          "default": 100
+        },
+        "ttl": {
+          "type": "object",
+          "description": "Time-to-live (TTL) settings for cache namespaces in milliseconds",
+          "properties": {
+            "projectDetection": {
+              "type": "number",
+              "description": "TTL for project detection cache (default: 60000ms / 1 minute)",
+              "minimum": 1000,
+              "maximum": 3600000,
+              "default": 60000
+            },
+            "gitOperations": {
+              "type": "number",
+              "description": "TTL for git operations cache (default: 30000ms / 30 seconds)",
+              "minimum": 1000,
+              "maximum": 3600000,
+              "default": 30000
+            },
+            "goModules": {
+              "type": "number",
+              "description": "TTL for Go modules cache (default: 300000ms / 5 minutes)",
+              "minimum": 1000,
+              "maximum": 3600000,
+              "default": 300000
+            },
+            "fileLists": {
+              "type": "number",
+              "description": "TTL for file list cache (default: 30000ms / 30 seconds)",
+              "minimum": 1000,
+              "maximum": 3600000,
+              "default": 30000
+            },
+            "commandAvailability": {
+              "type": "number",
+              "description": "TTL for command availability cache (default: 3600000ms / 1 hour)",
+              "minimum": 1000,
+              "maximum": 3600000,
+              "default": 3600000
+            },
+            "testResults": {
+              "type": "number",
+              "description": "TTL for test results cache (default: 60000ms / 1 minute)",
+              "minimum": 1000,
+              "maximum": 3600000,
+              "default": 60000
+            }
+          }
+        },
+        "maxItems": {
+          "type": "object",
+          "description": "Maximum number of items per cache namespace",
+          "properties": {
+            "projectDetection": {
+              "type": "number",
+              "description": "Max items in project detection cache (default: 50)",
+              "minimum": 10,
+              "maximum": 1000,
+              "default": 50
+            },
+            "gitOperations": {
+              "type": "number",
+              "description": "Max items in git operations cache (default: 100)",
+              "minimum": 10,
+              "maximum": 1000,
+              "default": 100
+            },
+            "goModules": {
+              "type": "number",
+              "description": "Max items in Go modules cache (default: 50)",
+              "minimum": 10,
+              "maximum": 1000,
+              "default": 50
+            },
+            "fileLists": {
+              "type": "number",
+              "description": "Max items in file list cache (default: 200)",
+              "minimum": 10,
+              "maximum": 1000,
+              "default": 200
+            },
+            "commandAvailability": {
+              "type": "number",
+              "description": "Max items in command availability cache (default: 50)",
+              "minimum": 10,
+              "maximum": 1000,
+              "default": 50
+            },
+            "testResults": {
+              "type": "number",
+              "description": "Max items in test results cache (default: 100)",
+              "minimum": 10,
+              "maximum": 1000,
+              "default": 100
+            }
+          }
+        },
+        "checksumTracking": {
+          "type": "object",
+          "description": "File checksum tracking for cache invalidation",
+          "properties": {
+            "enabled": {
+              "type": "boolean",
+              "description": "Enable automatic cache invalidation on file changes",
+              "default": true
+            },
+            "watchIntervalMs": {
+              "type": "number",
+              "description": "Interval for checking file changes in milliseconds",
+              "minimum": 1000,
+              "maximum": 60000,
+              "default": 5000
+            },
+            "algorithm": {
+              "type": "string",
+              "description": "Hash algorithm for checksum calculation",
+              "enum": ["sha256", "md5"],
+              "default": "sha256"
+            }
+          }
+        }
+      }
     }
   },
   "additionalProperties": false
