@@ -40,29 +40,24 @@ jobs:
   test:
     name: Test
     runs-on: ubuntu-latest
-    
-    strategy:
-      matrix:
-        node-version: [18, 20, 22]
-        
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v5
-        
-      - name: Setup Node.js ${{ matrix.node-version }}
+
+      - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
-          node-version: ${{ matrix.node-version }}
+          node-version: '24'
           cache: 'npm'
-          
+
       - name: Install dependencies
         run: npm ci
-        
+
       - name: Run tests
         run: npm test -- --coverage
-        
+
       - name: Upload coverage to Codecov
-        if: matrix.node-version == 20
         uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
