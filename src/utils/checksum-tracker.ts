@@ -51,6 +51,7 @@ export class ChecksumTracker {
   private callbacks: Map<string, FileChangeCallback[]>;
   private config: ChecksumTrackerConfig;
   private watchTimer: NodeJS.Timeout | null = null;
+  private isCheckingAll = false; // Mutex flag to prevent concurrent checkAll() calls
 
   constructor(config: Partial<ChecksumTrackerConfig> = {}) {
     this.config = { ...DEFAULT_CONFIG, ...config };
@@ -141,12 +142,27 @@ export class ChecksumTracker {
 
   /**
    * Calculate checksum for a file
+   * For files >100MB, uses mtime/size only (no checksum) to avoid memory issues
    */
   private async calculateChecksum(filePath: string): Promise<FileChecksum> {
-    const [content, stats] = await Promise.all([
-      readFile(filePath),
-      stat(filePath),
-    ]);
+    const stats = await stat(filePath);
+    const MAX_FILE_SIZE = 100 * 1024 * 1024; // 100MB
+
+    // For large files, skip checksum and use mtime + size only
+    if (stats.size > MAX_FILE_SIZE) {
+      logger.debug(`ChecksumTracker: Skipping checksum for large file ${filePath}`, {
+        size: stats.size,
+        maxSize: MAX_FILE_SIZE,
+      });
+      return {
+        path: filePath,
+        checksum: `mtime-${stats.mtimeMs}-size-${stats.size}`, // Deterministic fallback
+        mtime: stats.mtimeMs,
+        size: stats.size,
+      };
+    }
+
+    const content = await readFile(filePath);
 
     const hash = createHash(this.config.algorithm);
     hash.update(content);
@@ -164,16 +180,28 @@ export class ChecksumTracker {
    * Check all tracked files for changes and trigger callbacks
    */
   public async checkAll(): Promise<void> {
-    const filePaths = Array.from(this.checksums.keys());
+    // Prevent concurrent checkAll() calls (race condition protection)
+    if (this.isCheckingAll) {
+      logger.debug('ChecksumTracker: checkAll() already in progress, skipping');
+      return;
+    }
 
-    await Promise.all(
-      filePaths.map(async (filePath) => {
-        const changed = await this.hasChanged(filePath);
-        if (changed) {
-          await this.triggerCallbacks(filePath);
-        }
-      })
-    );
+    this.isCheckingAll = true;
+
+    try {
+      const filePaths = Array.from(this.checksums.keys());
+
+      await Promise.all(
+        filePaths.map(async (filePath) => {
+          const changed = await this.hasChanged(filePath);
+          if (changed) {
+            await this.triggerCallbacks(filePath);
+          }
+        })
+      );
+    } finally {
+      this.isCheckingAll = false;
+    }
   }
 
   /**

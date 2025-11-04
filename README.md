@@ -17,6 +17,7 @@ and formatting to make this the best DevTools server for Go development.
 - **[Contributing Guidelines](CONTRIBUTING.md)** - How to contribute to this project
 - **[Code of Conduct](CODE_OF_CONDUCT.md)** - Community standards and expectations
 - **[Security Policy](SECURITY.md)** - How to report security vulnerabilities
+- **[Caching System](CACHING.md)** - Intelligent caching for 3-5x performance improvements
 - **[API Documentation](docs/)** - TypeDoc generated API documentation (run `npm run docs`)
 
 ## Overview

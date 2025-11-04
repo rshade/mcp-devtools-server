@@ -2,7 +2,8 @@
 
 ## Overview
 
-This document describes the intelligent caching system implemented for the MCP DevTools Server to achieve **3-5x performance improvements** through in-process LRU caching with file-based invalidation.
+This document describes the intelligent caching system implemented for the MCP DevTools Server to achieve
+**3-5x performance improvements** through in-process LRU caching with file-based invalidation.
 
 ## Status: Phase 1 Complete ✅
 
@@ -51,6 +52,7 @@ The `ChecksumTracker` monitors critical files and invalidates caches when they c
 - **.git/HEAD**, **.git/refs/\*** → `gitOperations`
 
 **Invalidation Strategy:**
+
 1. Fast check: Compare mtime + file size
 2. Slow check: SHA-256 checksum comparison (only if mtime/size changed)
 3. Trigger callbacks to clear relevant cache namespaces
@@ -64,6 +66,7 @@ The `ChecksumTracker` monitors critical files and invalidates caches when they c
 #### 1. CacheManager (`src/utils/cache-manager.ts`)
 
 **Features:**
+
 - Singleton pattern with reset capability (for testing)
 - Multiple cache namespaces with independent TTLs
 - LRU eviction when max items reached
@@ -71,6 +74,7 @@ The `ChecksumTracker` monitors critical files and invalidates caches when they c
 - Enable/disable via configuration
 
 **API:**
+
 ```typescript
 const cache = getCacheManager();
 
@@ -90,6 +94,7 @@ console.log(`Hit rate: ${stats.hitRate.toFixed(2)}%`);
 ```
 
 **Memory Management:**
+
 - Target: <100MB total cache size
 - LRU eviction prevents unbounded growth
 - Configurable max items per namespace
@@ -98,6 +103,7 @@ console.log(`Hit rate: ${stats.hitRate.toFixed(2)}%`);
 #### 2. ChecksumTracker (`src/utils/checksum-tracker.ts`)
 
 **Features:**
+
 - SHA-256 or MD5 checksum algorithms
 - Automatic file watching with configurable intervals
 - Multiple callbacks per file
@@ -105,6 +111,7 @@ console.log(`Hit rate: ${stats.hitRate.toFixed(2)}%`);
 - Smart detection (mtime + size fast check before expensive checksum)
 
 **API:**
+
 ```typescript
 const tracker = new ChecksumTracker({ algorithm: 'sha256', watchIntervalMs: 5000 });
 
@@ -241,6 +248,7 @@ async codeReview(args: CodeReviewArgs): Promise<CodeReviewResult> {
 ```
 
 **Expected Impact:**
+
 - Code review: 800ms → 200-300ms (**2-3x faster**)
 - Duplicate `git diff` eliminated via cache
 
@@ -260,6 +268,7 @@ async getProjectInfo(args): Promise<GoProjectInfo> {
 ```
 
 **Expected Impact:**
+
 - First call: 500-1000ms
 - Cached: <5ms (**100x faster**)
 
@@ -328,7 +337,8 @@ LOG_LEVEL=debug npm test
 ```
 
 **Current Results:**
-```
+
+```text
 Test Suites: 14 passed, 14 total
 Tests:       328 passed, 328 total
 Time:        165s
@@ -364,6 +374,7 @@ console.log(`Total cache memory: ${totalMemory.toFixed(2)}MB`);
 ### Expected Metrics
 
 **After warmup (steady state):**
+
 - Project detection hit rate: **90%+**
 - Git operations hit rate: **70%+**
 - Go modules hit rate: **85%+**
@@ -376,6 +387,7 @@ console.log(`Total cache memory: ${totalMemory.toFixed(2)}MB`);
 ### When to Use Caching
 
 ✅ **Good candidates:**
+
 - Expensive file I/O operations
 - Repeated git commands
 - Project detection/analysis
@@ -383,6 +395,7 @@ console.log(`Total cache memory: ${totalMemory.toFixed(2)}MB`);
 - Command availability checks
 
 ❌ **Avoid caching:**
+
 - User input/interactive operations
 - Real-time data (current git status)
 - Operations with side effects (git commit, file writes)
@@ -390,12 +403,14 @@ console.log(`Total cache memory: ${totalMemory.toFixed(2)}MB`);
 ### Cache Key Design
 
 **Good:**
+
 ```typescript
 const key = `project:${path.resolve(dir)}`;  // Absolute path
 const key = `diff:${base}:${head}:${checksum}`;  // Include all variables
 ```
 
 **Bad:**
+
 ```typescript
 const key = `project:${dir}`;  // Relative path (ambiguous)
 const key = `diff:${base}`;  // Missing head/options (collisions)
@@ -404,11 +419,13 @@ const key = `diff:${base}`;  // Missing head/options (collisions)
 ### Invalidation Triggers
 
 **Automatic (via ChecksumTracker):**
+
 - package.json changes → Clear `projectDetection`
 - go.mod changes → Clear `goModules` + `projectDetection`
 - .git/HEAD changes → Clear `gitOperations`
 
 **Manual (when needed):**
+
 ```typescript
 // After modifying files programmatically
 await writeFile('package.json', newContent);
@@ -422,23 +439,28 @@ cache.invalidate('projectDetection');
 ### Cache not working?
 
 1. **Check if enabled:**
+
    ```typescript
    const cache = getCacheManager();
    console.log('Cache enabled:', cache.isEnabled());
    ```
 
 2. **Check hit rate:**
+
    ```typescript
    const stats = cache.getStats('projectDetection');
    console.log('Hit rate:', stats.hitRate);
    ```
+
    - If hit rate is 0%, keys might not match
    - If hit rate is low, TTL might be too short
 
 3. **Enable debug logging:**
+
    ```bash
    LOG_LEVEL=debug npm run dev
    ```
+
    Look for "Cache HIT" and "Cache MISS" messages
 
 ### Stale data issues?
@@ -446,6 +468,7 @@ cache.invalidate('projectDetection');
 1. **Check TTL settings** - Maybe too long?
 2. **Verify checksum tracking** - Files changing but cache not invalidating?
 3. **Manual invalidation**:
+
    ```typescript
    cache.clearAll(); // Nuclear option: clear everything
    ```
@@ -453,31 +476,88 @@ cache.invalidate('projectDetection');
 ### Memory usage too high?
 
 1. **Check current usage:**
+
    ```typescript
    console.log('Memory:', cache.getTotalMemoryUsage(), 'MB');
    ```
 
 2. **Reduce max items:**
+
    ```json
    {
      "cache": {
        "maxItems": {
-         "projectDetection": 25  // Reduced from 50
+         "projectDetection": 25
        }
      }
    }
    ```
 
 3. **Reduce TTL** (more aggressive eviction):
+
    ```json
    {
      "cache": {
        "ttl": {
-         "projectDetection": 30000  // 30s instead of 60s
+         "projectDetection": 30000
        }
      }
    }
    ```
+
+---
+
+## Known Issues and Limitations
+
+### Memory Estimation Accuracy
+
+**Issue**: Memory estimates are approximations based on sampling
+
+- Samples up to 10 cache entries to calculate average size
+- Uses `JSON.stringify()` length, which doesn't account for full JS object overhead
+- **Impact**: Actual memory usage may be 20-50% higher than reported
+- **Mitigation**: Conservative max items limits, monitor actual process memory
+- **Status**: Acceptable for production use, actual memory tracking would require native modules
+
+### Large File Handling
+
+**Issue**: Files >100MB skip checksum calculation
+
+- Files larger than 100MB use mtime + size only (no checksum)
+- Reduces accuracy of change detection for very large files
+- **Impact**: Rare edge case where large file content changes but size/mtime don't
+- **Mitigation**: Configuration files are typically <10MB, this affects only data files
+- **Status**: Intentional design decision to prevent memory issues
+- **Workaround**: Increase `MAX_FILE_SIZE` in `checksum-tracker.ts` if needed
+
+### Race Condition Protection
+
+**Issue**: Mutex flag prevents concurrent checkAll() calls
+
+- If `checkAll()` takes longer than `watchIntervalMs`, subsequent calls are skipped
+- **Impact**: Some file change checks might be delayed by one interval
+- **Mitigation**: Simple mutex flag added in current implementation
+- **Status**: Fixed in this version
+- **Recommendation**: Set `watchIntervalMs` > expected checkAll() duration (default 5s is safe)
+
+### Cache Key Design
+
+**Issue**: Cache keys must include all parameters affecting the result
+
+- Incomplete cache keys can cause incorrect cache hits
+- **Example**: `diff:${base}` without including `--unified` option
+- **Impact**: Could return cached results with wrong parameters
+- **Mitigation**: All current cache keys are correctly designed
+- **Best Practice**: Always use absolute paths and serialize all options
+
+### TTL vs. File-Based Invalidation
+
+**Issue**: Race condition between TTL expiration and file changes
+
+- TTL might expire before file change detected (or vice versa)
+- **Impact**: Cache might be invalidated twice or serve stale data briefly
+- **Mitigation**: TTLs are conservative (30s-5min), file checks every 5s
+- **Status**: Acceptable for development tools, not a correctness issue
 
 ---
 

@@ -309,7 +309,9 @@ export class CacheManager {
   }
 
   /**
-   * Estimate memory usage for namespace (rough estimate)
+   * Estimate memory usage for namespace
+   * Uses JSON.stringify length for more accurate estimation
+   * Note: This is still an approximation as it doesn't account for JS object overhead
    */
   private estimateMemoryUsage(namespace: string): number {
     const cache = this.caches.get(namespace);
@@ -317,10 +319,34 @@ export class CacheManager {
       return 0;
     }
 
-    // Rough estimate: assume average 1KB per cache entry
-    const avgEntrySize = 1024; // bytes
-    const totalBytes = cache.size * avgEntrySize;
-    return totalBytes / (1024 * 1024); // Convert to MB
+    let totalBytes = 0;
+    let sampleCount = 0;
+    const maxSamples = 10; // Sample up to 10 entries for performance
+
+    // Sample cache entries to estimate average size
+    for (const [key, entry] of cache.entries()) {
+      if (sampleCount >= maxSamples) break;
+
+      try {
+        // Estimate: key size + value size + overhead
+        const keySize = key.length * 2; // Characters are 2 bytes in JS
+        const valueSize = JSON.stringify(entry.value).length * 2;
+        const overhead = 100; // Estimate for object/entry overhead
+
+        totalBytes += keySize + valueSize + overhead;
+        sampleCount++;
+      } catch {
+        // If JSON.stringify fails, use fallback
+        totalBytes += 1024; // 1KB fallback
+        sampleCount++;
+      }
+    }
+
+    // Calculate average and extrapolate to total cache size
+    const avgEntrySize = sampleCount > 0 ? totalBytes / sampleCount : 1024;
+    const estimatedTotalBytes = cache.size * avgEntrySize;
+
+    return estimatedTotalBytes / (1024 * 1024); // Convert to MB
   }
 
   /**

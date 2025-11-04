@@ -1,14 +1,8 @@
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import { glob } from 'glob';
-import winston from 'winston';
 import { getCacheManager } from './cache-manager.js';
-
-const logger = winston.createLogger({
-  level: process.env.LOG_LEVEL || 'info',
-  format: winston.format.simple(),
-  transports: [new winston.transports.Console()]
-});
+import { logger } from './logger.js';
 
 export interface ProjectInfo {
   type: ProjectType;
