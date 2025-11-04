@@ -147,8 +147,87 @@ Claude Code. By establishing consistent patterns and best practices, it helps:
     - `.github/PULL_REQUEST_TEMPLATE/pull_request_template.md`
     - `docs/pull_request_template.md`
     - `PULL_REQUEST_TEMPLATE.md`
-  - Smart placeholder replacement in templates
-  - Falls back to generated format if no template found
+
+#### AI-Powered Smart Suggestions
+
+- **analyze_command** - Execute a command and analyze results with AI-powered smart suggestions
+
+  Executes a command and provides intelligent, context-aware recommendations based on the execution
+  result. Helps identify issues, suggests fixes, and provides workflow optimization tips.
+
+  **Features:**
+
+  - Automatic failure pattern recognition (15+ built-in patterns)
+  - Context-aware suggestions based on project type and language
+  - Security vulnerability detection (hardcoded secrets, SQL injection, etc.)
+  - Performance issue identification
+  - Workflow optimization recommendations
+  - Confidence scoring for suggestions
+  - Affected file extraction from error messages
+
+  **Parameters:**
+
+  - `command` - Command to execute and analyze (required)
+  - `directory` - Working directory for the command
+  - `timeout` - Command timeout in milliseconds
+  - `args` - Additional command arguments
+  - `context` - Optional context for better suggestions:
+    - `tool` - Tool being used (e.g., "go test", "npm run")
+    - `language` - Programming language
+    - `projectType` - Project type
+
+  **Example:**
+
+  ```typescript
+  {
+    "command": "go test",
+    "directory": "./src",
+    "context": {
+      "tool": "go test",
+      "language": "Go"
+    }
+  }
+  ```
+
+- **analyze_result** - Analyze already-executed command results
+
+  Post-mortem analysis of command execution results. Useful for analyzing failures from external
+  tools or historical command runs.
+
+  **Parameters:**
+
+  - `command` - Command that was executed (required)
+  - `exitCode` - Exit code from execution (required)
+  - `stdout` - Standard output from command
+  - `stderr` - Standard error from command
+  - `duration` - Execution duration in milliseconds
+  - `context` - Optional context (same as analyze_command)
+
+- **get_knowledge_base_stats** - Get statistics about the smart suggestions knowledge base
+
+  Returns information about available failure patterns and their categorization.
+
+  **Parameters:**
+
+  - `category` - Optional filter by category (security, performance, dependencies, etc.)
+
+  **Knowledge Base Categories:**
+
+  - **Security** - Hardcoded secrets, SQL injection, unsafe code patterns
+  - **Performance** - Nested loops, inefficient algorithms, memory issues
+  - **Dependencies** - Missing packages, version conflicts, module issues
+  - **Build** - Compilation errors, type mismatches, undefined references
+  - **Test** - Test failures, timeouts, race conditions
+  - **Lint** - Code style issues, formatting problems
+  - **Configuration** - Missing environment variables, config errors
+  - **General** - Runtime errors and other issues
+
+  **Supported Languages & Tools:**
+
+  - **Go** - Test failures, missing dependencies, race conditions, lint issues, build errors
+  - **JavaScript/TypeScript** - Module not found, type errors, ESLint issues
+  - **Python** - Import errors, syntax issues
+  - **Cross-language** - Security patterns, performance anti-patterns, configuration issues
 
 #### File Validation
 

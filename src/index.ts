@@ -16,6 +16,7 @@ import { GoTools, GoToolResult, GoProjectInfo } from './tools/go-tools.js';
 import { FileValidationTools, EnsureNewlineResult } from './tools/file-validation-tools.js';
 import { ActionlintTools, ActionlintResult } from './tools/actionlint-tools.js';
 import { GitTools, CodeReviewResult, PRMessageResult } from './tools/git-tools.js';
+import { SmartSuggestionsTools, AnalyzeCommandResult, AnalyzeResultResult, KnowledgeBaseStatsResult, RecommendMCPServersResult } from './tools/smart-suggestions-tools.js';
 
 // Configure logger
 const logger = winston.createLogger({
@@ -44,6 +45,7 @@ class MCPDevToolsServer {
   private fileValidationTools: FileValidationTools;
   private actionlintTools: ActionlintTools;
   private gitTools: GitTools;
+  private smartSuggestionsTools: SmartSuggestionsTools;
 
   constructor() {
     this.server = new Server(
@@ -67,6 +69,7 @@ class MCPDevToolsServer {
     this.fileValidationTools = new FileValidationTools();
     this.actionlintTools = new ActionlintTools(projectRoot);
     this.gitTools = new GitTools(projectRoot);
+    this.smartSuggestionsTools = new SmartSuggestionsTools(projectRoot);
 
     this.setupHandlers();
   }
@@ -1017,6 +1020,140 @@ class MCPDevToolsServer {
               },
             },
           },
+
+          // Smart Suggestions tools
+          {
+            name: 'analyze_command',
+            description: 'Execute a command and analyze the result with AI-powered smart suggestions. Provides intelligent recommendations for fixing failures, optimizing workflows, and identifying issues.',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                command: {
+                  type: 'string',
+                  description: 'Command to execute and analyze',
+                },
+                directory: {
+                  type: 'string',
+                  description: 'Working directory for the command',
+                },
+                timeout: {
+                  type: 'number',
+                  description: 'Command timeout in milliseconds',
+                },
+                args: {
+                  type: 'array',
+                  items: { type: 'string' },
+                  description: 'Additional command arguments',
+                },
+                context: {
+                  type: 'object',
+                  properties: {
+                    tool: {
+                      type: 'string',
+                      description: 'Tool being used (e.g., "go test", "npm run")',
+                    },
+                    language: {
+                      type: 'string',
+                      description: 'Programming language',
+                    },
+                    projectType: {
+                      type: 'string',
+                      description: 'Project type',
+                    },
+                  },
+                  description: 'Additional context for better suggestions',
+                },
+              },
+              required: ['command'],
+            },
+          },
+          {
+            name: 'analyze_result',
+            description: 'Analyze an already-executed command result and generate smart suggestions. Useful for post-mortem analysis and understanding failures.',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                command: {
+                  type: 'string',
+                  description: 'Command that was executed',
+                },
+                exitCode: {
+                  type: 'number',
+                  description: 'Exit code from command execution',
+                },
+                stdout: {
+                  type: 'string',
+                  description: 'Standard output from command',
+                },
+                stderr: {
+                  type: 'string',
+                  description: 'Standard error from command',
+                },
+                duration: {
+                  type: 'number',
+                  description: 'Execution duration in milliseconds',
+                },
+                context: {
+                  type: 'object',
+                  properties: {
+                    tool: {
+                      type: 'string',
+                      description: 'Tool being used',
+                    },
+                    language: {
+                      type: 'string',
+                      description: 'Programming language',
+                    },
+                    projectType: {
+                      type: 'string',
+                      description: 'Project type',
+                    },
+                  },
+                  description: 'Additional context for better suggestions',
+                },
+              },
+              required: ['command', 'exitCode'],
+            },
+          },
+          {
+            name: 'get_knowledge_base_stats',
+            description: 'Get statistics about the smart suggestions knowledge base, including total patterns and categorization.',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                category: {
+                  type: 'string',
+                  description: 'Filter by category (security, performance, maintainability, etc.)',
+                },
+              },
+            },
+          },
+          {
+            name: 'recommend_mcp_servers',
+            description: 'Get intelligent recommendations for best-practice MCP servers based on project context. Suggests MCP servers like Sequential Thinking, Context7, Playwright, and others.',
+            inputSchema: {
+              type: 'object',
+              properties: {
+                category: {
+                  type: 'string',
+                  description: 'Filter by category (development, testing, documentation, ai, database, filesystem, web, productivity)',
+                },
+                priority: {
+                  type: 'string',
+                  enum: ['high', 'medium', 'low'],
+                  description: 'Filter by priority level',
+                },
+                useCase: {
+                  type: 'string',
+                  description: 'Specific use case (e.g., "testing", "database", "browser automation")',
+                },
+                includeConfig: {
+                  type: 'boolean',
+                  description: 'Include .mcp.json configuration example (default: false)',
+                },
+              },
+            },
+          },
         ],
       };
     });
@@ -1417,6 +1554,59 @@ class MCPDevToolsServer {
                 {
                   type: 'text',
                   text: this.formatPRMessageResult(result),
+                },
+              ],
+            };
+          }
+
+          // Smart Suggestions tools
+          case 'analyze_command': {
+            const validatedArgs = SmartSuggestionsTools.validateAnalyzeCommandArgs(args);
+            const result = await this.smartSuggestionsTools.analyzeCommand(validatedArgs);
+            return {
+              content: [
+                {
+                  type: 'text',
+                  text: this.formatAnalyzeCommandResult(result),
+                },
+              ],
+            };
+          }
+
+          case 'analyze_result': {
+            const validatedArgs = SmartSuggestionsTools.validateAnalyzeResultArgs(args);
+            const result = await this.smartSuggestionsTools.analyzeResult(validatedArgs);
+            return {
+              content: [
+                {
+                  type: 'text',
+                  text: this.formatAnalyzeResultResult(result),
+                },
+              ],
+            };
+          }
+
+          case 'get_knowledge_base_stats': {
+            const validatedArgs = SmartSuggestionsTools.validateGetKnowledgeBaseStatsArgs(args);
+            const result = await this.smartSuggestionsTools.getKnowledgeBaseStats(validatedArgs);
+            return {
+              content: [
+                {
+                  type: 'text',
+                  text: this.formatKnowledgeBaseStatsResult(result),
+                },
+              ],
+            };
+          }
+
+          case 'recommend_mcp_servers': {
+            const validatedArgs = SmartSuggestionsTools.validateRecommendMCPServersArgs(args);
+            const result = await this.smartSuggestionsTools.recommendMCPServers(validatedArgs);
+            return {
+              content: [
+                {
+                  type: 'text',
+                  text: this.formatRecommendMCPServersResult(result),
                 },
               ],
             };
@@ -1881,6 +2071,152 @@ class MCPDevToolsServer {
       output += `### Full Message\n\n\`\`\`markdown\n${result.message}\n\`\`\`\n`;
     } else {
       output += `**Error:** ${result.error}\n`;
+    }
+
+    return output;
+  }
+
+  private formatAnalyzeCommandResult(result: AnalyzeCommandResult): string {
+    let output = `## Smart Analysis Results\n\n`;
+    output += `**Command:** \`${result.command}\`\n`;
+    output += `**Status:** ${result.success ? '✅ Success' : '❌ Failed'}\n`;
+    output += `**Duration:** ${result.duration}ms\n`;
+    output += `**Analysis Time:** ${result.executionResult.duration}ms\n\n`;
+
+    output += `**Summary:** ${result.summary}\n\n`;
+
+    if (result.suggestions.length > 0) {
+      output += `### Smart Suggestions\n\n`;
+
+      for (const suggestion of result.suggestions) {
+        const priorityIcon = suggestion.priority === 'high' ? '🔴' :
+                            suggestion.priority === 'medium' ? '🟡' : '🟢';
+
+        output += `${priorityIcon} **${suggestion.title}** (${suggestion.category})\n`;
+        output += `   Confidence: ${(suggestion.confidence * 100).toFixed(0)}%\n\n`;
+        output += `   ${suggestion.description}\n\n`;
+
+        if (suggestion.actions.length > 0) {
+          output += `   **Actions:**\n`;
+          for (const action of suggestion.actions) {
+            output += `   - ${action}\n`;
+          }
+          output += `\n`;
+        }
+
+        if (suggestion.relatedFiles && suggestion.relatedFiles.length > 0) {
+          output += `   **Related Files:** ${suggestion.relatedFiles.join(', ')}\n\n`;
+        }
+      }
+    }
+
+    if (!result.success && result.executionResult.stderr) {
+      output += `### Error Output\n\n\`\`\`\n${result.executionResult.stderr}\n\`\`\`\n\n`;
+    }
+
+    return output;
+  }
+
+  private formatAnalyzeResultResult(result: AnalyzeResultResult): string {
+    let output = `## Analysis Results\n\n`;
+    output += `**Status:** ${result.success ? '✅ Success' : '❌ Failed'}\n`;
+    output += `**Analysis Time:** ${result.duration}ms\n\n`;
+
+    output += `**Summary:** ${result.summary}\n\n`;
+
+    if (result.analysis.affectedFiles.length > 0) {
+      output += `**Affected Files:** ${result.analysis.affectedFiles.length}\n`;
+      for (const file of result.analysis.affectedFiles.slice(0, 5)) {
+        output += `  - ${file}\n`;
+      }
+      if (result.analysis.affectedFiles.length > 5) {
+        output += `  ... and ${result.analysis.affectedFiles.length - 5} more\n`;
+      }
+      output += `\n`;
+    }
+
+    if (result.suggestions.length > 0) {
+      output += `### Smart Suggestions\n\n`;
+
+      for (const suggestion of result.suggestions) {
+        const priorityIcon = suggestion.priority === 'high' ? '🔴' :
+                            suggestion.priority === 'medium' ? '🟡' : '🟢';
+
+        output += `${priorityIcon} **${suggestion.title}** (${suggestion.category})\n`;
+        output += `   Confidence: ${(suggestion.confidence * 100).toFixed(0)}%\n\n`;
+        output += `   ${suggestion.description}\n\n`;
+
+        if (suggestion.actions.length > 0) {
+          output += `   **Actions:**\n`;
+          for (const action of suggestion.actions) {
+            output += `   - ${action}\n`;
+          }
+          output += `\n`;
+        }
+      }
+    }
+
+    return output;
+  }
+
+  private formatKnowledgeBaseStatsResult(result: KnowledgeBaseStatsResult): string {
+    let output = `## Knowledge Base Statistics\n\n`;
+    output += `**Total Patterns:** ${result.totalPatterns}\n\n`;
+
+    output += `### Patterns by Category\n\n`;
+
+    const sortedCategories = Object.entries(result.byCategory)
+      .sort(([, a], [, b]) => b - a);
+
+    for (const [category, count] of sortedCategories) {
+      output += `- **${category}:** ${count} pattern(s)\n`;
+    }
+
+    return output;
+  }
+
+  private formatRecommendMCPServersResult(result: RecommendMCPServersResult): string {
+    let output = `## MCP Server Recommendations\n\n`;
+    output += `**Total Recommendations:** ${result.totalRecommendations}\n\n`;
+
+    if (result.recommendations.length === 0) {
+      output += `No recommendations found for the given criteria.\n`;
+      return output;
+    }
+
+    for (const rec of result.recommendations) {
+      const priorityIcon = rec.priority === 'high' ? '🔴' :
+                          rec.priority === 'medium' ? '🟡' : '🟢';
+
+      output += `### ${priorityIcon} ${rec.name}\n\n`;
+      output += `**Package:** \`${rec.package}\`\n`;
+      output += `**Priority:** ${rec.priority}\n`;
+      output += `**Categories:** ${rec.categories.join(', ')}\n\n`;
+      output += `${rec.description}\n\n`;
+
+      if (rec.useCases.length > 0) {
+        output += `**Use Cases:**\n`;
+        for (const useCase of rec.useCases) {
+          output += `- ${useCase}\n`;
+        }
+        output += `\n`;
+      }
+
+      if (rec.benefits.length > 0) {
+        output += `**Benefits:**\n`;
+        for (const benefit of rec.benefits) {
+          output += `- ${benefit}\n`;
+        }
+        output += `\n`;
+      }
+
+      output += `**Configuration Example:**\n\`\`\`json\n${JSON.stringify(rec.configExample, null, 2)}\n\`\`\`\n\n`;
+      output += `---\n\n`;
+    }
+
+    if (result.mcpConfig) {
+      output += `### Complete .mcp.json Configuration\n\n`;
+      output += `\`\`\`json\n${JSON.stringify(result.mcpConfig, null, 2)}\n\`\`\`\n`;
     }
 
     return output;

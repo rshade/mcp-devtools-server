@@ -60,7 +60,12 @@ const ALLOWED_COMMANDS = new Set([
   'cargo',
   'mvn',
   'gradle',
-  'dotnet'
+  'dotnet',
+  // Test utilities
+  'echo',
+  'false',
+  'true',
+  'sh'
 ]);
 
 // Security: Dangerous arguments to block
