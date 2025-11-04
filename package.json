@@ -16,7 +16,8 @@
     "lint:yaml": "yamllint '**/*.yml' '**/*.yaml' || echo 'YAML linting skipped - yamllint not available'",
     "lint:changelog": "grep -q 'Keep a Changelog' CHANGELOG.md && echo 'CHANGELOG.md follows Keep a Changelog format'",
     "test": "jest",
-    "clean": "rm -rf dist"
+    "clean": "rm -rf dist",
+    "docs": "typedoc"
   },
   "keywords": [
     "mcp",
@@ -43,6 +44,7 @@
   "devDependencies": {
     "@commitlint/cli": "^20.0.0",
     "@commitlint/config-conventional": "^20.0.0",
+    "@metamask/auto-changelog": "^5.0.0",
     "@types/glob": "^9.0.0",
     "@types/jest": "^30.0.0",
     "@types/node": "^24.0.0",
@@ -50,10 +52,10 @@
     "@typescript-eslint/parser": "^8.0.0",
     "eslint": "^9.0.0",
     "jest": "^30.0.0",
-    "@metamask/auto-changelog": "^5.0.0",
     "markdownlint-cli": "^0.45.0",
     "ts-jest": "^29.1.1",
     "tsx": "^4.7.0",
+    "typedoc": "^0.28.14",
     "typescript": "^5.3.3"
   },
   "engines": {

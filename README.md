@@ -12,6 +12,13 @@ autocorrection capabilities.
 highest priority feature. We're building comprehensive support for Go testing, building, linting,
 and formatting to make this the best DevTools server for Go development.
 
+## Documentation
+
+- **[Contributing Guidelines](CONTRIBUTING.md)** - How to contribute to this project
+- **[Code of Conduct](CODE_OF_CONDUCT.md)** - Community standards and expectations
+- **[Security Policy](SECURITY.md)** - How to report security vulnerabilities
+- **[API Documentation](docs/)** - TypeDoc generated API documentation (run `npm run docs`)
+
 ## Overview
 
 This MCP server creates a standardized interface between development tools and AI assistants like
@@ -625,6 +632,15 @@ The server provides comprehensive error handling with:
 
 Contributions are welcome! This project is built on continuous learning and improvement.
 
+Please read our [Contributing Guidelines](CONTRIBUTING.md) for detailed information on how to contribute to this project.
+
+### Quick Links
+
+- [Contributing Guidelines](CONTRIBUTING.md) - How to contribute
+- [Code of Conduct](CODE_OF_CONDUCT.md) - Community standards
+- [Security Policy](SECURITY.md) - Reporting vulnerabilities
+- [API Documentation](docs/) - TypeDoc generated API docs
+
 ### Development Workflow
 
 1. Fork the repository
@@ -633,6 +649,8 @@ Contributions are welcome! This project is built on continuous learning and impr
 4. Add tests for new functionality
 5. Run linting and tests
 6. Submit a pull request
+
+For detailed instructions, see [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ### Areas for Contribution
 
