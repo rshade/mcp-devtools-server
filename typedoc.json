@@ -1,0 +1,32 @@
+{
+  "$schema": "https://typedoc.org/schema.json",
+  "entryPoints": ["src/index.ts"],
+  "out": "docs",
+  "exclude": [
+    "**/*.test.ts",
+    "**/__tests__/**",
+    "**/node_modules/**"
+  ],
+  "excludePrivate": true,
+  "excludeProtected": false,
+  "excludeInternal": false,
+  "readme": "README.md",
+  "name": "MCP DevTools Server",
+  "navigationLinks": {
+    "GitHub": "https://github.com/rshade/mcp-devtools-server",
+    "Issues": "https://github.com/rshade/mcp-devtools-server/issues"
+  },
+  "plugin": [],
+  "sort": ["source-order"],
+  "gitRevision": "main",
+  "includeVersion": true,
+  "searchInComments": true,
+  "categorizeByGroup": true,
+  "defaultCategory": "Other",
+  "categoryOrder": [
+    "Tools",
+    "Utilities",
+    "Core",
+    "*"
+  ]
+}

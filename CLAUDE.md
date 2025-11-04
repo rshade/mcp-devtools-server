@@ -7,7 +7,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 This is an MCP (Model Context Protocol) DevTools server project built with Node.js/TypeScript.
 The server provides standardized development tool integration for AI assistants.
 
-**Current Work:** See [GitHub Issues](https://github.com/rshade/mcp-devtools-server/issues) and [Milestones](https://github.com/rshade/mcp-devtools-server/milestones) for active development priorities.
+**Current Work:** See [GitHub Issues](https://github.com/rshade/mcp-devtools-server/issues) and
+[Milestones](https://github.com/rshade/mcp-devtools-server/milestones) for active development
+priorities.
 
 ## Build and Test Commands
 
@@ -31,6 +33,9 @@ npm test
 
 # Clean build artifacts
 npm run clean
+
+# Generate API documentation
+npm run docs
 ```
 
 ## Development Workflow
@@ -39,6 +44,39 @@ npm run clean
 2. **Comprehensive Testing** - Add tests for all new tools and utilities (90%+ coverage goal)
 3. **Documentation** - Include JSDoc comments for all public APIs
 4. **Linting** - Run `npm run lint`, `npm run lint:md`, `npm run lint:yaml` before committing
+5. **Community Guidelines** - Follow [CONTRIBUTING.md](CONTRIBUTING.md) for all contributions
+
+## Community Documentation
+
+This project has comprehensive community documentation:
+
+- **[CONTRIBUTING.md](CONTRIBUTING.md)** - Development setup, code style, testing, commit conventions, PR process
+- **[SECURITY.md](SECURITY.md)** - Security policy and vulnerability reporting
+- **[CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md)** - Community standards (Contributor Covenant 2.1)
+- **API Documentation** - Generated via TypeDoc (`npm run docs`, output in `docs/`)
+
+### Important Guidelines
+
+**CHANGELOG Management:**
+
+- **DO NOT manually edit CHANGELOG.md** - It's managed by release-please
+- Commit messages using conventional commits format automatically update the CHANGELOG
+- release-please creates Release PRs with CHANGELOG updates
+- See [CONTRIBUTING.md](CONTRIBUTING.md#changelog-management) for details
+
+**Commit Messages:**
+
+- Follow Conventional Commits specification (enforced by commitlint)
+- Format: `type(scope): description`
+- Types: feat, fix, docs, style, refactor, perf, test, build, ci, chore
+- Examples in [CONTRIBUTING.md](CONTRIBUTING.md#commit-message-conventions)
+
+**Security:**
+
+- Report vulnerabilities via
+  [GitHub Security Advisories](https://github.com/rshade/mcp-devtools-server/security/advisories/new)
+- Do NOT open public issues for security vulnerabilities
+- See [SECURITY.md](SECURITY.md) for full policy
 
 ## Architecture Overview
 
@@ -132,7 +170,9 @@ ensure_newline({ patterns: ['**/*'], mode: 'validate', exclude: ['node_modules/*
 
 ## Project Roadmap
 
-See [README.md](README.md#roadmap) for detailed quarterly milestones and [GitHub Milestones](https://github.com/rshade/mcp-devtools-server/milestones) for current progress.
+See [README.md](README.md#roadmap) for detailed quarterly milestones and
+[GitHub Milestones](https://github.com/rshade/mcp-devtools-server/milestones) for current
+progress.
 
 ## Session Learnings & Important Notes
 
@@ -183,13 +223,16 @@ See [README.md](README.md#roadmap) for detailed quarterly milestones and [GitHub
 - ✅ Cross-platform testing (Ubuntu, Windows, macOS)
 - ✅ Security auditing (npm audit, Snyk)
 - ✅ Code coverage upload (Codecov)
-- ⏳ **Still needed**: Automated releases to npm registry
+- ✅ **release-please workflow** - Automated CHANGELOG and version management
+- ⏳ **Still needed**: Automated releases to npm registry (can be added to release-please workflow)
 
-#### Development Tooling
+#### Development Tooling ⚠️ **PARTIALLY ADDRESSED**
 
+- ✅ **commitlint configured** - Validates commit messages (dependency exists)
+- ✅ **TypeDoc configured** - API documentation generation via `npm run docs`
+- ✅ **release-please** - Automated CHANGELOG and release management
 - **No Makefile** for the project itself (ironic for a make-tools server!)
 - **No pre-commit hooks** - Should run linting and tests
-- **No commitlint configuration** - Despite having it as a dependency
 - Consider using Husky for git hooks
 
 #### Error Handling Patterns
@@ -219,15 +262,16 @@ See [README.md](README.md#roadmap) for detailed quarterly milestones and [GitHub
 - Shell command differences between platforms not documented
 - Go tool behavior varies between OS (especially file paths)
 
-#### Documentation Gaps
+#### Documentation Gaps ✅ **FULLY ADDRESSED**
 
-- No CONTRIBUTING.md file (in project root)
+- ✅ **CONTRIBUTING.md** - Comprehensive 400+ line contributing guide
 - ✅ **PR template exists** - `.github/pull_request_template.md`
 - ✅ **Issue templates exist** - `.github/ISSUE_TEMPLATE/`
-- No SECURITY.md for vulnerability reporting (in project root)
-- No CODE_OF_CONDUCT.md
-- API documentation could use TypeDoc generation
+- ✅ **SECURITY.md** - 220+ line security policy with vulnerability reporting
+- ✅ **CODE_OF_CONDUCT.md** - Contributor Covenant 2.1 community standards
+- ✅ **TypeDoc configured** - API documentation generation via `npm run docs`
 - ✅ **Comprehensive analysis** - `codebase_analysis.md` added (1,869 lines)
+- ✅ **release-please** - Automated CHANGELOG management
 
 ### Development Workflow Recommendations
 
@@ -285,10 +329,10 @@ See [README.md](README.md#roadmap) for detailed quarterly milestones and [GitHub
 
 #### Medium Priority (P2)
 
-5. **Add Docker support for containerized deployment** - Container images
-6. **Create performance benchmarking suite** - Track performance over time
-7. **Add CONTRIBUTING.md and SECURITY.md** - Community guidelines
-8. **TypeDoc generation** - Auto-generated API documentation
+1. **Add Docker support for containerized deployment** - Container images
+2. **Create performance benchmarking suite** - Track performance over time
+3. ~~**Add CONTRIBUTING.md and SECURITY.md**~~ - ✅ Completed
+4. ~~**TypeDoc generation**~~ - ✅ Completed
 
 ### Known Issues & Workarounds
 
