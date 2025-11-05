@@ -5,6 +5,16 @@
  * Organized by tool/language for efficient matching.
  */
 
+/**
+ * Represents a failure pattern that can be detected in command output
+ * @property {string} id - Unique identifier for the pattern
+ * @property {string} name - Human-readable name describing the failure
+ * @property {Category} category - Classification category for the failure
+ * @property {RegExp[]} patterns - Array of regex patterns to match against output
+ * @property {'high' | 'medium' | 'low'} severity - Severity level of the failure
+ * @property {string[]} suggestions - Actionable suggestions to fix the failure
+ * @property {string} [context] - Optional additional context about when this pattern applies
+ */
 export interface FailurePattern {
   id: string;
   name: string;
@@ -15,25 +25,67 @@ export interface FailurePattern {
   context?: string;
 }
 
+/**
+ * Categories for classifying failure patterns and suggestions
+ */
 export enum Category {
+  /** Security-related issues like vulnerabilities, race conditions, and hardcoded secrets */
   Security = 'security',
+  /** Performance issues like slow operations, memory leaks, and inefficient algorithms */
   Performance = 'performance',
+  /** Code maintainability issues like code smells, complexity, and readability */
   Maintainability = 'maintainability',
+  /** Build and compilation failures */
   Build = 'build',
+  /** Test execution failures and test-related issues */
   Test = 'test',
+  /** Linting and code style violations */
   Lint = 'lint',
+  /** Dependency resolution and package management issues */
   Dependencies = 'dependencies',
+  /** Configuration and environment setup problems */
   Configuration = 'configuration',
+  /** General issues that don't fit other categories */
   General = 'general'
 }
 
+/**
+ * Knowledge base containing patterns for detecting and resolving common development failures
+ *
+ * The knowledge base maintains a collection of failure patterns organized by category,
+ * enabling efficient pattern matching and suggestion generation for various development issues.
+ */
 export class KnowledgeBase {
   private patterns: Map<Category, FailurePattern[]> = new Map();
 
+  /**
+   * Creates a new KnowledgeBase instance and initializes all built-in failure patterns
+   *
+   * @example
+   * ```typescript
+   * const kb = new KnowledgeBase();
+   * const stats = kb.getStats();
+   * console.log(`Loaded ${stats.totalPatterns} patterns`);
+   * ```
+   */
   constructor() {
     this.initializePatterns();
   }
 
+  /**
+   * Initialize all built-in failure patterns across different categories
+   *
+   * This method populates the knowledge base with patterns for:
+   * - Go language issues (dependencies, tests, race conditions, linting, build)
+   * - JavaScript/TypeScript issues (modules, type errors, linting)
+   * - Python issues (imports)
+   * - Security issues (hardcoded secrets, SQL injection)
+   * - Performance issues (nested loops)
+   * - Configuration issues (missing environment variables)
+   * - Build/test patterns (timeouts, out of memory)
+   *
+   * @private
+   */
   private initializePatterns(): void {
     // Go-specific patterns
     this.addPattern({
@@ -311,6 +363,14 @@ export class KnowledgeBase {
     });
   }
 
+  /**
+   * Add a failure pattern to the knowledge base
+   *
+   * Organizes patterns by category for efficient retrieval and matching.
+   *
+   * @param {FailurePattern} pattern - The failure pattern to add to the knowledge base
+   * @private
+   */
   private addPattern(pattern: FailurePattern): void {
     const patterns = this.patterns.get(pattern.category) || [];
     patterns.push(pattern);
@@ -318,7 +378,23 @@ export class KnowledgeBase {
   }
 
   /**
-   * Find matching patterns for given error text
+   * Find all failure patterns that match the given error text
+   *
+   * Searches through all patterns (or patterns in a specific category) and returns
+   * those that match the provided error text using regex pattern matching.
+   *
+   * @param {string} errorText - The error output text to analyze
+   * @param {Category} [category] - Optional category to filter patterns by
+   * @returns {FailurePattern[]} Array of matching failure patterns, sorted by severity (high first)
+   *
+   * @example
+   * ```typescript
+   * const patterns = knowledgeBase.findMatchingPatterns(
+   *   "cannot find package 'lodash'",
+   *   Category.Dependencies
+   * );
+   * // Returns patterns related to dependency issues
+   * ```
    */
   findMatchingPatterns(errorText: string, category?: Category): FailurePattern[] {
     const matches: FailurePattern[] = [];
@@ -344,19 +420,56 @@ export class KnowledgeBase {
     return matches;
   }
 
+  /**
+   * Check if error text matches any of a pattern's regex patterns
+   *
+   * Tests the provided text against all regex patterns in the failure pattern,
+   * returning true if any pattern matches.
+   *
+   * @param {string} text - The error text to test against pattern regexes
+   * @param {FailurePattern} pattern - The failure pattern containing regex patterns to match
+   * @returns {boolean} True if any regex pattern matches the text
+   * @private
+   */
   private matchesPattern(text: string, pattern: FailurePattern): boolean {
     return pattern.patterns.some(regex => regex.test(text));
   }
 
   /**
-   * Get all patterns for a specific category
+   * Get all failure patterns for a specific category
+   *
+   * Returns an array of all failure patterns that belong to the specified category.
+   * Useful for filtering patterns by type (security, performance, etc.).
+   *
+   * @param {Category} category - The category to filter patterns by
+   * @returns {FailurePattern[]} Array of failure patterns in the specified category
+   *
+   * @example
+   * ```typescript
+   * const securityPatterns = knowledgeBase.getPatternsByCategory(Category.Security);
+   * // Returns all security-related failure patterns
+   * ```
    */
   getPatternsByCategory(category: Category): FailurePattern[] {
     return this.patterns.get(category) || [];
   }
 
   /**
-   * Get pattern by ID
+   * Get a specific failure pattern by its unique identifier
+   *
+   * Searches through all patterns across all categories to find the pattern
+   * with the specified ID.
+   *
+   * @param {string} id - The unique identifier of the pattern to retrieve
+   * @returns {FailurePattern | undefined} The failure pattern if found, undefined otherwise
+   *
+   * @example
+   * ```typescript
+   * const pattern = knowledgeBase.getPatternById('go-missing-dep');
+   * if (pattern) {
+   *   console.log('Found pattern:', pattern.name);
+   * }
+   * ```
    */
   getPatternById(id: string): FailurePattern | undefined {
     for (const patterns of this.patterns.values()) {
@@ -367,7 +480,21 @@ export class KnowledgeBase {
   }
 
   /**
-   * Get statistics about the knowledge base
+   * Get statistics about the knowledge base contents
+   *
+   * Provides an overview of the total number of patterns and their distribution
+   * across different categories.
+   *
+   * @returns {{ totalPatterns: number; byCategory: Record<string, number> }}
+   * Object containing total pattern count and breakdown by category
+   *
+   * @example
+   * ```typescript
+   * const stats = knowledgeBase.getStats();
+   * console.log(`Total patterns: ${stats.totalPatterns}`);
+   * console.log('By category:', stats.byCategory);
+   * // Output: Total patterns: 15, By category: { security: 2, performance: 1, ... }
+   * ```
    */
   getStats(): { totalPatterns: number; byCategory: Record<string, number> } {
     const byCategory: Record<string, number> = {};

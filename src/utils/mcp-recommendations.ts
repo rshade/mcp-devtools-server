@@ -7,6 +7,17 @@
 
 import { ProjectType } from './project-detector.js';
 
+/**
+ * Recommendation for an MCP server with configuration and usage details
+ * @property {string} name - Human-readable name of the MCP server
+ * @property {string} package - NPM package name or installation command
+ * @property {string} description - Detailed description of the server's capabilities
+ * @property {string[]} useCases - Specific scenarios where this server is most beneficial
+ * @property {string[]} benefits - Key benefits and advantages of using this server
+ * @property {Record<string, unknown>} configExample - Example .mcp.json configuration snippet
+ * @property {'high' | 'medium' | 'low'} priority - Recommendation priority level
+ * @property {MCPCategory[]} categories - Categories this server belongs to
+ */
 export interface MCPServerRecommendation {
   name: string;
   package: string;
@@ -18,24 +29,67 @@ export interface MCPServerRecommendation {
   categories: MCPCategory[];
 }
 
+/**
+ * Categories for classifying MCP server capabilities and use cases
+ */
 export enum MCPCategory {
+  /** General development tools and utilities */
   Development = 'development',
+  /** Testing frameworks and quality assurance tools */
   Testing = 'testing',
+  /** Documentation generation and API reference tools */
   Documentation = 'documentation',
+  /** AI-powered assistants and reasoning tools */
   AI = 'ai',
+  /** Database access and management tools */
   Database = 'database',
+  /** File system operations and management */
   FileSystem = 'filesystem',
+  /** Web development and HTTP-related tools */
   Web = 'web',
+  /** Productivity enhancement and workflow tools */
   Productivity = 'productivity'
 }
 
+/**
+ * Recommendation engine for MCP servers
+ *
+ * Provides intelligent, context-aware recommendations for Model Context Protocol (MCP)
+ * servers that enhance development workflows. Maintains a curated catalog of MCP servers
+ * with configuration examples, use cases, and contextual matching logic.
+ */
 export class MCPRecommendations {
   private recommendations: MCPServerRecommendation[] = [];
 
+  /**
+   * Creates a new MCPRecommendations instance and initializes the server catalog
+   *
+   * @example
+   * ```typescript
+   * const recommendations = new MCPRecommendations();
+   * const all = recommendations.getAllRecommendations();
+   * console.log(`${all.length} MCP servers available`);
+   * ```
+   */
   constructor() {
     this.initializeRecommendations();
   }
 
+  /**
+   * Initialize the catalog of recommended MCP servers
+   *
+   * Populates the recommendations database with curated MCP servers including:
+   * - AI/Productivity: Sequential Thinking, Context7, Memory
+   * - Testing: Playwright
+   * - Database: PostgreSQL, SQLite
+   * - File System: Filesystem
+   * - Development: Git
+   * - Web: Fetch
+   *
+   * Each recommendation includes configuration examples, use cases, and benefits.
+   *
+   * @private
+   */
   private initializeRecommendations(): void {
     // Core AI/Productivity MCPs
     this.addRecommendation({
@@ -266,33 +320,97 @@ export class MCPRecommendations {
     });
   }
 
+  /**
+   * Add an MCP server recommendation to the catalog
+   *
+   * @param {MCPServerRecommendation} recommendation - The recommendation to add
+   * @private
+   */
   private addRecommendation(recommendation: MCPServerRecommendation): void {
     this.recommendations.push(recommendation);
   }
 
   /**
-   * Get all recommendations
+   * Get all MCP server recommendations
+   *
+   * Returns the complete catalog of available MCP server recommendations
+   * across all categories and priorities.
+   *
+   * @returns {MCPServerRecommendation[]} Array of all MCP server recommendations
+   *
+   * @example
+   * ```typescript
+   * const all = recommendations.getAllRecommendations();
+   * console.log('Available servers:', all.map(r => r.name).join(', '));
+   * ```
    */
   getAllRecommendations(): MCPServerRecommendation[] {
     return this.recommendations;
   }
 
   /**
-   * Get recommendations by category
+   * Get MCP server recommendations filtered by category
+   *
+   * Returns all MCP server recommendations that belong to the specified category,
+   * allowing users to find tools for specific use cases like testing, databases, etc.
+   *
+   * @param {MCPCategory} category - The category to filter by (AI, Testing, Database, etc.)
+   * @returns {MCPServerRecommendation[]} Array of recommendations matching the category
+   *
+   * @example
+   * ```typescript
+   * const testingServers = recommendations.getRecommendationsByCategory(MCPCategory.Testing);
+   * // Returns [Playwright, ...other testing servers]
+   * ```
    */
   getRecommendationsByCategory(category: MCPCategory): MCPServerRecommendation[] {
     return this.recommendations.filter(r => r.categories.includes(category));
   }
 
   /**
-   * Get recommendations by priority
+   * Get MCP server recommendations filtered by priority level
+   *
+   * Returns recommendations matching a specific priority level, useful for
+   * focusing on essential tools (high) vs. nice-to-have additions (low/medium).
+   *
+   * @param {'high' | 'medium' | 'low'} priority - The priority level to filter by
+   * @returns {MCPServerRecommendation[]} Array of recommendations matching the priority
+   *
+   * @example
+   * ```typescript
+   * const essentialServers = recommendations.getRecommendationsByPriority('high');
+   * // Returns [Sequential Thinking, Context7, Git]
+   * ```
    */
   getRecommendationsByPriority(priority: 'high' | 'medium' | 'low'): MCPServerRecommendation[] {
     return this.recommendations.filter(r => r.priority === priority);
   }
 
   /**
-   * Get contextual recommendations based on project type and issues
+   * Generate contextual MCP server recommendations based on project characteristics
+   *
+   * Analyzes project context (type, features, issues) and returns prioritized
+   * recommendations for MCP servers that would be most beneficial.
+   *
+   * @param {{
+   *   projectType?: ProjectType;
+   *   hasTests?: boolean;
+   *   hasDatabase?: boolean;
+   *   hasWebInterface?: boolean;
+   *   detectedIssues?: string[];
+   * }} context - Project context for recommendations
+   * @returns {MCPServerRecommendation[]} Prioritized array of relevant recommendations
+   *
+   * @example
+   * ```typescript
+   * const recs = recommendations.getContextualRecommendations({
+   *   projectType: ProjectType.NodeJS,
+   *   hasTests: true,
+   *   hasDatabase: true,
+   *   hasWebInterface: true
+   * });
+   * // Returns: [Context7, Sequential Thinking, Playwright, PostgreSQL, ...]
+   * ```
    */
   getContextualRecommendations(context: {
     projectType?: ProjectType;
@@ -360,7 +478,22 @@ export class MCPRecommendations {
   }
 
   /**
-   * Get recommendations for specific use cases
+   * Get recommendations matching a specific use case
+   *
+   * Searches through recommendation use cases to find servers that support
+   * the specified use case (case-insensitive substring matching).
+   *
+   * @param {string} useCase - The use case to search for (e.g., "testing", "database", "API")
+   * @returns {MCPServerRecommendation[]} Array of recommendations matching the use case
+   *
+   * @example
+   * ```typescript
+   * const testingTools = recommendations.getRecommendationsForUseCase('testing');
+   * // Returns servers with "testing" in their use cases (Playwright, etc.)
+   *
+   * const dbTools = recommendations.getRecommendationsForUseCase('database');
+   * // Returns [PostgreSQL, SQLite]
+   * ```
    */
   getRecommendationsForUseCase(useCase: string): MCPServerRecommendation[] {
     return this.recommendations.filter(r =>
@@ -369,7 +502,13 @@ export class MCPRecommendations {
   }
 
   /**
-   * Sort recommendations by priority
+   * Sort recommendations by priority level
+   *
+   * Sorts recommendations with high priority first, followed by medium, then low.
+   *
+   * @param {MCPServerRecommendation[]} recommendations - Array of recommendations to sort
+   * @returns {MCPServerRecommendation[]} Sorted array with high priority first
+   * @private
    */
   private sortByPriority(recommendations: MCPServerRecommendation[]): MCPServerRecommendation[] {
     const priorityOrder = { high: 0, medium: 1, low: 2 };
@@ -377,7 +516,20 @@ export class MCPRecommendations {
   }
 
   /**
-   * Generate .mcp.json configuration snippet
+   * Generate .mcp.json configuration snippet for recommended servers
+   *
+   * Creates a properly formatted .mcp.json configuration object that can be
+   * directly used in Claude Desktop or other MCP-compatible applications.
+   *
+   * @param {MCPServerRecommendation[]} recommendations - Array of MCP server recommendations
+   * @returns {Record<string, unknown>} .mcp.json configuration object with mcpServers key
+   *
+   * @example
+   * ```typescript
+   * const recommendations = recommendations.getContextualRecommendations(context);
+   * const config = recommendations.generateMCPConfig(recommendations);
+   * // Returns: { mcpServers: { "sequential-thinking": {...}, ... } }
+   * ```
    */
   generateMCPConfig(recommendations: MCPServerRecommendation[]): Record<string, unknown> {
     const mcpServers: Record<string, unknown> = {};
@@ -392,7 +544,28 @@ export class MCPRecommendations {
   }
 
   /**
-   * Get statistics about available recommendations
+   * Get statistics about the recommendation catalog
+   *
+   * Provides overview metrics including total count and distribution
+   * across priorities and categories.
+   *
+   * @returns {{
+   *   total: number;
+   *   byPriority: Record<string, number>;
+   *   byCategory: Record<string, number>;
+   * }} Statistics about available recommendations
+   *
+   * @example
+   * ```typescript
+   * const stats = recommendations.getStats();
+   * console.log(`Total: ${stats.total}`);
+   * console.log('By priority:', stats.byPriority);
+   * console.log('By category:', stats.byCategory);
+   * // Output:
+   * // Total: 9
+   * // By priority: { high: 3, medium: 5, low: 1 }
+   * // By category: { ai: 3, development: 5, testing: 2, ... }
+   * ```
    */
   getStats(): {
     total: number;

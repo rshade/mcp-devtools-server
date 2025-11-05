@@ -10,6 +10,14 @@ import { FailureAnalyzer, AnalysisResult, ErrorType } from './failure-analyzer.j
 import { KnowledgeBase } from './knowledge-base.js';
 import { ProjectDetector, ProjectType } from './project-detector.js';
 
+/**
+ * Context information for generating more accurate suggestions
+ * @property {string} [tool] - The tool or command that was executed
+ * @property {string} [language] - Programming language being used
+ * @property {ProjectType} [projectType] - Type of project (NodeJS, Go, Python, etc.)
+ * @property {string} [command] - The full command that was executed
+ * @property {string} [workingDirectory] - Working directory where command was executed
+ */
 export interface SuggestionContext {
   tool?: string;
   language?: string;
@@ -18,6 +26,16 @@ export interface SuggestionContext {
   workingDirectory?: string;
 }
 
+/**
+ * A smart suggestion with actionable recommendations for fixing issues
+ * @property {string} title - Brief title describing the suggestion
+ * @property {string} description - Detailed description of the issue and context
+ * @property {string[]} actions - Array of specific, actionable steps to resolve the issue
+ * @property {'high' | 'medium' | 'low'} priority - Priority level indicating urgency of the suggestion
+ * @property {string} category - Category classification (security, performance, build, etc.)
+ * @property {number} confidence - Confidence score (0.0-1.0) in the suggestion's relevance
+ * @property {string[]} [relatedFiles] - Files related to the issue that may need attention
+ */
 export interface SmartSuggestion {
   title: string;
   description: string;
@@ -28,6 +46,14 @@ export interface SmartSuggestion {
   relatedFiles?: string[];
 }
 
+/**
+ * Result of suggestion engine analysis with comprehensive recommendations
+ * @property {boolean} success - Whether the original command execution was successful
+ * @property {AnalysisResult} analysis - Detailed failure analysis results
+ * @property {SmartSuggestion[]} suggestions - Array of prioritized smart suggestions
+ * @property {string} summary - Human-readable summary of the analysis and key findings
+ * @property {number} executionTime - Time taken to perform the analysis in milliseconds
+ */
 export interface SuggestionEngineResult {
   success: boolean;
   analysis: AnalysisResult;
@@ -36,11 +62,33 @@ export interface SuggestionEngineResult {
   executionTime: number;
 }
 
+/**
+ * Core engine for generating intelligent, context-aware suggestions
+ *
+ * The SuggestionEngine orchestrates failure analysis, pattern matching, and contextual
+ * recommendation generation. It combines multiple sources of information including
+ * execution results, project type, and historical patterns to provide actionable suggestions.
+ */
 export class SuggestionEngine {
   private knowledgeBase: KnowledgeBase;
   private failureAnalyzer: FailureAnalyzer;
   private projectDetector: ProjectDetector;
 
+  /**
+   * Creates a new SuggestionEngine instance
+   *
+   * @param {string} [projectRoot] - Optional project root directory for context detection.
+   *                                 Defaults to current working directory if not provided.
+   *
+   * @example
+   * ```typescript
+   * // Using current directory
+   * const engine = new SuggestionEngine();
+   *
+   * // Using specific project directory
+   * const engine = new SuggestionEngine('/path/to/project');
+   * ```
+   */
   constructor(projectRoot?: string) {
     this.knowledgeBase = new KnowledgeBase();
     this.failureAnalyzer = new FailureAnalyzer(this.knowledgeBase);
@@ -48,7 +96,28 @@ export class SuggestionEngine {
   }
 
   /**
-   * Generate smart suggestions from execution result
+   * Generate intelligent, context-aware suggestions based on execution results
+   *
+   * This method performs comprehensive analysis including:
+   * - Failure pattern detection and matching
+   * - Error type classification
+   * - Project context consideration (language, type, tools)
+   * - Actionable suggestion generation
+   * - Workflow optimization recommendations
+   *
+   * @param {ExecutionResult} result - The execution result to analyze
+   * @param {SuggestionContext} [context] - Optional context about the project and command
+   * @returns {Promise<SuggestionEngineResult>} Generated suggestions with analysis
+   *
+   * @example
+   * ```typescript
+   * const result = await executor.execute('go test', ['./...']);
+   * const suggestions = await engine.generateSuggestions(result, {
+   *   projectType: ProjectType.Go,
+   *   language: 'go'
+   * });
+   * console.log(suggestions.suggestions); // Array of smart suggestions
+   * ```
    */
   async generateSuggestions(
     result: ExecutionResult,
@@ -76,6 +145,20 @@ export class SuggestionEngine {
     };
   }
 
+  /**
+   * Create smart suggestions from analysis results and context
+   *
+   * Generates multiple types of suggestions:
+   * - Pattern-based suggestions from matched failure patterns
+   * - Context-aware suggestions based on project type and language
+   * - Workflow optimization suggestions
+   * - Success recommendations for passing executions
+   *
+   * @param {AnalysisResult} analysis - Failure analysis results
+   * @param {SuggestionContext} [context] - Optional project and command context
+   * @returns {Promise<SmartSuggestion[]>} Array of prioritized smart suggestions
+   * @private
+   */
   private async createSmartSuggestions(
     analysis: AnalysisResult,
     context?: SuggestionContext
@@ -140,6 +223,17 @@ export class SuggestionEngine {
     return this.prioritizeSuggestions(suggestions);
   }
 
+  /**
+   * Format a pattern into a descriptive message with affected files
+   *
+   * Creates a human-readable description that includes the pattern's context
+   * and lists affected files if available.
+   *
+   * @param {{ name: string; context?: string }} pattern - Pattern with name and optional context
+   * @param {AnalysisResult} analysis - Analysis result containing affected files
+   * @returns {string} Formatted description string
+   * @private
+   */
   private formatPatternDescription(
     pattern: { name: string; context?: string },
     analysis: AnalysisResult
@@ -157,6 +251,24 @@ export class SuggestionEngine {
     return description;
   }
 
+  /**
+   * Generate suggestions tailored to project type and error context
+   *
+   * Provides language-specific and framework-specific suggestions based on:
+   * - Detected project type (Go, Node.js, Python, etc.)
+   * - Error type classification
+   * - Available project context
+   *
+   * Examples:
+   * - Go test failures → suggest verbose mode, race detection flags
+   * - Node.js dependency issues → suggest npm cache clearing, peer dependencies
+   * - Security issues → recommend secrets management best practices
+   *
+   * @param {AnalysisResult} analysis - Failure analysis results
+   * @param {SuggestionContext} [context] - Optional project context
+   * @returns {Promise<SmartSuggestion[]>} Array of context-aware suggestions
+   * @private
+   */
   private async generateContextAwareSuggestions(
     analysis: AnalysisResult,
     context?: SuggestionContext
@@ -224,6 +336,18 @@ export class SuggestionEngine {
     return suggestions;
   }
 
+  /**
+   * Generate workflow optimization suggestions based on error patterns
+   *
+   * Suggests improvements to development workflow such as:
+   * - Pre-commit hooks for catching linting issues early
+   * - Test organization improvements for widespread failures
+   * - CI/CD integration recommendations
+   *
+   * @param {AnalysisResult} analysis - Failure analysis results
+   * @returns {SmartSuggestion[]} Array of workflow improvement suggestions
+   * @private
+   */
   private generateWorkflowSuggestions(
     analysis: AnalysisResult
   ): SmartSuggestion[] {
@@ -265,6 +389,19 @@ export class SuggestionEngine {
     return suggestions;
   }
 
+  /**
+   * Prioritize and limit suggestions by priority and confidence
+   *
+   * Sorts suggestions by:
+   * 1. Priority level (high > medium > low)
+   * 2. Confidence score (higher first)
+   *
+   * Returns top 10 suggestions to avoid overwhelming the user.
+   *
+   * @param {SmartSuggestion[]} suggestions - Array of suggestions to prioritize
+   * @returns {SmartSuggestion[]} Sorted and limited array (max 10 suggestions)
+   * @private
+   */
   private prioritizeSuggestions(suggestions: SmartSuggestion[]): SmartSuggestion[] {
     const priorityOrder = { high: 0, medium: 1, low: 2 };
 
@@ -278,6 +415,28 @@ export class SuggestionEngine {
     }).slice(0, 10); // Limit to top 10 suggestions
   }
 
+  /**
+   * Generate a concise summary of the analysis and suggestions
+   *
+   * Creates a pipe-separated summary including:
+   * - Error summary or success message
+   * - Number of patterns matched
+   * - Number of affected files
+   * - Count of high-priority suggestions
+   * - Confidence percentage
+   *
+   * @param {AnalysisResult} analysis - Failure analysis results
+   * @param {SmartSuggestion[]} suggestions - Generated suggestions
+   * @returns {string} Formatted summary string
+   *
+   * @example
+   * ```typescript
+   * // Example output:
+   * // "Failure Analysis: Go Test Failures | Matched 2 known pattern(s) | 3 file(s) affected | 1 high-priority suggestion(s) | Confidence: 85%"
+   * ```
+   *
+   * @private
+   */
   private generateSummary(
     analysis: AnalysisResult,
     suggestions: SmartSuggestion[]
@@ -309,7 +468,28 @@ export class SuggestionEngine {
   }
 
   /**
-   * Analyze command history to provide proactive suggestions
+   * Analyze command execution history to provide proactive workflow suggestions
+   *
+   * Examines patterns across multiple command executions to identify:
+   * - Recurring failures that need attention
+   * - Success rate trends
+   * - Workflow optimization opportunities
+   * - Preventive measures for common issues
+   *
+   * @param {ExecutionResult[]} results - Array of historical execution results to analyze
+   * @returns {Promise<SmartSuggestion[]>} Array of proactive suggestions based on historical patterns
+   *
+   * @example
+   * ```typescript
+   * const history = await getCommandHistory();
+   * const proactiveSuggestions = await engine.analyzeHistory(history);
+   *
+   * for (const suggestion of proactiveSuggestions) {
+   *   if (suggestion.priority === 'high') {
+   *     console.log('High priority:', suggestion.title);
+   *   }
+   * }
+   * ```
    */
   async analyzeHistory(results: ExecutionResult[]): Promise<SmartSuggestion[]> {
     const trends = this.failureAnalyzer.analyzeTrends(results);
@@ -350,7 +530,20 @@ export class SuggestionEngine {
   }
 
   /**
-   * Get knowledge base statistics
+   * Get statistics about the underlying knowledge base
+   *
+   * Provides insights into the pattern database used for failure detection,
+   * including total pattern count and distribution across categories.
+   *
+   * @returns {{ totalPatterns: number; byCategory: Record<string, number> }}
+   * Statistics about the knowledge base patterns
+   *
+   * @example
+   * ```typescript
+   * const stats = engine.getKnowledgeBaseStats();
+   * console.log(`Engine has ${stats.totalPatterns} failure patterns`);
+   * console.log('Coverage by category:', stats.byCategory);
+   * ```
    */
   getKnowledgeBaseStats(): { totalPatterns: number; byCategory: Record<string, number> } {
     return this.knowledgeBase.getStats();
