@@ -13,30 +13,41 @@ priorities.
 
 ## Build and Test Commands
 
+You can use either `make` commands (recommended) or `npm` scripts directly.
+**Makefile is a thin wrapper around npm - npm is the source of truth.**
+
 ```bash
-# Install dependencies
+# View all available commands
+make help
+
+# Common commands
+make install         # Install dependencies
+make build           # Build TypeScript
+make dev             # Start development server
+make test            # Run tests
+make lint            # Run all linters (TypeScript, Markdown, YAML)
+make check           # Run all linters and tests
+make all             # Complete CI pipeline (install, check, build)
+
+# Or use npm scripts directly
 npm install
-
-# Build TypeScript
 npm run build
-
-# Start development server
 npm run dev
-
-# Run linting
 npm run lint
 npm run lint:md
 npm run lint:yaml
-
-# Run tests
 npm test
-
-# Clean build artifacts
 npm run clean
-
-# Generate API documentation
-npm run docs
 ```
+
+## Makefile Maintenance
+
+**IMPORTANT:** The Makefile must be kept in sync with package.json scripts:
+
+- When adding/removing npm scripts, update the Makefile accordingly
+- Keep `make help` output current and accurate
+- All Makefile targets should delegate to npm (no duplicate logic)
+- The Makefile is just a convenience wrapper - npm is the source of truth
 
 ## Development Workflow
 
@@ -44,15 +55,48 @@ npm run docs
 2. **Comprehensive Testing** - Add tests for all new tools and utilities (90%+ coverage goal)
 3. **Documentation** - Include JSDoc comments for all public APIs
 4. **Linting** - **ALWAYS RUN BEFORE FINISHING ANY TASK**:
-   - `npm run lint` - TypeScript/JavaScript linting
-   - `npm run lint:md` - Markdown linting (REQUIRED for all .md file changes)
-   - `npm run lint:yaml` - YAML linting
-   - `npm test` - Full test suite
-   - `npm run build` - Verify build passes
+   - `make lint` (or `npm run lint`) - TypeScript/JavaScript linting
+   - `make lint-md` (or `npm run lint:md`) - Markdown linting (REQUIRED for all .md file changes)
+   - `make lint-yaml` (or `npm run lint:yaml`) - YAML linting
+   - `make test` (or `npm test`) - Full test suite
+   - `make build` (or `npm run build`) - Verify build passes
 5. **Community Guidelines** - Follow [CONTRIBUTING.md](CONTRIBUTING.md) for all contributions
 
-**CRITICAL**: If you edit ANY markdown file (*.md), you MUST run `npm run lint:md` before considering the
+**CRITICAL**: If you edit ANY markdown file (*.md), you MUST run `make lint-md` before considering the
 task complete. Do not claim success until all linting passes.
+
+## Test Quality Standards
+
+**CRITICAL**: We are burning cycles fixing low-quality tests. Tests MUST be:
+
+1. **Well thought through** - Not AI slop. Think about edge cases, error conditions, and real usage
+2. **Fast execution** - Tests that take too long are a productivity killer
+3. **Focused and purposeful** - Test one thing clearly, not everything vaguely
+4. **Meaningful assertions** - Don't just check `toBeDefined()`, verify actual behavior
+5. **Minimal mocking** - Only mock external dependencies, not the code under test
+6. **No flaky tests** - Tests must be deterministic and reliable
+
+**BAD TEST (AI slop):**
+
+```typescript
+it('should work', async () => {
+  const result = await someFunction();
+  expect(result).toBeDefined();
+  expect(result).toBeTruthy();
+});
+```
+
+**GOOD TEST:**
+
+```typescript
+it('returns error when file does not exist', async () => {
+  const result = await readConfig('/nonexistent.json');
+  expect(result.error).toBe('ENOENT');
+  expect(result.data).toBeNull();
+});
+```
+
+**Code Review**: When reviewing code, explicitly check test quality against these standards.
 
 ## Community Documentation
 
