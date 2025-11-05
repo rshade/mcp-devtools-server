@@ -1,0 +1,22 @@
+#!/bin/sh
+
+echo "🔍 Running pre-commit checks..."
+
+# Run ESLint
+echo "→ ESLint..."
+npm run lint || exit 1
+
+# Run Markdown linting
+echo "→ Markdown linting..."
+npm run lint:md || exit 1
+
+# Run YAML linting
+echo "→ YAML linting..."
+npm run lint:yaml || exit 1
+
+# Check TypeScript compilation
+echo "→ Building TypeScript..."
+npm run build || exit 1
+
+echo "✅ All pre-commit checks passed!"
+echo "ℹ️  Full test suite will run in CI"
