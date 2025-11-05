@@ -702,6 +702,7 @@ git add -u
 - **Shell Executor** - Secure command execution with validation
 - **Project Detector** - Auto-detection of project type and configuration
 - **Tool Classes** - Specialized handlers for make, lint, and test operations
+- **Plugin Manager** - Auto-discovery and lifecycle management for plugins
 - **MCP Server** - Main server implementation with tool registration
 
 ### Security Model
@@ -710,6 +711,7 @@ git add -u
 - Arguments are sanitized to prevent injection attacks
 - Working directories are restricted to project boundaries
 - All operations have configurable timeouts
+- Plugins execute through shared ShellExecutor for security isolation
 
 ### Tool Schema
 
@@ -722,6 +724,310 @@ Each tool uses JSON Schema for input validation:
   // Tool-specific options...
 }
 ```
+
+## Plugin System
+
+The MCP DevTools Server supports an extensible plugin architecture that allows you to add custom
+tools and integrations without modifying the core codebase.
+
+### What Are Plugins?
+
+Plugins extend the server with additional functionality:
+
+- **Custom tools** accessible through the MCP protocol
+- **Language/framework support** (Docker, Kubernetes, etc.)
+- **CI/CD integrations** (GitHub Actions, Jenkins, etc.)
+- **IDE enhancements** (formatters, linters, etc.)
+- **Notification systems** (Slack, Discord, Email)
+
+### Available Plugins
+
+#### git-spice Plugin
+
+A reference implementation demonstrating best practices for plugin development. Provides Git stacked branch management tools.
+
+**Tools Provided:**
+
+- `git_spice_branch_create` - Create new stacked branches
+- `git_spice_branch_checkout` - Checkout existing branches
+- `git_spice_stack_submit` - Submit entire stack as pull requests
+- `git_spice_stack_restack` - Rebase stack on latest changes
+- `git_spice_log_short` - View current stack visualization
+- `git_spice_repo_sync` - Sync with remote and cleanup merged branches
+
+**Example Configuration:**
+
+```json
+{
+  "plugins": {
+    "enabled": ["git-spice"],
+    "git-spice": {
+      "defaultBranch": "main",
+      "autoRestack": false,
+      "jsonOutput": true,
+      "timeout": 60000
+    }
+  }
+}
+```
+
+**Usage Example:**
+
+```javascript
+// Create a new feature branch
+await callTool('git_spice_branch_create', {
+  name: 'feature/add-authentication',
+  base: 'main'
+});
+
+// Create a stacked branch on top of the first
+await callTool('git_spice_branch_create', {
+  name: 'feature/auth-service',
+  base: 'feature/add-authentication'
+});
+
+// View the stack
+await callTool('git_spice_log_short', {});
+
+// Submit all as PRs
+await callTool('git_spice_stack_submit', { draft: false });
+```
+
+See the [git-spice User Guide](docs/plugins/git-spice.md) for detailed documentation.
+
+### Plugin Architecture
+
+#### How Plugins Work
+
+```text
+┌─────────────────────────────────────┐
+│     MCP DevTools Server             │
+│  ┌───────────────────────────────┐  │
+│  │     Plugin Manager            │  │
+│  │  - Discovery                  │  │
+│  │  - Registration               │  │
+│  │  - Tool Routing               │  │
+│  └───────────┬───────────────────┘  │
+│              │                       │
+│  ┌───────────┴───────────────────┐  │
+│  │   Plugin 1   │   Plugin 2     │  │
+│  │  ┌─────┐     │   ┌─────┐      │  │
+│  │  │Tool1│     │   │Tool3│      │  │
+│  │  │Tool2│     │   │Tool4│      │  │
+│  │  └─────┘     │   └─────┘      │  │
+│  └──────────────┴────────────────┘  │
+│              │                       │
+│  ┌───────────┴───────────────────┐  │
+│  │    Shared ShellExecutor       │  │
+│  │    (Security Layer)           │  │
+│  └───────────────────────────────┘  │
+└─────────────────────────────────────┘
+```
+
+#### Plugin Lifecycle
+
+1. **Discovery**: PluginManager scans `src/plugins/*-plugin.ts`
+2. **Validation**: Checks required dependencies
+3. **Initialization**: Calls `initialize()` with context
+4. **Registration**: Calls `registerTools()` to get tool list
+5. **Execution**: Routes tool calls to `handleToolCall()`
+6. **Shutdown**: Calls `shutdown()` on server exit
+
+#### Tool Namespacing
+
+Tools are automatically prefixed with plugin name to prevent conflicts:
+
+```text
+Plugin: git-spice
+Tool: branch_create
+Result: git_spice_branch_create
+```
+
+### Developing Plugins
+
+#### Quick Start (5 Minutes)
+
+1. **Copy the template:**
+
+   ```bash
+   cp examples/plugins/custom-plugin-example.ts src/plugins/my-tool-plugin.ts
+   ```
+
+2. **Update metadata:**
+
+   ```typescript
+   metadata: PluginMetadata = {
+     name: 'my-tool',
+     version: '1.0.0',
+     description: 'Integration with my-tool',
+     requiredCommands: ['my-tool'],
+     tags: ['utility'],
+   };
+   ```
+
+3. **Implement a tool:**
+
+   ```typescript
+   async registerTools(): Promise<PluginTool[]> {
+     return [{
+       name: 'execute',
+       description: 'Execute my-tool command',
+       inputSchema: {
+         type: 'object',
+         properties: {
+           args: { type: 'array', items: { type: 'string' } }
+         }
+       }
+     }];
+   }
+   ```
+
+4. **Build and test:**
+
+   ```bash
+   npm run build
+   node dist/index.js
+   ```
+
+Your plugin will be auto-discovered and loaded!
+
+#### Plugin Interface
+
+All plugins must implement the `Plugin` interface:
+
+```typescript
+export class MyPlugin implements Plugin {
+  // Metadata (required)
+  metadata: PluginMetadata = {
+    name: 'my-plugin',
+    version: '1.0.0',
+    description: 'My custom plugin',
+    requiredCommands: ['my-command'],
+    tags: ['utility'],
+  };
+
+  // Lifecycle methods (required)
+  async initialize(context: PluginContext): Promise<void> {
+    // Validate required commands are available
+    // Initialize any state
+  }
+
+  async registerTools(): Promise<PluginTool[]> {
+    // Return array of tool definitions
+  }
+
+  async handleToolCall(toolName: string, args: unknown): Promise<unknown> {
+    // Route to appropriate tool method
+  }
+
+  // Optional methods
+  async validateConfig?(config: unknown): Promise<boolean> { }
+  async shutdown?(): Promise<void> { }
+  async healthCheck?(): Promise<PluginHealth> { }
+}
+```
+
+#### Plugin Context
+
+Every plugin receives a context with:
+
+```typescript
+interface PluginContext {
+  config: Record<string, unknown>;    // Plugin configuration
+  projectRoot: string;                 // Project directory
+  shellExecutor: ShellExecutor;        // Secure command execution
+  logger: winston.Logger;              // Scoped logger
+  utils: PluginUtils;                  // Helper functions
+}
+```
+
+#### Security Best Practices
+
+1. **Always use the shared ShellExecutor** - Never execute commands directly
+2. **Validate all input with Zod schemas** - Runtime type safety
+3. **Add commands to the allowlist** - Update `src/utils/shell-executor.ts`
+4. **Sanitize user input** - Prevent command injection
+5. **No dynamic code execution** - Never use `eval()` or `Function()`
+
+Example:
+
+```typescript
+import { z } from 'zod';
+
+const MyToolArgsSchema = z.object({
+  input: z.string().min(1).describe('Input parameter'),
+  verbose: z.boolean().optional().describe('Verbose output'),
+});
+
+private async myTool(args: unknown): Promise<MyToolResult> {
+  // 1. Validate input
+  const validated = MyToolArgsSchema.parse(args);
+
+  // 2. Execute through ShellExecutor
+  const result = await this.context.shellExecutor.execute(
+    `my-command ${validated.input}`,
+    {
+      cwd: this.context.projectRoot,
+      timeout: 60000,
+    }
+  );
+
+  // 3. Return structured result
+  if (result.success) {
+    return { success: true, output: result.stdout };
+  } else {
+    return {
+      success: false,
+      error: result.stderr,
+      suggestions: this.generateSuggestions(result.stderr),
+    };
+  }
+}
+```
+
+### Plugin Documentation
+
+- **Developer Guide**: [docs/plugin-development.md](docs/plugin-development.md) - Comprehensive
+  guide covering architecture, implementation, testing, and best practices
+- **git-spice User Guide**: [docs/plugins/git-spice.md](docs/plugins/git-spice.md) - Complete
+  user documentation for the git-spice plugin
+- **Template**: [examples/plugins/custom-plugin-example.ts](examples/plugins/custom-plugin-example.ts)
+  \- Ready-to-use plugin template with TODOs
+
+### Testing Plugins
+
+Create tests in `src/__tests__/plugins/your-plugin.test.ts`:
+
+```typescript
+import { describe, it, expect, beforeEach } from '@jest/globals';
+import { YourPlugin } from '../../plugins/your-plugin.js';
+
+describe('YourPlugin', () => {
+  let plugin: YourPlugin;
+  let mockContext: PluginContext;
+
+  beforeEach(() => {
+    plugin = new YourPlugin();
+    mockContext = createMockContext();
+  });
+
+  it('should initialize successfully', async () => {
+    await expect(plugin.initialize(mockContext)).resolves.not.toThrow();
+  });
+
+  it('should execute tool successfully', async () => {
+    const result = await plugin.handleToolCall('my_tool', {
+      input: 'test'
+    });
+    expect(result).toMatchObject({ success: true });
+  });
+});
+```
+
+**Coverage Goals:**
+
+- Plugin Manager: 90%+ coverage
+- Individual Plugins: 85%+ coverage
 
 ## Error Handling
 
@@ -817,16 +1123,19 @@ Our development is organized into quarterly milestones with clear priorities:
 
 - [x] Enhanced Go language support (go_test, go_build, go_fmt, go_lint, go_vet, go_mod_tidy)
 - [x] POSIX newline compliance validation (ensure_newline tool)
+- [x] **Extensible plugin architecture framework** (Issue #2 ✅)
+- [x] **git-spice reference plugin implementation** (Issue #58 ✅)
 - [ ] Complete Go toolchain integration
 - [ ] golangci-lint and staticcheck integration
 - [ ] Go project analysis and recommendations
 - [ ] Go-specific configuration options
 
-### 2025-Q2 - Plugin Architecture & Performance
+### 2025-Q2 - Plugin Ecosystem & Performance
 
 #### Priority: HIGH (P1)
 
-- [ ] Extensible plugin architecture framework
+- [ ] Community plugin marketplace
+- [ ] Additional first-party plugins (Docker, Kubernetes, etc.)
 - [ ] Intelligent caching system (10x performance improvement)
 - [ ] Advanced telemetry and observability
 - [ ] Resource management and concurrency control

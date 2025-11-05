@@ -2,7 +2,10 @@ import { NewlineChecker } from '../../utils/newline-checker';
 import { promises as fs } from 'fs';
 import os from 'os';
 import path from 'path';
+import { fileURLToPath } from 'url';
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 const fixturesDir = path.join(__dirname, '..', 'fixtures');
 
 describe('NewlineChecker', () => {

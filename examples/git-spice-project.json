@@ -1,0 +1,26 @@
+{
+  "$schema": "../.mcp-devtools.schema.json",
+  "projectType": "nodejs",
+  "buildSystem": "npm",
+  "commands": {
+    "lint": "npm run lint",
+    "test": "npm test",
+    "build": "npm run build"
+  },
+  "linters": ["eslint", "markdownlint"],
+  "testRunner": "jest",
+  "plugins": {
+    "enabled": ["git-spice"],
+    "git-spice": {
+      "defaultBranch": "main",
+      "autoRestack": false,
+      "jsonOutput": true,
+      "timeout": 60000
+    }
+  },
+  "excludePaths": [
+    "node_modules/**",
+    "dist/**",
+    "coverage/**"
+  ]
+}

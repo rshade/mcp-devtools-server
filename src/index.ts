@@ -20,6 +20,13 @@ import { SmartSuggestionsTools, AnalyzeCommandResult, AnalyzeResultResult, Knowl
 import { OnboardingTools, OnboardingResult, ProjectProfileResult, GenerateConfigResult, RollbackResult } from './tools/onboarding-tools.js';
 import { ValidationResult } from './utils/onboarding-wizard.js';
 
+// Import plugin system
+import { PluginManager } from './plugins/plugin-manager.js';
+import { ShellExecutor } from './utils/shell-executor.js';
+import { PluginConfiguration } from './plugins/plugin-interface.js';
+import * as fs from 'fs/promises';
+import * as path from 'path';
+
 // Configure logger
 const logger = winston.createLogger({
   level: process.env.LOG_LEVEL || 'info',
@@ -38,6 +45,20 @@ const logger = winston.createLogger({
 const SERVER_NAME = 'mcp-devtools-server';
 const SERVER_VERSION = '1.0.0';
 
+/**
+ * Load project configuration from .mcp-devtools.json
+ */
+async function loadConfig(): Promise<Record<string, unknown>> {
+  try {
+    const configPath = path.join(process.cwd(), '.mcp-devtools.json');
+    const configContent = await fs.readFile(configPath, 'utf-8');
+    return JSON.parse(configContent);
+  } catch {
+    // No config file or parse error - return empty config
+    return {};
+  }
+}
+
 class MCPDevToolsServer {
   private server: Server;
   private makeTools: MakeTools;
@@ -49,6 +70,7 @@ class MCPDevToolsServer {
   private gitTools: GitTools;
   private smartSuggestionsTools: SmartSuggestionsTools;
   private onboardingTools: OnboardingTools;
+  private pluginManager!: PluginManager;
 
   constructor() {
     this.server = new Server(
@@ -75,13 +97,40 @@ class MCPDevToolsServer {
     this.smartSuggestionsTools = new SmartSuggestionsTools(projectRoot);
     this.onboardingTools = new OnboardingTools(projectRoot);
 
+    // Plugin manager will be initialized in run() after loading config
+  }
+
+  async initialize(): Promise<void> {
+    // Load configuration
+    const config = await loadConfig();
+    const pluginConfig = (config.plugins as PluginConfiguration) || {};
+
+    // Initialize plugin manager
+    const projectRoot = process.cwd();
+    const shellExecutor = new ShellExecutor(projectRoot);
+
+    this.pluginManager = new PluginManager(
+      projectRoot,
+      pluginConfig,
+      shellExecutor,
+      logger
+    );
+
+    // Load plugins before setting up handlers
+    try {
+      await this.pluginManager.loadPlugins();
+    } catch (error) {
+      logger.error('Failed to load plugins:', error);
+      // Continue without plugins rather than failing to start
+    }
+
+    // Setup request handlers
     this.setupHandlers();
   }
 
   private setupHandlers(): void {
     this.server.setRequestHandler(ListToolsRequestSchema, async () => {
-      return {
-        tools: [
+      const coreTools = [
           // Make tools
           {
             name: 'make_lint',
@@ -1262,7 +1311,13 @@ class MCPDevToolsServer {
               required: ['backupPath'],
             },
           },
-        ],
+        ];
+
+      // Get plugin tools
+      const pluginTools = await this.pluginManager.getAllTools();
+
+      return {
+        tools: [...coreTools, ...pluginTools],
       };
     });
 
@@ -1787,6 +1842,23 @@ class MCPDevToolsServer {
           }
 
           default:
+            // Check if this is a plugin tool
+            const pluginTools = await this.pluginManager.getAllTools();
+            const isPluginTool = pluginTools.some(tool => tool.name === name);
+
+            if (isPluginTool) {
+              // Route to plugin manager
+              const result = await this.pluginManager.executeToolCall(name, args);
+              return {
+                content: [
+                  {
+                    type: 'text',
+                    text: JSON.stringify(result, null, 2),
+                  },
+                ],
+              };
+            }
+
             throw new Error(`Unknown tool: ${name}`);
         }
       } catch (error) {
@@ -2614,9 +2686,13 @@ class MCPDevToolsServer {
   }
 
   async run(): Promise<void> {
+    // Initialize plugins first
+    await this.initialize();
+
     const transport = new StdioServerTransport();
     await this.server.connect(transport);
     logger.info(`${SERVER_NAME} v${SERVER_VERSION} started`);
+    logger.info(`Loaded plugins: ${this.pluginManager.getLoadedPlugins().join(', ')}`);
   }
 }
 
