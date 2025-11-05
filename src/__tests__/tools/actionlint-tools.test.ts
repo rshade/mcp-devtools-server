@@ -1,28 +1,36 @@
+import { describe, it, expect, beforeEach, jest } from '@jest/globals';
 import { ActionlintTools } from '../../tools/actionlint-tools';
+import { ShellExecutor } from '../../utils/shell-executor';
 import path from 'path';
+import { fileURLToPath } from 'url';
 
-// Mock ShellExecutor to avoid ESM issues with execa
-jest.mock('../../utils/shell-executor', () => ({
-  ShellExecutor: jest.fn().mockImplementation(() => ({
-    execute: jest.fn().mockResolvedValue({
-      success: true,
-      stdout: '',
-      stderr: '',
-      exitCode: 0,
-      duration: 100,
-      command: 'actionlint test.yml'
-    }),
-    isCommandAvailable: jest.fn().mockResolvedValue(true)
-  }))
-}));
-
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 const fixturesDir = path.join(__dirname, '..', 'fixtures', 'workflows');
 
 describe('ActionlintTools', () => {
   let tools: ActionlintTools;
 
   beforeEach(() => {
-    tools = new ActionlintTools();
+    const projectRoot = process.cwd();
+
+    // Create mock executor
+    const mockExecutor = {
+      execute: jest.fn(() => Promise.resolve({
+        success: true,
+        stdout: '',
+        stderr: '',
+        exitCode: 0,
+        duration: 100,
+        command: 'actionlint test.yml'
+      })),
+      isCommandAvailable: jest.fn(() => Promise.resolve(true))
+    } as unknown as ShellExecutor;
+
+    tools = new ActionlintTools(projectRoot);
+    // Replace executor with mock
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (tools as any).executor = mockExecutor;
   });
 
   describe('validateArgs', () => {

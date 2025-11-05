@@ -322,6 +322,62 @@
           }
         }
       }
+    },
+    "plugins": {
+      "type": "object",
+      "description": "Plugin system configuration",
+      "properties": {
+        "enabled": {
+          "type": "array",
+          "description": "List of plugins to enable (if empty, all non-disabled plugins are enabled)",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true,
+          "default": ["git-spice"]
+        },
+        "disabled": {
+          "type": "array",
+          "description": "List of plugins to explicitly disable",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true,
+          "default": []
+        },
+        "git-spice": {
+          "type": "object",
+          "description": "git-spice plugin configuration",
+          "properties": {
+            "defaultBranch": {
+              "type": "string",
+              "description": "Default base branch for stack operations",
+              "default": "main"
+            },
+            "autoRestack": {
+              "type": "boolean",
+              "description": "Automatically restack branches on changes",
+              "default": false
+            },
+            "jsonOutput": {
+              "type": "boolean",
+              "description": "Use JSON output format when available",
+              "default": true
+            },
+            "timeout": {
+              "type": "number",
+              "description": "Command timeout in milliseconds",
+              "minimum": 1000,
+              "maximum": 300000,
+              "default": 60000
+            }
+          }
+        }
+      },
+      "additionalProperties": {
+        "type": "object",
+        "description": "Plugin-specific configuration sections"
+      }
     }
   },
   "additionalProperties": false

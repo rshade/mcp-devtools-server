@@ -1,7 +1,12 @@
+import { describe, it, expect, beforeEach, afterEach, jest } from '@jest/globals';
 import { writeFile, mkdir, rm } from 'fs/promises';
 import { join } from 'path';
-import { ChecksumTracker, createDevFileTracker } from '../../utils/checksum-tracker.js';
+import { ChecksumTracker, createDevFileTracker, FileChangeCallback } from '../../utils/checksum-tracker.js';
 import { CacheManager } from '../../utils/cache-manager.js';
+
+// Helper to create typed mock callback
+const mockCallback = (): jest.MockedFunction<FileChangeCallback> =>
+  jest.fn<FileChangeCallback>();
 
 describe('ChecksumTracker', () => {
   let tracker: ChecksumTracker;
@@ -33,7 +38,7 @@ describe('ChecksumTracker', () => {
     it('should track a file', async () => {
       await writeFile(testFile, 'initial content');
 
-      const callbackMock = jest.fn();
+      const callbackMock = mockCallback();
       await tracker.track(testFile, callbackMock);
 
       const trackedFiles = tracker.getTrackedFiles();
@@ -42,7 +47,7 @@ describe('ChecksumTracker', () => {
 
     it('should store initial checksum', async () => {
       await writeFile(testFile, 'initial content');
-      await tracker.track(testFile, jest.fn());
+      await tracker.track(testFile, mockCallback());
 
       const checksum = tracker.getChecksum(testFile);
       expect(checksum).toBeDefined();
@@ -54,7 +59,7 @@ describe('ChecksumTracker', () => {
 
     it('should untrack a file', async () => {
       await writeFile(testFile, 'initial content');
-      await tracker.track(testFile, jest.fn());
+      await tracker.track(testFile, mockCallback());
 
       tracker.untrack(testFile);
 
@@ -64,7 +69,7 @@ describe('ChecksumTracker', () => {
 
     it('should handle tracking non-existent file', async () => {
       const nonExistentFile = join(testDir, 'nonexistent.txt');
-      const callbackMock = jest.fn();
+      const callbackMock = mockCallback();
 
       await tracker.track(nonExistentFile, callbackMock);
 
@@ -77,7 +82,7 @@ describe('ChecksumTracker', () => {
   describe('Change Detection', () => {
     beforeEach(async () => {
       await writeFile(testFile, 'initial content');
-      await tracker.track(testFile, jest.fn());
+      await tracker.track(testFile, mockCallback());
     });
 
     it('should detect when file content changes', async () => {
@@ -115,8 +120,8 @@ describe('ChecksumTracker', () => {
       const trackerSHA256 = new ChecksumTracker({ algorithm: 'sha256' });
       const trackerMD5 = new ChecksumTracker({ algorithm: 'md5' });
 
-      await trackerSHA256.track(testFile, jest.fn());
-      await trackerMD5.track(testFile, jest.fn());
+      await trackerSHA256.track(testFile, mockCallback());
+      await trackerMD5.track(testFile, mockCallback());
 
       const sha256Checksum = trackerSHA256.getChecksum(testFile)!.checksum;
       const md5Checksum = trackerMD5.getChecksum(testFile)!.checksum;
@@ -132,7 +137,7 @@ describe('ChecksumTracker', () => {
   describe('Callbacks', () => {
     it('should trigger callback when file changes', async () => {
       await writeFile(testFile, 'initial content');
-      const callbackMock = jest.fn();
+      const callbackMock = mockCallback();
       await tracker.track(testFile, callbackMock);
 
       // Modify file and check
@@ -144,7 +149,7 @@ describe('ChecksumTracker', () => {
 
     it('should not trigger callback when file unchanged', async () => {
       await writeFile(testFile, 'initial content');
-      const callbackMock = jest.fn();
+      const callbackMock = mockCallback();
       await tracker.track(testFile, callbackMock);
 
       // Check without modifying
@@ -156,8 +161,8 @@ describe('ChecksumTracker', () => {
     it('should support multiple callbacks for same file', async () => {
       await writeFile(testFile, 'initial content');
 
-      const callback1 = jest.fn();
-      const callback2 = jest.fn();
+      const callback1 = mockCallback();
+      const callback2 = mockCallback();
 
       await tracker.track(testFile, callback1);
       await tracker.track(testFile, callback2);
@@ -172,7 +177,7 @@ describe('ChecksumTracker', () => {
     it('should support async callbacks', async () => {
       await writeFile(testFile, 'initial content');
 
-      const asyncCallback = jest.fn(async () => {
+      const asyncCallback = mockCallback().mockImplementation(async () => {
         await new Promise((resolve) => setTimeout(resolve, 10));
       });
 
@@ -211,7 +216,7 @@ describe('ChecksumTracker', () => {
     it('should check files automatically when watching', async () => {
       await writeFile(testFile, 'initial content');
 
-      const callbackMock = jest.fn();
+      const callbackMock = mockCallback();
       await tracker.track(testFile, callbackMock);
 
       // Start watching with short interval
@@ -257,9 +262,9 @@ describe('ChecksumTracker', () => {
     });
 
     it('should track multiple files', async () => {
-      await tracker.track(file1, jest.fn());
-      await tracker.track(file2, jest.fn());
-      await tracker.track(file3, jest.fn());
+      await tracker.track(file1, mockCallback());
+      await tracker.track(file2, mockCallback());
+      await tracker.track(file3, mockCallback());
 
       const trackedFiles = tracker.getTrackedFiles();
       expect(trackedFiles).toContain(file1);
@@ -268,9 +273,9 @@ describe('ChecksumTracker', () => {
     });
 
     it('should detect changes in multiple files', async () => {
-      const callback1 = jest.fn();
-      const callback2 = jest.fn();
-      const callback3 = jest.fn();
+      const callback1 = mockCallback();
+      const callback2 = mockCallback();
+      const callback3 = mockCallback();
 
       await tracker.track(file1, callback1);
       await tracker.track(file2, callback2);
@@ -288,9 +293,9 @@ describe('ChecksumTracker', () => {
     });
 
     it('should clear all tracked files', async () => {
-      await tracker.track(file1, jest.fn());
-      await tracker.track(file2, jest.fn());
-      await tracker.track(file3, jest.fn());
+      await tracker.track(file1, mockCallback());
+      await tracker.track(file2, mockCallback());
+      await tracker.track(file3, mockCallback());
 
       tracker.clear();
 
@@ -302,7 +307,7 @@ describe('ChecksumTracker', () => {
   describe('Performance Optimization', () => {
     it('should use fast mtime/size check before checksum', async () => {
       await writeFile(testFile, 'content');
-      await tracker.track(testFile, jest.fn());
+      await tracker.track(testFile, mockCallback());
 
       // Get initial checksum
       const checksum1 = tracker.getChecksum(testFile)!;
@@ -373,7 +378,7 @@ describe('ChecksumTracker', () => {
       const binaryContent = Buffer.from([0x00, 0xFF, 0xAB, 0xCD]);
       await writeFile(binaryFile, binaryContent);
 
-      await tracker.track(binaryFile, jest.fn());
+      await tracker.track(binaryFile, mockCallback());
       const checksum1 = tracker.getChecksum(binaryFile)!;
 
       // Modify binary content
@@ -391,7 +396,7 @@ describe('ChecksumTracker', () => {
       const emptyFile = join(testDir, 'empty.txt');
       await writeFile(emptyFile, '');
 
-      await tracker.track(emptyFile, jest.fn());
+      await tracker.track(emptyFile, mockCallback());
       const checksum = tracker.getChecksum(emptyFile);
 
       expect(checksum).toBeDefined();
@@ -404,7 +409,7 @@ describe('ChecksumTracker', () => {
       const largeContent = 'x'.repeat(1024 * 1024); // 1MB
       await writeFile(largeFile, largeContent);
 
-      await tracker.track(largeFile, jest.fn());
+      await tracker.track(largeFile, mockCallback());
       const checksum = tracker.getChecksum(largeFile);
 
       expect(checksum).toBeDefined();
@@ -416,7 +421,7 @@ describe('ChecksumTracker', () => {
       const unicodeContent = '测试内容 🚀 café naïve résumé';
       await writeFile(unicodeFile, unicodeContent, 'utf8');
 
-      await tracker.track(unicodeFile, jest.fn());
+      await tracker.track(unicodeFile, mockCallback());
       tracker.getChecksum(unicodeFile);
 
       // Modify unicode content

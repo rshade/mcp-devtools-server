@@ -1,37 +1,7 @@
+import { describe, it, expect, beforeEach } from '@jest/globals';
 import { SmartSuggestionsTools } from '../../tools/smart-suggestions-tools.js';
 import { ProjectType } from '../../utils/project-detector.js';
 import { MCPCategory } from '../../utils/mcp-recommendations.js';
-
-// Mock execa to avoid ESM issues in Jest
-jest.mock('execa', () => ({
-  execa: jest.fn(),
-  ExecaError: class ExecaError extends Error {
-    exitCode?: number;
-    stdout?: string;
-    stderr?: string;
-    constructor(message: string) {
-      super(message);
-      this.name = 'ExecaError';
-    }
-  }
-}));
-
-// Mock ProjectDetector to avoid slow file system scans
-jest.mock('../../utils/project-detector.js', () => {
-  const actual = jest.requireActual('../../utils/project-detector.js');
-  return {
-    ...actual,
-    ProjectDetector: jest.fn().mockImplementation(() => ({
-      detectProject: jest.fn().mockResolvedValue({
-        type: actual.ProjectType.Unknown,
-        hasTests: false,
-        testCommand: undefined,
-        lintCommand: undefined,
-        buildCommand: undefined
-      })
-    }))
-  };
-});
 
 describe('SmartSuggestionsTools', () => {
   let tools: SmartSuggestionsTools;
@@ -39,42 +9,6 @@ describe('SmartSuggestionsTools', () => {
 
   beforeEach(() => {
     tools = new SmartSuggestionsTools(projectRoot);
-    jest.clearAllMocks();
-
-    // Setup default mock implementation for execa
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const { execa } = require('execa');
-    (execa as jest.Mock).mockImplementation(async (command: string, args?: string[]) => {
-      if (command === 'echo') {
-        return {
-          stdout: args?.join(' ') || '',
-          stderr: '',
-          exitCode: 0
-        };
-      }
-      if (command === 'false') {
-        return {
-          stdout: '',
-          stderr: '',
-          exitCode: 1
-        };
-      }
-      if (command === 'sh' && args?.[0] === '-c') {
-        const script = args[1];
-        if (script?.includes('exit 1')) {
-          return {
-            stdout: script.includes('echo') ? script.split('&&')[0].replace('echo ', '').replace(/"/g, '') : '',
-            stderr: '',
-            exitCode: 1
-          };
-        }
-      }
-      return {
-        stdout: '',
-        stderr: '',
-        exitCode: 0
-      };
-    });
   });
 
   describe('analyzeCommand', () => {
@@ -102,7 +36,7 @@ describe('SmartSuggestionsTools', () => {
       expect(result.success).toBe(false);
       expect(result.executionResult.exitCode).toBe(1);
       expect(result.suggestions).toBeDefined();
-    });
+    }, 60000); // 60s timeout for ProjectDetector file system scan
 
     it('should respect timeout parameter', async () => {
       const startTime = Date.now();
@@ -171,7 +105,7 @@ describe('SmartSuggestionsTools', () => {
 
       expect(result.success).toBe(false);
       expect(result.suggestions.length).toBeGreaterThanOrEqual(0);
-    });
+    }, 60000); // 60s timeout for ProjectDetector file system scan
   });
 
   describe('analyzeResult', () => {

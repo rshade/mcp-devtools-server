@@ -57,6 +57,7 @@ const ALLOWED_COMMANDS = new Set([
   'govulncheck',
   'actionlint',
   'git',
+  'gs', // git-spice plugin support
   'cargo',
   'mvn',
   'gradle',

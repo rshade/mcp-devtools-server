@@ -99,7 +99,7 @@ export class CacheManager {
           updateAgeOnGet: true,  // LRU behavior
           updateAgeOnHas: true,
           // Track evictions for debugging
-          dispose: (value, key, reason) => {
+          dispose: (value: CacheEntry<unknown>, key: string, reason: LRUCache.DisposeReason) => {
             logger.debug(`Cache eviction in ${namespace}`, {
               key,
               reason,

@@ -1,23 +1,26 @@
+import { describe, it, expect, beforeEach, jest } from '@jest/globals';
 import { GitTools } from '../../tools/git-tools';
+import { ShellExecutor } from '../../utils/shell-executor';
 
-// Mock ShellExecutor to avoid actual git commands
-jest.mock('../../utils/shell-executor', () => ({
-  ShellExecutor: jest.fn().mockImplementation(() => ({
-    execute: jest.fn(),
-    isCommandAvailable: jest.fn().mockResolvedValue(true)
-  }))
-}));
+// Mock type for jest.fn()
+type MockFn = ReturnType<typeof jest.fn>;
 
 describe('GitTools', () => {
   let tools: GitTools;
-  let mockExecute: jest.Mock;
+  let mockExecute: MockFn;
 
   beforeEach(() => {
+    // Create mock executor
+    const mockExecutor = {
+      execute: jest.fn(),
+      isCommandAvailable: jest.fn(() => Promise.resolve(true))
+    } as unknown as ShellExecutor;
+
     tools = new GitTools();
-    // Get the mocked execute function
+    // Replace executor with mock
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    mockExecute = (tools as any).executor.execute;
-    mockExecute.mockClear();
+    (tools as any).executor = mockExecutor;
+    mockExecute = mockExecutor.execute as MockFn;
   });
 
   describe('Schema Validation', () => {
