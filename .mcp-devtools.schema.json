@@ -323,6 +323,71 @@
         }
       }
     },
+    "smartSuggestions": {
+      "type": "object",
+      "description": "AI-powered smart suggestions and failure analysis configuration",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "description": "Enable smart suggestions system",
+          "default": true
+        },
+        "autoAnalyze": {
+          "type": "boolean",
+          "description": "Automatically analyze command failures in ShellExecutor",
+          "default": false
+        },
+        "maxSuggestions": {
+          "type": "number",
+          "description": "Maximum number of suggestions to return per analysis",
+          "minimum": 1,
+          "maximum": 10,
+          "default": 5
+        },
+        "minConfidence": {
+          "type": "number",
+          "description": "Minimum confidence threshold for suggestions (0.0-1.0)",
+          "minimum": 0.0,
+          "maximum": 1.0,
+          "default": 0.3
+        },
+        "includeWorkflow": {
+          "type": "boolean",
+          "description": "Include workflow optimization suggestions",
+          "default": true
+        },
+        "platformSpecific": {
+          "type": "boolean",
+          "description": "Enable platform-specific command suggestions",
+          "default": true
+        },
+        "cache": {
+          "type": "object",
+          "description": "Caching settings for smart suggestions",
+          "properties": {
+            "enabled": {
+              "type": "boolean",
+              "description": "Enable suggestion caching",
+              "default": true
+            },
+            "ttl": {
+              "type": "number",
+              "description": "TTL for suggestions cache in milliseconds (default: 300000ms / 5 minutes)",
+              "minimum": 1000,
+              "maximum": 3600000,
+              "default": 300000
+            },
+            "maxItems": {
+              "type": "number",
+              "description": "Maximum number of cached suggestion results (default: 100)",
+              "minimum": 10,
+              "maximum": 1000,
+              "default": 100
+            }
+          }
+        }
+      }
+    },
     "plugins": {
       "type": "object",
       "description": "Plugin system configuration",

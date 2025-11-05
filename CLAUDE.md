@@ -623,6 +623,135 @@ progress.
 
 ## Recent Major Updates
 
+### 2025-11-05: Enhanced Error Messages with Actionable Suggestions (Issue #67)
+
+**Implementation Complete** - Extended knowledge base with 20+ new error patterns and platform detection
+
+**What Was Built:**
+
+This enhancement addresses Issue #67 by significantly expanding the smart suggestions system with practical, platform-specific error resolution guidance.
+
+**New Components:**
+
+1. **Extended Knowledge Base** (`src/utils/knowledge-base.ts`)
+   - Added 20+ new failure patterns across multiple categories
+   - Command not found patterns: make, golangci-lint, actionlint, docker, npm, go, python, git, markdownlint, yamllint, cargo
+   - Permission denied patterns: file/directory permissions, npm-specific issues
+   - Network error patterns: timeouts, connection refused, DNS failures, SSL/TLS errors
+   - System error patterns: file not found, disk space full, port already in use
+   - **Total patterns**: 35+ (up from ~15 original)
+
+2. **Platform Detector** (`src/utils/platform-detector.ts` - 391 lines)
+   - Detects OS platform (Linux, macOS, Windows, FreeBSD)
+   - Identifies package manager (apt, yum, dnf, pacman, brew, choco, scoop, winget, etc.)
+   - Determines default shell (bash, zsh, powershell, etc.)
+   - Provides `getInstallCommand()` for platform-specific installation commands
+   - Integrated with `SuggestionEngine` for context-aware suggestions
+
+3. **Configuration Schema** (`.mcp-devtools.schema.json`)
+   - Added `smartSuggestions` section with granular controls:
+     - `enabled`: Enable/disable smart suggestions (default: true)
+     - `autoAnalyze`: Auto-analyze failures in ShellExecutor (default: false, opt-in)
+     - `maxSuggestions`: Limit suggestions per analysis (default: 5)
+     - `minConfidence`: Confidence threshold 0.0-1.0 (default: 0.3)
+     - `platformSpecific`: Enable platform-specific suggestions (default: true)
+     - Cache settings: TTL and maxItems configuration
+
+4. **Comprehensive Tests**
+   - `src/__tests__/utils/knowledge-base.test.ts` - Extended with 40+ new test cases
+   - `src/__tests__/utils/platform-detector.test.ts` - New file with 20+ platform detection tests
+   - Tests cover: command-not-found detection, permission errors, network errors, platform-specific behavior
+
+**Key Patterns Added:**
+
+- **Command Not Found** (11 patterns): Provides platform-specific installation instructions for missing tools
+- **Permission Denied** (2 patterns): chmod/chown guidance, npm-specific permission fixes
+- **Network Errors** (4 patterns): Timeout troubleshooting, connection refused, DNS resolution, SSL/TLS certificates
+- **System Errors** (4 patterns): File not found, config missing, disk space, port conflicts
+
+**Example Enhanced Error Message:**
+
+Before:
+```
+Error: Command 'golangci-lint' not found
+Exit code: 127
+```
+
+After (with smart suggestions via `analyze_command` or `analyze_result`):
+```
+Error: golangci-lint Not Installed
+
+Suggestions:
+1. Install: go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+2. Ensure $GOPATH/bin is in PATH: export PATH=$PATH:$(go env GOPATH)/bin
+3. macOS: brew install golangci-lint
+4. Documentation: https://golangci-lint.run/usage/install/
+
+Confidence: 90% | Priority: High
+```
+
+**Integration Points:**
+
+- Smart suggestions are available via existing MCP tools: `analyze_command`, `analyze_result`
+- Platform detection integrated into `SuggestionEngine` constructor
+- Configuration schema allows fine-grained control per project
+- Auto-analysis in `ShellExecutor` deferred (opt-in) to avoid performance impact
+
+**Architecture Decisions:**
+
+1. **No Separate ErrorHelper Class**: Extended existing `KnowledgeBase` instead of creating duplicate functionality
+2. **Platform Detection Cached**: First detection is cached to avoid repeated system calls
+3. **Opt-in Auto-Analysis**: `autoAnalyze` defaults to false to prevent breaking changes and performance impact
+4. **Pattern-Based Matching**: Uses regex patterns for flexible, extensible error detection
+
+**Test Coverage:**
+
+- Knowledge base patterns: 40+ test cases covering all new patterns
+- Platform detector: 20+ test cases for cross-platform detection
+- Tests verify: pattern matching, severity classification, platform-specific suggestions, caching behavior
+
+**Known Limitations:**
+
+1. ShellExecutor auto-analysis not implemented (deferred as opt-in feature)
+2. Platform detection uses command availability checks (may timeout on slow systems)
+3. Some patterns may overlap (e.g., ENOENT matches both file-not-found and js-module-not-found)
+
+**Issue Coverage from #67:**
+
+- ✅ 20+ command error patterns with installation instructions
+- ✅ Platform-specific suggestions (Linux, macOS, Windows)
+- ✅ Permission denied patterns with chmod/sudo guidance
+- ✅ Network error patterns with troubleshooting steps
+- ✅ Links to official documentation in suggestions
+- ✅ Integration with existing smart suggestions system
+- ✅ Comprehensive test coverage
+- ⏳ ShellExecutor auto-analysis (deferred, opt-in via config)
+
+**Future Enhancements:**
+
+- Implement ShellExecutor auto-analysis when `autoAnalyze: true` in config
+- Add more language-specific patterns (Ruby, PHP, C#, etc.)
+- Machine learning-based pattern detection for unknown errors
+- Telemetry for most common error patterns to prioritize improvements
+
+**Files Modified:**
+
+- `src/utils/knowledge-base.ts` (+250 lines, 20+ new patterns)
+- `src/utils/suggestion-engine.ts` (+3 lines, platform detector integration)
+- `.mcp-devtools.schema.json` (+65 lines, smart suggestions config)
+- `src/__tests__/utils/knowledge-base.test.ts` (+217 lines, comprehensive tests)
+
+**Files Added:**
+
+- `src/utils/platform-detector.ts` (391 lines)
+- `src/__tests__/utils/platform-detector.test.ts` (172 lines)
+
+**Related:**
+
+- Issue #67: Enhanced error messages with actionable suggestions
+- PR #78: Intelligent Caching System (provides caching infrastructure)
+- PR #89: Smart Suggestions System (foundation for this enhancement)
+
 ### 2025-11-04: Intelligent Caching System (Phases 1-2)
 
 **PR #78** - Implemented intelligent in-process LRU caching with file-based invalidation

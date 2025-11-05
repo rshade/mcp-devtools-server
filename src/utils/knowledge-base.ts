@@ -601,6 +601,458 @@ export class KnowledgeBase {
         'Verify compiler version supports C++ standard used (C++11/14/17/20)'
       ]
     });
+
+    // Command Not Found patterns (cross-platform)
+    this.addPattern({
+      id: 'cmd-not-found-make',
+      name: 'Make Command Not Found',
+      category: Category.Configuration,
+      patterns: [
+        /make: command not found/,
+        /bash:.*make.*not found/,
+        /sh:.*make.*not found/,
+        /'make' is not recognized/i
+      ],
+      severity: 'high',
+      suggestions: [
+        'Ubuntu/Debian: sudo apt install build-essential',
+        'RHEL/CentOS/Fedora: sudo yum groupinstall "Development Tools"',
+        'macOS: xcode-select --install',
+        'Windows: Install via chocolatey (choco install make) or use WSL',
+        'Documentation: https://www.gnu.org/software/make/'
+      ],
+      context: 'Make is required for building many C/C++ projects and workflow automation'
+    });
+
+    this.addPattern({
+      id: 'cmd-not-found-golangci-lint',
+      name: 'golangci-lint Not Installed',
+      category: Category.Configuration,
+      patterns: [
+        /golangci-lint: command not found/,
+        /bash:.*golangci-lint.*not found/,
+        /'golangci-lint' is not recognized/i
+      ],
+      severity: 'high',
+      suggestions: [
+        'Install: go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest',
+        'Ensure $GOPATH/bin is in PATH: export PATH=$PATH:$(go env GOPATH)/bin',
+        'macOS: brew install golangci-lint',
+        'Linux binary: curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin',
+        'Documentation: https://golangci-lint.run/usage/install/'
+      ],
+      context: 'golangci-lint is a fast Go linters aggregator'
+    });
+
+    this.addPattern({
+      id: 'cmd-not-found-actionlint',
+      name: 'actionlint Not Installed',
+      category: Category.Configuration,
+      patterns: [
+        /actionlint: command not found/,
+        /bash:.*actionlint.*not found/,
+        /'actionlint' is not recognized/i
+      ],
+      severity: 'high',
+      suggestions: [
+        'Install: go install github.com/rhysd/actionlint/cmd/actionlint@latest',
+        'Ensure $GOPATH/bin is in PATH: export PATH=$PATH:$(go env GOPATH)/bin',
+        'macOS: brew install actionlint',
+        'Download binary: https://github.com/rhysd/actionlint/releases',
+        'Documentation: https://github.com/rhysd/actionlint'
+      ],
+      context: 'actionlint validates GitHub Actions workflow files'
+    });
+
+    this.addPattern({
+      id: 'cmd-not-found-docker',
+      name: 'Docker Not Installed',
+      category: Category.Configuration,
+      patterns: [
+        /docker: command not found/,
+        /bash:.*docker.*not found/,
+        /'docker' is not recognized/i,
+        /Cannot connect to the Docker daemon/i
+      ],
+      severity: 'high',
+      suggestions: [
+        'Install Docker Desktop: https://www.docker.com/products/docker-desktop',
+        'Ubuntu/Debian: sudo apt install docker.io',
+        'RHEL/CentOS: sudo yum install docker',
+        'macOS: brew install --cask docker',
+        'Start Docker daemon: sudo systemctl start docker',
+        'Add user to docker group: sudo usermod -aG docker $USER'
+      ],
+      context: 'Docker is required for container-based development'
+    });
+
+    this.addPattern({
+      id: 'cmd-not-found-npm',
+      name: 'npm Not Installed',
+      category: Category.Configuration,
+      patterns: [
+        /npm: command not found/,
+        /bash:.*npm.*not found/,
+        /'npm' is not recognized/i
+      ],
+      severity: 'high',
+      suggestions: [
+        'Install Node.js (includes npm): https://nodejs.org/',
+        'Ubuntu/Debian: sudo apt install nodejs npm',
+        'macOS: brew install node',
+        'Windows: Download installer from nodejs.org',
+        'Use nvm for version management: https://github.com/nvm-sh/nvm'
+      ],
+      context: 'npm is the Node.js package manager'
+    });
+
+    this.addPattern({
+      id: 'cmd-not-found-go',
+      name: 'Go Not Installed',
+      category: Category.Configuration,
+      patterns: [
+        /^go: command not found/,
+        /bash:.*go:.*not found/,
+        /sh:.*go:.*not found/,
+        /'go' is not recognized/i
+      ],
+      severity: 'high',
+      suggestions: [
+        'Download and install Go: https://go.dev/dl/',
+        'Ubuntu/Debian: sudo apt install golang-go',
+        'macOS: brew install go',
+        'Set GOPATH: export GOPATH=$HOME/go',
+        'Add to PATH: export PATH=$PATH:$GOPATH/bin'
+      ],
+      context: 'Go is required for building Go applications'
+    });
+
+    this.addPattern({
+      id: 'cmd-not-found-python',
+      name: 'Python Not Installed',
+      category: Category.Configuration,
+      patterns: [
+        /python: command not found/,
+        /python3: command not found/,
+        /bash:.*python.*not found/,
+        /'python' is not recognized/i
+      ],
+      severity: 'high',
+      suggestions: [
+        'Ubuntu/Debian: sudo apt install python3 python3-pip',
+        'macOS: brew install python3',
+        'Windows: Download from https://www.python.org/downloads/',
+        'Use pyenv for version management: https://github.com/pyenv/pyenv',
+        'Create alias: alias python=python3'
+      ],
+      context: 'Python is required for Python development and many build tools'
+    });
+
+    this.addPattern({
+      id: 'cmd-not-found-git',
+      name: 'Git Not Installed',
+      category: Category.Configuration,
+      patterns: [
+        /git: command not found/,
+        /bash:.*git.*not found/,
+        /'git' is not recognized/i
+      ],
+      severity: 'high',
+      suggestions: [
+        'Ubuntu/Debian: sudo apt install git',
+        'RHEL/CentOS: sudo yum install git',
+        'macOS: xcode-select --install or brew install git',
+        'Windows: Download from https://git-scm.com/download/win',
+        'Configure: git config --global user.name "Your Name"'
+      ],
+      context: 'Git is essential for version control'
+    });
+
+    this.addPattern({
+      id: 'cmd-not-found-markdownlint',
+      name: 'markdownlint Not Installed',
+      category: Category.Configuration,
+      patterns: [
+        /markdownlint: command not found/,
+        /bash:.*markdownlint.*not found/,
+        /'markdownlint' is not recognized/i
+      ],
+      severity: 'medium',
+      suggestions: [
+        'Install globally: npm install -g markdownlint-cli',
+        'Install locally: npm install --save-dev markdownlint-cli',
+        'Alternative: Install markdownlint-cli2 for better performance',
+        'Documentation: https://github.com/igorshubovych/markdownlint-cli'
+      ],
+      context: 'markdownlint checks Markdown files for style issues'
+    });
+
+    this.addPattern({
+      id: 'cmd-not-found-yamllint',
+      name: 'yamllint Not Installed',
+      category: Category.Configuration,
+      patterns: [
+        /yamllint: command not found/,
+        /bash:.*yamllint.*not found/,
+        /'yamllint' is not recognized/i
+      ],
+      severity: 'medium',
+      suggestions: [
+        'Install with pip: pip install yamllint',
+        'Ubuntu/Debian: sudo apt install yamllint',
+        'macOS: brew install yamllint',
+        'Alternative JS version: npm install -g js-yaml-cli',
+        'Documentation: https://yamllint.readthedocs.io/'
+      ],
+      context: 'yamllint validates YAML files for syntax and style'
+    });
+
+    this.addPattern({
+      id: 'cmd-not-found-cargo',
+      name: 'Cargo/Rust Not Installed',
+      category: Category.Configuration,
+      patterns: [
+        /cargo: command not found/,
+        /rustc: command not found/,
+        /bash:.*cargo.*not found/,
+        /'cargo' is not recognized/i
+      ],
+      severity: 'high',
+      suggestions: [
+        'Install Rust: curl --proto "=https" --tlsv1.2 -sSf https://sh.rustup.rs | sh',
+        'Windows: Download from https://www.rust-lang.org/tools/install',
+        'macOS: brew install rust',
+        'Add to PATH: source $HOME/.cargo/env',
+        'Update: rustup update'
+      ],
+      context: 'Cargo is the Rust package manager and build tool'
+    });
+
+    // Permission Denied patterns
+    this.addPattern({
+      id: 'permission-denied-file',
+      name: 'Permission Denied',
+      category: Category.Configuration,
+      patterns: [
+        /Permission denied/i,
+        /EACCES/,
+        /operation not permitted/i,
+        /access is denied/i
+      ],
+      severity: 'high',
+      suggestions: [
+        'Check file permissions: ls -la <file>',
+        'Make file executable: chmod +x <file>',
+        'Fix directory permissions: chmod 755 <directory>',
+        'Check ownership: ls -l and use chown if needed',
+        'Use sudo for administrative tasks (use cautiously)',
+        'On Windows: Right-click → Properties → Security → Edit permissions'
+      ],
+      context: 'Permission errors prevent file or directory access'
+    });
+
+    this.addPattern({
+      id: 'permission-denied-npm',
+      name: 'npm Permission Denied',
+      category: Category.Configuration,
+      patterns: [
+        /npm.*EACCES/,
+        /npm.*permission denied/i,
+        /Please try running this command again as root/
+      ],
+      severity: 'high',
+      suggestions: [
+        'Fix npm permissions: https://docs.npmjs.com/resolving-eacces-permissions-errors',
+        'Change npm prefix: npm config set prefix ~/.npm-global',
+        'Use nvm (Node Version Manager) to avoid permission issues',
+        'DO NOT use sudo with npm - it can cause security issues',
+        'Reinstall Node.js with proper permissions'
+      ],
+      context: 'npm permission errors often indicate incorrect installation'
+    });
+
+    // Network Error patterns
+    this.addPattern({
+      id: 'network-timeout',
+      name: 'Network Connection Timeout',
+      category: Category.Configuration,
+      patterns: [
+        /ETIMEDOUT/,
+        /connection timed out/i,
+        /dial tcp.*timeout/i,
+        /connect ETIMEDOUT/,
+        /request timeout/i
+      ],
+      severity: 'medium',
+      suggestions: [
+        'Check network connectivity: ping 8.8.8.8',
+        'Verify firewall/proxy settings are not blocking requests',
+        'Increase timeout in configuration if operation is slow',
+        'Check if the remote service is accessible and operational',
+        'Try using a VPN if behind restrictive network',
+        'Check DNS resolution: nslookup <hostname>'
+      ],
+      context: 'Network timeouts indicate connectivity or performance issues'
+    });
+
+    this.addPattern({
+      id: 'network-refused',
+      name: 'Connection Refused',
+      category: Category.Configuration,
+      patterns: [
+        /ECONNREFUSED/,
+        /connection refused/i,
+        /connect: connection refused/i,
+        /dial tcp.*connection refused/i
+      ],
+      severity: 'high',
+      suggestions: [
+        'Verify the service is running on the target host',
+        'Check if the port is correct and not blocked',
+        'Ensure firewall allows connections on this port',
+        'For Docker: Check if container is running and port is exposed',
+        'For local services: Check service logs for startup errors',
+        'Verify host/IP address is correct'
+      ],
+      context: 'Connection refused means service is not listening on the port'
+    });
+
+    this.addPattern({
+      id: 'network-dns-error',
+      name: 'DNS Resolution Failed',
+      category: Category.Configuration,
+      patterns: [
+        /ENOTFOUND/,
+        /getaddrinfo.*not found/i,
+        /could not resolve host/i,
+        /dns.*failed/i,
+        /name or service not known/i
+      ],
+      severity: 'medium',
+      suggestions: [
+        'Check hostname spelling for typos',
+        'Verify DNS server is reachable: cat /etc/resolv.conf',
+        'Try using IP address instead of hostname',
+        'Check /etc/hosts file for correct entries',
+        'Flush DNS cache: sudo systemd-resolve --flush-caches (Linux)',
+        'Try different DNS server: temporarily use 8.8.8.8 or 1.1.1.1'
+      ],
+      context: 'DNS errors prevent hostname resolution to IP addresses'
+    });
+
+    this.addPattern({
+      id: 'network-ssl-error',
+      name: 'SSL/TLS Certificate Error',
+      category: Category.Security,
+      patterns: [
+        /SSL.*certificate/i,
+        /TLS.*handshake/i,
+        /certificate verify failed/i,
+        /CERT_HAS_EXPIRED/i,
+        /self.signed certificate/i
+      ],
+      severity: 'high',
+      suggestions: [
+        'Update system certificates: sudo update-ca-certificates',
+        'Check system clock/timezone is correct',
+        'For development only: Set NODE_TLS_REJECT_UNAUTHORIZED=0 (NEVER in production)',
+        'Install/update root CA certificates',
+        'Verify certificate chain is valid: openssl s_client -connect host:443',
+        'Contact administrator if using corporate proxy/firewall'
+      ],
+      context: 'SSL/TLS errors indicate certificate validation failures'
+    });
+
+    // File Not Found patterns (more specific patterns first)
+    this.addPattern({
+      id: 'config-file-missing',
+      name: 'Configuration File Missing',
+      category: Category.Configuration,
+      patterns: [
+        /config.*not found/i,
+        /config.*file not found/i,
+        /\.env.*not found/i,
+        /settings.*not found/i,
+        /missing.*configuration/i
+      ],
+      severity: 'medium',
+      suggestions: [
+        'Create configuration file from template or example',
+        'Check for .env.example or config.example files',
+        'Review project README for setup instructions',
+        'Verify configuration file is in correct location',
+        'Check .gitignore - config files may not be in repository'
+      ],
+      context: 'Many applications require configuration files to run'
+    });
+
+    this.addPattern({
+      id: 'file-not-found',
+      name: 'File or Directory Not Found',
+      category: Category.Configuration,
+      patterns: [
+        /ENOENT(?!.*(?:^|\/|\\)node_modules(?:\/|\\))/,  // Exclude node_modules paths (covered by js-module-not-found)
+        /no such file or directory/i,
+        /cannot find the path/i,
+        /file not found/i,
+        /cannot access.*no such file/i
+      ],
+      severity: 'medium',
+      suggestions: [
+        'Verify the file path is correct and file exists',
+        'Check for typos in the file or directory name',
+        'Use absolute paths instead of relative paths',
+        'Ensure the file has been created before accessing it',
+        'Check current working directory: pwd',
+        'List directory contents: ls -la'
+      ],
+      context: 'ENOENT errors indicate missing files or directories'
+    });
+
+    // Disk Space patterns
+    this.addPattern({
+      id: 'disk-space-full',
+      name: 'Disk Space Full',
+      category: Category.Configuration,
+      patterns: [
+        /no space left on device/i,
+        /ENOSPC/,
+        /disk.*full/i,
+        /out of disk space/i
+      ],
+      severity: 'high',
+      suggestions: [
+        'Check disk usage: df -h',
+        'Find large files: du -sh * | sort -h',
+        'Clean npm cache: npm cache clean --force',
+        'Clean Docker: docker system prune -a',
+        'Remove node_modules: find . -name "node_modules" -type d -prune -exec rm -rf {} +',
+        'Clear system logs: sudo journalctl --vacuum-time=7d'
+      ],
+      context: 'Disk space errors prevent file writes and builds'
+    });
+
+    // Port Already in Use
+    this.addPattern({
+      id: 'port-in-use',
+      name: 'Port Already in Use',
+      category: Category.Configuration,
+      patterns: [
+        /EADDRINUSE/,
+        /address already in use/i,
+        /port.*already in use/i,
+        /bind.*address already in use/i
+      ],
+      severity: 'medium',
+      suggestions: [
+        'Find process using port: lsof -i :<port> or netstat -ano | findstr :<port>',
+        'Kill process: kill -9 <PID>',
+        'Use different port number in configuration',
+        'Stop conflicting service: sudo systemctl stop <service>',
+        'For development: Use port auto-assignment (port 0)'
+      ],
+      context: 'Port conflicts occur when multiple services try to use same port'
+    });
   }
 
   /**

@@ -166,4 +166,221 @@ describe('KnowledgeBase', () => {
       expect(jsModuleNotFound?.suggestions.some(s => s.includes('npm install'))).toBe(true);
     });
   });
+
+  describe('command not found patterns', () => {
+    it('should detect make command not found', () => {
+      const errorText = 'bash: make: command not found';
+      const matches = kb.findMatchingPatterns(errorText);
+
+      expect(matches.length).toBeGreaterThan(0);
+      expect(matches[0].id).toBe('cmd-not-found-make');
+      expect(matches[0].category).toBe(Category.Configuration);
+      expect(matches[0].suggestions.some(s => s.includes('apt install build-essential'))).toBe(true);
+    });
+
+    it('should detect golangci-lint not installed', () => {
+      const errorText = 'golangci-lint: command not found';
+      const matches = kb.findMatchingPatterns(errorText);
+
+      expect(matches.length).toBeGreaterThan(0);
+      expect(matches[0].id).toBe('cmd-not-found-golangci-lint');
+      expect(matches[0].suggestions.some(s => s.includes('go install'))).toBe(true);
+    });
+
+    it('should detect docker not installed', () => {
+      const errorText = 'docker: command not found';
+      const matches = kb.findMatchingPatterns(errorText);
+
+      expect(matches.length).toBeGreaterThan(0);
+      expect(matches[0].id).toBe('cmd-not-found-docker');
+      expect(matches[0].suggestions.some(s => s.includes('Docker Desktop'))).toBe(true);
+    });
+
+    it('should detect npm not installed', () => {
+      const errorText = 'npm: command not found';
+      const matches = kb.findMatchingPatterns(errorText);
+
+      expect(matches.length).toBeGreaterThan(0);
+      expect(matches[0].id).toBe('cmd-not-found-npm');
+      expect(matches[0].suggestions.some(s => s.includes('Node.js'))).toBe(true);
+    });
+
+    it('should detect go not installed', () => {
+      const errorText = 'go: command not found';
+      const matches = kb.findMatchingPatterns(errorText);
+
+      expect(matches.length).toBeGreaterThan(0);
+      expect(matches[0].id).toBe('cmd-not-found-go');
+      expect(matches[0].suggestions.some(s => s.includes('go.dev'))).toBe(true);
+    });
+
+    it('should detect python not installed', () => {
+      const errorText = 'python3: command not found';
+      const matches = kb.findMatchingPatterns(errorText);
+
+      expect(matches.length).toBeGreaterThan(0);
+      expect(matches[0].id).toBe('cmd-not-found-python');
+      expect(matches[0].suggestions.some(s => s.includes('python3'))).toBe(true);
+    });
+
+    it('should detect git not installed', () => {
+      const errorText = 'git: command not found';
+      const matches = kb.findMatchingPatterns(errorText);
+
+      expect(matches.length).toBeGreaterThan(0);
+      expect(matches[0].id).toBe('cmd-not-found-git');
+      expect(matches[0].suggestions.some(s => s.includes('git'))).toBe(true);
+    });
+
+    it('should detect actionlint not installed', () => {
+      const errorText = 'actionlint: command not found';
+      const matches = kb.findMatchingPatterns(errorText);
+
+      expect(matches.length).toBeGreaterThan(0);
+      expect(matches[0].id).toBe('cmd-not-found-actionlint');
+      expect(matches[0].suggestions.some(s => s.includes('actionlint'))).toBe(true);
+    });
+
+    it('should detect cargo not installed', () => {
+      const errorText = 'cargo: command not found';
+      const matches = kb.findMatchingPatterns(errorText);
+
+      expect(matches.length).toBeGreaterThan(0);
+      expect(matches[0].id).toBe('cmd-not-found-cargo');
+      expect(matches[0].suggestions.some(s => s.includes('rustup'))).toBe(true);
+    });
+  });
+
+  describe('permission denied patterns', () => {
+    it('should detect permission denied errors', () => {
+      const errorText = 'Permission denied';
+      const matches = kb.findMatchingPatterns(errorText);
+
+      expect(matches.length).toBeGreaterThan(0);
+      expect(matches[0].id).toBe('permission-denied-file');
+      expect(matches[0].severity).toBe('high');
+      expect(matches[0].suggestions.some(s => s.includes('chmod'))).toBe(true);
+    });
+
+    it('should detect EACCES errors', () => {
+      const errorText = 'Error: EACCES: permission denied, access \'/usr/local/bin\'';
+      const matches = kb.findMatchingPatterns(errorText);
+
+      expect(matches.length).toBeGreaterThan(0);
+      expect(matches[0].id).toBe('permission-denied-file');
+    });
+
+    it('should detect npm permission denied', () => {
+      const errorText = 'npm ERR! code EACCES\nnpm ERR! errno -13';
+      const matches = kb.findMatchingPatterns(errorText);
+
+      expect(matches.length).toBeGreaterThan(0);
+      expect(matches.some(m => m.id === 'permission-denied-npm')).toBe(true);
+      const npmPattern = matches.find(m => m.id === 'permission-denied-npm');
+      expect(npmPattern?.suggestions.some(s => s.includes('nvm'))).toBe(true);
+    });
+  });
+
+  describe('network error patterns', () => {
+    it('should detect network timeout', () => {
+      const errorText = 'Error: connect ETIMEDOUT';
+      const matches = kb.findMatchingPatterns(errorText);
+
+      expect(matches.length).toBeGreaterThan(0);
+      expect(matches[0].id).toBe('network-timeout');
+      expect(matches[0].category).toBe(Category.Configuration);
+      expect(matches[0].suggestions.some(s => s.includes('network connectivity'))).toBe(true);
+    });
+
+    it('should detect connection refused', () => {
+      const errorText = 'Error: connect ECONNREFUSED 127.0.0.1:3000';
+      const matches = kb.findMatchingPatterns(errorText);
+
+      expect(matches.length).toBeGreaterThan(0);
+      expect(matches[0].id).toBe('network-refused');
+      expect(matches[0].suggestions.some(s => s.includes('service is running'))).toBe(true);
+    });
+
+    it('should detect DNS resolution errors', () => {
+      const errorText = 'Error: getaddrinfo ENOTFOUND example.com';
+      const matches = kb.findMatchingPatterns(errorText);
+
+      expect(matches.length).toBeGreaterThan(0);
+      expect(matches[0].id).toBe('network-dns-error');
+      expect(matches[0].suggestions.some(s => s.includes('DNS'))).toBe(true);
+    });
+
+    it('should detect SSL/TLS certificate errors', () => {
+      const errorText = 'Error: certificate verify failed';
+      const matches = kb.findMatchingPatterns(errorText);
+
+      expect(matches.length).toBeGreaterThan(0);
+      expect(matches[0].id).toBe('network-ssl-error');
+      expect(matches[0].category).toBe(Category.Security);
+      expect(matches[0].suggestions.some(s => s.includes('certificate'))).toBe(true);
+    });
+  });
+
+  describe('file and system error patterns', () => {
+    it('should detect file not found errors', () => {
+      const errorText = 'Error: ENOENT: no such file or directory, open \'/path/to/file\'';
+      const matches = kb.findMatchingPatterns(errorText);
+
+      expect(matches.length).toBeGreaterThan(0);
+      expect(matches[0].id).toBe('file-not-found');
+      expect(matches[0].suggestions.some(s => s.includes('file path'))).toBe(true);
+    });
+
+    it('should detect config file missing', () => {
+      const errorText = 'Error: config file not found';
+      const matches = kb.findMatchingPatterns(errorText);
+
+      expect(matches.length).toBeGreaterThan(0);
+      expect(matches[0].id).toBe('config-file-missing');
+      expect(matches[0].suggestions.some(s => s.includes('configuration'))).toBe(true);
+    });
+
+    it('should detect disk space full', () => {
+      const errorText = 'Error: ENOSPC: no space left on device';
+      const matches = kb.findMatchingPatterns(errorText);
+
+      expect(matches.length).toBeGreaterThan(0);
+      expect(matches[0].id).toBe('disk-space-full');
+      expect(matches[0].severity).toBe('high');
+      expect(matches[0].suggestions.some(s => s.includes('df -h'))).toBe(true);
+    });
+
+    it('should detect port already in use', () => {
+      const errorText = 'Error: listen EADDRINUSE: address already in use :::3000';
+      const matches = kb.findMatchingPatterns(errorText);
+
+      expect(matches.length).toBeGreaterThan(0);
+      expect(matches[0].id).toBe('port-in-use');
+      expect(matches[0].suggestions.some(s => s.includes('lsof'))).toBe(true);
+    });
+  });
+
+  describe('pattern coverage', () => {
+    it('should have increased total patterns after enhancement', () => {
+      const stats = kb.getStats();
+
+      // Should have at least 30+ patterns now (15 original + 20+ new)
+      expect(stats.totalPatterns).toBeGreaterThanOrEqual(35);
+    });
+
+    it('should have significant configuration category patterns', () => {
+      const patterns = kb.getPatternsByCategory(Category.Configuration);
+
+      // Configuration category should have the most patterns (command-not-found, permissions, network, etc.)
+      expect(patterns.length).toBeGreaterThanOrEqual(20);
+    });
+
+    it('should provide platform-specific suggestions', () => {
+      const makePattern = kb.getPatternById('cmd-not-found-make');
+
+      expect(makePattern?.suggestions.some(s => s.includes('Ubuntu/Debian'))).toBe(true);
+      expect(makePattern?.suggestions.some(s => s.includes('macOS'))).toBe(true);
+      expect(makePattern?.suggestions.some(s => s.includes('Windows'))).toBe(true);
+    });
+  });
 });
