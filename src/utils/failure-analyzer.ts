@@ -8,6 +8,16 @@
 import { ExecutionResult } from './shell-executor.js';
 import { KnowledgeBase, FailurePattern } from './knowledge-base.js';
 
+/**
+ * Result of analyzing a command execution for failures and patterns
+ * @property {boolean} failureDetected - Whether any failures were detected in the execution
+ * @property {FailurePattern[]} patterns - Array of matched failure patterns with suggestions
+ * @property {ErrorType} errorType - Classified type of error (build, test, security, etc.)
+ * @property {string} errorSummary - Human-readable summary of the error and primary issue
+ * @property {string[]} affectedFiles - Files affected by the error (extracted from output)
+ * @property {string[]} suggestedActions - Recommended actions to resolve the failure
+ * @property {number} confidence - Confidence score (0.0-1.0) in the analysis accuracy
+ */
 export interface AnalysisResult {
   failureDetected: boolean;
   patterns: FailurePattern[];
@@ -18,27 +28,83 @@ export interface AnalysisResult {
   confidence: number;
 }
 
+/**
+ * Classification of error types for better categorization and handling
+ */
 export enum ErrorType {
+  /** Build and compilation failures */
   BuildError = 'build',
+  /** Test execution failures and test-related issues */
   TestFailure = 'test',
+  /** Linting and code style violations */
   LintIssue = 'lint',
+  /** Dependency resolution and package management issues */
   DependencyIssue = 'dependency',
+  /** Configuration and environment setup problems */
   ConfigurationIssue = 'configuration',
+  /** Security vulnerabilities and unsafe practices */
   SecurityIssue = 'security',
+  /** Performance issues and bottlenecks */
   PerformanceIssue = 'performance',
+  /** Runtime errors during execution */
   RuntimeError = 'runtime',
+  /** Unknown or unclassified error types */
   Unknown = 'unknown'
 }
 
+/**
+ * Analyzer for detecting and categorizing command execution failures
+ *
+ * The FailureAnalyzer examines execution results to identify failure patterns,
+ * extract affected files, classify error types, and calculate confidence scores
+ * for its analysis. It leverages the KnowledgeBase for pattern matching.
+ */
 export class FailureAnalyzer {
   private knowledgeBase: KnowledgeBase;
 
+  /**
+   * Creates a new FailureAnalyzer instance
+   *
+   * @param {KnowledgeBase} [knowledgeBase] - Optional knowledge base to use for pattern matching.
+   *                                          If not provided, creates a new instance.
+   *
+   * @example
+   * ```typescript
+   * // Using default knowledge base
+   * const analyzer = new FailureAnalyzer();
+   *
+   * // Using custom knowledge base
+   * const customKB = new KnowledgeBase();
+   * const analyzer = new FailureAnalyzer(customKB);
+   * ```
+   */
   constructor(knowledgeBase?: KnowledgeBase) {
     this.knowledgeBase = knowledgeBase || new KnowledgeBase();
   }
 
   /**
-   * Analyze execution result and generate suggestions
+   * Analyze an execution result to detect failures and generate suggestions
+   *
+   * Performs comprehensive analysis of command execution results including:
+   * - Pattern matching against known failure types
+   * - Error type classification
+   * - File path extraction from error messages
+   * - Confidence scoring based on pattern matches
+   * - Generation of actionable suggestions
+   *
+   * @param {ExecutionResult} result - The execution result to analyze
+   * @returns {AnalysisResult} Analysis result with failure detection, patterns, and suggestions
+   *
+   * @example
+   * ```typescript
+   * const result = await executor.execute('go test', ['./...']);
+   * const analysis = analyzer.analyze(result);
+   *
+   * if (analysis.failureDetected) {
+   *   console.log('Error:', analysis.errorSummary);
+   *   console.log('Suggestions:', analysis.suggestedActions);
+   * }
+   * ```
    */
   analyze(result: ExecutionResult): AnalysisResult {
     // If execution was successful, return early
@@ -94,6 +160,18 @@ export class FailureAnalyzer {
     };
   }
 
+  /**
+   * Determine the error type from command output and execution context
+   *
+   * Uses a combination of pattern matching and command context to classify
+   * the type of error. Pattern-based detection takes precedence over command-based
+   * detection for more accurate classification.
+   *
+   * @param {string} output - Combined stdout and stderr output from command execution
+   * @param {ExecutionResult} result - Complete execution result including command info
+   * @returns {ErrorType} Classified error type
+   * @private
+   */
   private determineErrorType(
     output: string,
     result: ExecutionResult
@@ -141,6 +219,19 @@ export class FailureAnalyzer {
   }
 
 
+  /**
+   * Extract file paths from error output using common error message patterns
+   *
+   * Scans the command output for file paths using language-specific patterns:
+   * - Go-style: ./path/to/file.go:123:45
+   * - JavaScript-style: at /path/to/file.js:123:45
+   * - Python-style: File "/path/to/file.py", line 123
+   * - Generic: /path/to/file.ext
+   *
+   * @param {string} output - Command output to scan for file paths
+   * @returns {string[]} Array of unique file paths found in the output
+   * @private
+   */
   private extractAffectedFiles(output: string): string[] {
     const files: Set<string> = new Set();
 
@@ -168,6 +259,18 @@ export class FailureAnalyzer {
     return Array.from(files);
   }
 
+  /**
+   * Generate a human-readable error summary
+   *
+   * Creates a concise, actionable summary of the error. Prefers pattern-based
+   * summaries when available, falls back to generic error type descriptions.
+   *
+   * @param {ExecutionResult} result - Execution result with exit code and command info
+   * @param {FailurePattern[]} patterns - Matched failure patterns
+   * @param {ErrorType} errorType - Classified error type
+   * @returns {string} Human-readable error summary
+   * @private
+   */
   private generateErrorSummary(
     result: ExecutionResult,
     patterns: FailurePattern[],
@@ -194,6 +297,17 @@ export class FailureAnalyzer {
     return errorTypeMap[errorType];
   }
 
+  /**
+   * Aggregate suggestions from multiple matched patterns
+   *
+   * Combines suggestions from the top matched patterns, prioritizing the most
+   * relevant suggestions. Limits to top 3 patterns with top 2 suggestions each,
+   * then removes duplicates and limits total to 5 suggestions.
+   *
+   * @param {FailurePattern[]} patterns - Matched failure patterns with suggestions
+   * @returns {string[]} Array of unique, prioritized suggestions (max 5)
+   * @private
+   */
   private aggregateSuggestions(
     patterns: FailurePattern[]
   ): string[] {
@@ -215,6 +329,31 @@ export class FailureAnalyzer {
     return Array.from(new Set(suggestions)).slice(0, 5);
   }
 
+  /**
+   * Calculate confidence score for failure pattern matches
+   *
+   * Algorithm:
+   * 1. Base confidence starts at 0.5 for any matches (0.3 for no matches)
+   * 2. Increase by 0.15 for each additional pattern match (max +0.3)
+   * 3. Increase by 0.1 for each high-severity match
+   * 4. Decrease by 10% for very long output (>5000 chars, likely multiple issues)
+   * 5. Clamp final score to [0.0, 1.0]
+   *
+   * @param {FailurePattern[]} patterns - Matched failure patterns
+   * @param {string} output - Command output
+   * @returns {number} Confidence score between 0.0 and 1.0
+   *
+   * @example
+   * ```typescript
+   * const confidence = calculateConfidence(
+   *   [goTestPattern, raceConditionPattern],
+   *   stderr
+   * );
+   * // Returns: ~0.8 (high confidence with 2 patterns, including high-severity)
+   * ```
+   *
+   * @private
+   */
   private calculateConfidence(
     patterns: FailurePattern[],
     output: string
@@ -240,7 +379,33 @@ export class FailureAnalyzer {
   }
 
   /**
-   * Analyze multiple execution results for trend analysis
+   * Analyze multiple execution results to identify trends and patterns
+   *
+   * Performs trend analysis across multiple command executions to identify:
+   * - Common error patterns across executions
+   * - Success rate calculations
+   * - Workflow improvement recommendations
+   * - Recurring issues that need attention
+   *
+   * @param {ExecutionResult[]} results - Array of execution results to analyze for trends
+   * @returns {{
+   *   commonErrors: string[];
+   *   successRate: number;
+   *   recommendations: string[];
+   * }} Trend analysis results with common errors, success rate, and recommendations
+   *
+   * @example
+   * ```typescript
+   * const results = [
+   *   await executor.execute('npm test'),
+   *   await executor.execute('npm run lint'),
+   *   await executor.execute('npm run build')
+   * ];
+   *
+   * const trends = analyzer.analyzeTrends(results);
+   * console.log(`Success rate: ${(trends.successRate * 100).toFixed(1)}%`);
+   * console.log('Common errors:', trends.commonErrors);
+   * ```
    */
   analyzeTrends(results: ExecutionResult[]): {
     commonErrors: string[];

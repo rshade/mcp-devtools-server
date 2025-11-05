@@ -57,6 +57,16 @@ export type AnalyzeResultArgs = z.infer<typeof AnalyzeResultArgsSchema>;
 export type GetKnowledgeBaseStatsArgs = z.infer<typeof GetKnowledgeBaseStatsArgsSchema>;
 export type RecommendMCPServersArgs = z.infer<typeof RecommendMCPServersArgsSchema>;
 
+/**
+ * Result from analyzing and executing a command with smart suggestions
+ * @property {boolean} success - Whether the command execution was successful
+ * @property {string} command - The command that was executed
+ * @property {ExecutionResult} executionResult - Complete execution result with stdout/stderr
+ * @property {AnalysisResult} analysis - Detailed failure analysis results
+ * @property {SmartSuggestion[]} suggestions - Array of actionable smart suggestions
+ * @property {string} summary - Human-readable summary of the analysis
+ * @property {number} duration - Total execution and analysis time in milliseconds
+ */
 export interface AnalyzeCommandResult {
   success: boolean;
   command: string;
@@ -67,6 +77,14 @@ export interface AnalyzeCommandResult {
   duration: number;
 }
 
+/**
+ * Result from analyzing a pre-executed command result
+ * @property {boolean} success - Whether the original command execution was successful
+ * @property {AnalysisResult} analysis - Detailed failure analysis results
+ * @property {SmartSuggestion[]} suggestions - Array of actionable smart suggestions
+ * @property {string} summary - Human-readable summary of the analysis
+ * @property {number} duration - Analysis time in milliseconds
+ */
 export interface AnalyzeResultResult {
   success: boolean;
   analysis: AnalysisResult;
@@ -75,17 +93,39 @@ export interface AnalyzeResultResult {
   duration: number;
 }
 
+/**
+ * Statistics about the knowledge base failure patterns
+ * @property {number} totalPatterns - Total number of failure patterns in the knowledge base
+ * @property {Record<string, number>} byCategory - Pattern count breakdown by category
+ */
 export interface KnowledgeBaseStatsResult {
   totalPatterns: number;
   byCategory: Record<string, number>;
 }
 
+/**
+ * MCP server recommendations with optional configuration
+ * @property {MCPServerRecommendation[]} recommendations - Array of recommended MCP servers
+ * @property {number} totalRecommendations - Total count of recommendations returned
+ * @property {Record<string, unknown>} [mcpConfig] - Optional .mcp.json configuration object
+ */
 export interface RecommendMCPServersResult {
   recommendations: MCPServerRecommendation[];
   totalRecommendations: number;
   mcpConfig?: Record<string, unknown>;
 }
 
+/**
+ * MCP tools for AI-powered smart suggestions and failure analysis
+ *
+ * Provides four MCP tools for intelligent command analysis and recommendations:
+ * - analyze_command: Execute commands with AI-powered failure analysis
+ * - analyze_result: Analyze pre-executed command results
+ * - get_knowledge_base_stats: Inspect failure pattern database
+ * - recommend_mcp_servers: Get contextual MCP server recommendations
+ *
+ * Each tool combines multiple analysis engines to provide actionable insights.
+ */
 export class SmartSuggestionsTools {
   private suggestionEngine: SuggestionEngine;
   private executor: ShellExecutor;
@@ -93,6 +133,21 @@ export class SmartSuggestionsTools {
   private projectDetector: ProjectDetector;
   private projectRoot: string;
 
+  /**
+   * Creates a new SmartSuggestionsTools instance
+   *
+   * @param {string} [projectRoot] - Optional project root directory.
+   *                                 Defaults to current working directory.
+   *
+   * @example
+   * ```typescript
+   * // Using current directory
+   * const tools = new SmartSuggestionsTools();
+   *
+   * // Using specific project directory
+   * const tools = new SmartSuggestionsTools('/path/to/project');
+   * ```
+   */
   constructor(projectRoot?: string) {
     this.projectRoot = projectRoot || process.cwd();
     this.suggestionEngine = new SuggestionEngine(this.projectRoot);
@@ -102,35 +157,74 @@ export class SmartSuggestionsTools {
   }
 
   /**
-   * Validate analyze_command arguments
+   * Validate and parse analyze_command arguments using Zod schema
+   *
+   * @param {unknown} args - Arguments to validate
+   * @returns {AnalyzeCommandArgs} Validated and typed arguments
+   * @throws {z.ZodError} If validation fails
    */
   static validateAnalyzeCommandArgs(args: unknown): AnalyzeCommandArgs {
     return AnalyzeCommandArgsSchema.parse(args);
   }
 
   /**
-   * Validate analyze_result arguments
+   * Validate and parse analyze_result arguments using Zod schema
+   *
+   * @param {unknown} args - Arguments to validate
+   * @returns {AnalyzeResultArgs} Validated and typed arguments
+   * @throws {z.ZodError} If validation fails
    */
   static validateAnalyzeResultArgs(args: unknown): AnalyzeResultArgs {
     return AnalyzeResultArgsSchema.parse(args);
   }
 
   /**
-   * Validate get_knowledge_base_stats arguments
+   * Validate and parse get_knowledge_base_stats arguments using Zod schema
+   *
+   * @param {unknown} args - Arguments to validate
+   * @returns {GetKnowledgeBaseStatsArgs} Validated and typed arguments
+   * @throws {z.ZodError} If validation fails
    */
   static validateGetKnowledgeBaseStatsArgs(args: unknown): GetKnowledgeBaseStatsArgs {
     return GetKnowledgeBaseStatsArgsSchema.parse(args);
   }
 
   /**
-   * Validate recommend_mcp_servers arguments
+   * Validate and parse recommend_mcp_servers arguments using Zod schema
+   *
+   * @param {unknown} args - Arguments to validate
+   * @returns {RecommendMCPServersArgs} Validated and typed arguments
+   * @throws {z.ZodError} If validation fails
    */
   static validateRecommendMCPServersArgs(args: unknown): RecommendMCPServersArgs {
     return RecommendMCPServersArgsSchema.parse(args);
   }
 
   /**
-   * Execute a command and provide smart suggestions based on the result
+   * Execute a command and provide AI-powered analysis with smart suggestions
+   *
+   * This tool combines command execution with intelligent failure analysis,
+   * providing actionable suggestions for fixing issues and optimizing workflows.
+   *
+   * @param {AnalyzeCommandArgs} args - Command execution parameters
+   * @param {string} args.command - The command to execute
+   * @param {string[]} [args.args] - Command arguments
+   * @param {string} [args.directory] - Working directory
+   * @param {number} [args.timeout] - Execution timeout in milliseconds
+   * @param {object} [args.context] - Additional context (tool, language, projectType)
+   * @returns {Promise<AnalyzeCommandResult>} Execution result with analysis and suggestions
+   *
+   * @example
+   * ```typescript
+   * const result = await tools.analyzeCommand({
+   *   command: 'go test',
+   *   args: ['./...'],
+   *   context: { language: 'go', projectType: 'go' }
+   * });
+   * if (!result.success) {
+   *   console.log('Suggestions:', result.suggestions);
+   * }
+   * ```
    */
   async analyzeCommand(args: AnalyzeCommandArgs): Promise<AnalyzeCommandResult> {
     // Validate arguments
@@ -211,7 +305,30 @@ export class SmartSuggestionsTools {
   }
 
   /**
-   * Analyze an already-executed command result and provide suggestions
+   * Analyze an already-executed command result and provide smart suggestions
+   *
+   * Takes the results of a previously executed command and performs the same
+   * intelligent analysis as analyzeCommand, but without re-executing the command.
+   *
+   * @param {AnalyzeResultArgs} args - Pre-executed command result parameters
+   * @param {string} args.command - Command that was executed
+   * @param {number} args.exitCode - Exit code from command execution
+   * @param {string} [args.stdout] - Standard output from command
+   * @param {string} [args.stderr] - Standard error from command
+   * @param {number} [args.duration] - Execution duration in milliseconds
+   * @param {object} [args.context] - Additional context for better suggestions
+   * @returns {Promise<AnalyzeResultResult>} Analysis result with suggestions
+   *
+   * @example
+   * ```typescript
+   * const result = await tools.analyzeResult({
+   *   command: 'npm test',
+   *   exitCode: 1,
+   *   stderr: 'Test failed: expected 2 but got 3',
+   *   context: { language: 'javascript', projectType: 'nodejs' }
+   * });
+   * console.log('Analysis:', result.analysis.errorSummary);
+   * ```
    */
   async analyzeResult(args: AnalyzeResultArgs): Promise<AnalyzeResultResult> {
     const startTime = Date.now();
@@ -251,7 +368,25 @@ export class SmartSuggestionsTools {
   }
 
   /**
-   * Get statistics about the knowledge base
+   * Get statistics about the smart suggestions knowledge base
+   *
+   * Provides insights into the pattern database used for failure detection,
+   * including total pattern counts and category distribution.
+   *
+   * @param {GetKnowledgeBaseStatsArgs} args - Statistics query parameters
+   * @param {string} [args.category] - Optional category filter
+   * @returns {Promise<KnowledgeBaseStatsResult>} Knowledge base statistics
+   *
+   * @example
+   * ```typescript
+   * const stats = await tools.getKnowledgeBaseStats({});
+   * console.log(`Knowledge base has ${stats.totalPatterns} patterns`);
+   *
+   * const securityStats = await tools.getKnowledgeBaseStats({
+   *   category: 'security'
+   * });
+   * console.log(`Security patterns: ${securityStats.totalPatterns}`);
+   * ```
    */
   async getKnowledgeBaseStats(
     args: GetKnowledgeBaseStatsArgs
@@ -271,7 +406,30 @@ export class SmartSuggestionsTools {
   }
 
   /**
-   * Recommend MCP servers based on project context and use case
+   * Recommend MCP servers based on project context and use case requirements
+   *
+   * Provides intelligent recommendations for MCP servers that would enhance
+   * development workflows, based on project type, existing tools, and specific needs.
+   *
+   * @param {RecommendMCPServersArgs} args - Recommendation query parameters
+   * @param {string} [args.category] - Filter by category (development, testing, etc.)
+   * @param {'high' | 'medium' | 'low'} [args.priority] - Filter by priority level
+   * @param {string} [args.useCase] - Specific use case (e.g., "testing", "database")
+   * @param {boolean} [args.includeConfig] - Include .mcp.json configuration example
+   * @returns {Promise<RecommendMCPServersResult>} MCP server recommendations with optional config
+   *
+   * @example
+   * ```typescript
+   * // Get testing-focused recommendations
+   * const testingRecs = await tools.recommendMCPServers({
+   *   category: 'testing',
+   *   includeConfig: true
+   * });
+   *
+   * // Get contextual recommendations for current project
+   * const contextualRecs = await tools.recommendMCPServers({});
+   * console.log('Recommended servers:', contextualRecs.recommendations.map(r => r.name));
+   * ```
    */
   async recommendMCPServers(
     args: RecommendMCPServersArgs
