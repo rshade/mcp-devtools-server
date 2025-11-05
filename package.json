@@ -8,6 +8,7 @@
     "mcp-devtools-server": "dist/index.js"
   },
   "scripts": {
+    "prepare": "husky",
     "build": "tsc",
     "start": "node dist/index.js",
     "dev": "tsx src/index.ts",
@@ -52,12 +53,12 @@
     "@commitlint/cli": "^20.0.0",
     "@commitlint/config-conventional": "^20.0.0",
     "@metamask/auto-changelog": "^5.0.0",
-    "@types/glob": "^9.0.0",
     "@types/jest": "^30.0.0",
     "@types/node": "^24.0.0",
     "@typescript-eslint/eslint-plugin": "^8.0.0",
     "@typescript-eslint/parser": "^8.0.0",
     "eslint": "^9.0.0",
+    "husky": "^9.0.0",
     "jest": "^30.0.0",
     "markdownlint-cli": "^0.45.0",
     "ts-jest": "^29.1.1",
