@@ -12,14 +12,17 @@
     "start": "node dist/index.js",
     "dev": "tsx src/index.ts",
     "lint": "eslint src",
-    "lint:md": "markdownlint '**/*.md' --ignore node_modules",
+    "lint:md": "markdownlint '**/*.md' --ignore node_modules --ignore docs",
     "lint:yaml": "yamllint '**/*.yml' '**/*.yaml' || echo 'YAML linting skipped - yamllint not available'",
     "lint:changelog": "grep -q 'Keep a Changelog' CHANGELOG.md && echo 'CHANGELOG.md follows Keep a Changelog format'",
     "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
     "test:watch": "node --experimental-vm-modules node_modules/jest/bin/jest.js --watch",
     "test:coverage": "node --experimental-vm-modules node_modules/jest/bin/jest.js --coverage",
     "clean": "rm -rf dist",
-    "docs": "typedoc"
+    "docs:api": "typedoc --out typedoc",
+    "docs:dev": "vitepress dev docs",
+    "docs:build": "vitepress build docs",
+    "docs:preview": "vitepress preview docs"
   },
   "keywords": [
     "mcp",
@@ -60,7 +63,9 @@
     "ts-jest": "^29.1.1",
     "tsx": "^4.7.0",
     "typedoc": "^0.28.14",
-    "typescript": "^5.3.3"
+    "typescript": "^5.3.3",
+    "vitepress": "^2.0.0-alpha.12",
+    "vue": "^3.5.22"
   },
   "engines": {
     "node": ">=18.0.0"
