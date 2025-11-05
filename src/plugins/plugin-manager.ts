@@ -2,7 +2,7 @@
  * Plugin Manager
  *
  * Centralized lifecycle management for MCP DevTools plugins. Handles:
- * - Plugin discovery from src/plugins/ directory
+ * - Plugin discovery from multiple locations (src/plugins/, ~/.mcp-devtools/plugins/, ./.mcp-devtools-plugins/)
  * - Plugin loading and initialization with error isolation
  * - Tool registration with automatic namespacing
  * - Tool call routing to appropriate plugins
@@ -34,6 +34,7 @@
 
 import * as path from 'path';
 import * as fs from 'fs/promises';
+import * as os from 'os';
 import { glob } from 'glob';
 import winston from 'winston';
 import { ShellExecutor } from '../utils/shell-executor.js';
@@ -119,25 +120,105 @@ export class PluginManager {
   }
 
   /**
-   * Discover plugin files in src/plugins/ directory
+   * Discover plugin files from multiple locations
+   *
+   * Searches in priority order:
+   * 1. src/plugins/ - Core/official plugins
+   * 2. ~/.mcp-devtools/plugins/ - Global user plugins
+   * 3. ./.mcp-devtools-plugins/ - Project-specific plugins
    *
    * @returns Array of absolute paths to plugin files
    */
   private async discoverPlugins(): Promise<string[]> {
-    const pluginsDir = path.join(this.projectRoot, 'src', 'plugins');
+    const discoveryPaths = this.getPluginDiscoveryPaths();
+    const allFiles: string[] = [];
 
-    try {
-      await fs.access(pluginsDir);
-    } catch {
-      this.logger.warn(`Plugins directory not found: ${pluginsDir}`);
-      return [];
+    for (const searchPath of discoveryPaths) {
+      try {
+        await fs.access(searchPath);
+        this.logger.debug(`Searching for plugins in: ${searchPath}`);
+
+        // Find all *-plugin.ts and *-plugin.js files
+        const pattern = path.join(searchPath, '*-plugin.{ts,js}');
+        const files = await glob(pattern, { absolute: true });
+
+        if (files.length > 0) {
+          this.logger.info(`Found ${files.length} plugin(s) in ${searchPath}`);
+          allFiles.push(...files);
+        }
+      } catch {
+        // Directory doesn't exist or not accessible - this is fine
+        this.logger.debug(`Plugin directory not accessible: ${searchPath}`);
+      }
     }
 
-    // Find all *-plugin.ts and *-plugin.js files
-    const pattern = path.join(pluginsDir, '*-plugin.{ts,js}');
-    const files = await glob(pattern, { absolute: true });
+    // Remove duplicates (same plugin name from multiple locations)
+    const uniqueFiles = this.deduplicatePlugins(allFiles);
 
-    return files;
+    return uniqueFiles;
+  }
+
+  /**
+   * Get plugin discovery paths in priority order
+   *
+   * @returns Array of absolute paths to search for plugins
+   */
+  private getPluginDiscoveryPaths(): string[] {
+    const paths: string[] = [];
+
+    // 1. Core plugins (highest priority)
+    paths.push(path.join(this.projectRoot, 'src', 'plugins'));
+
+    // 2. Global user plugins
+    const homeDir = os.homedir();
+    paths.push(path.join(homeDir, '.mcp-devtools', 'plugins'));
+
+    // 3. Project-specific plugins (lowest priority)
+    paths.push(path.join(this.projectRoot, '.mcp-devtools-plugins'));
+
+    return paths;
+  }
+
+  /**
+   * Deduplicate plugins when found in multiple locations
+   *
+   * Priority: src/plugins/ > ~/.mcp-devtools/plugins/ > ./.mcp-devtools-plugins/
+   * If same plugin name exists in multiple locations, only the highest priority is kept.
+   *
+   * @param files - Array of plugin file paths
+   * @returns Deduplicated array of plugin file paths
+   */
+  private deduplicatePlugins(files: string[]): string[] {
+    const pluginMap = new Map<string, { path: string; priority: number }>();
+
+    for (const file of files) {
+      // Extract plugin name from filename
+      const filename = path.basename(file);
+      const pluginName = filename.replace(/-plugin\.(ts|js)$/, '');
+
+      // Determine priority based on location
+      let priority = 0;
+      if (file.includes(path.join('src', 'plugins'))) {
+        priority = 3; // Highest - core plugins
+      } else if (file.includes(path.join('.mcp-devtools', 'plugins'))) {
+        priority = 2; // Medium - global user plugins
+      } else if (file.includes('.mcp-devtools-plugins')) {
+        priority = 1; // Lowest - project-specific plugins
+      }
+
+      // Keep highest priority version
+      const existing = pluginMap.get(pluginName);
+      if (!existing || priority > existing.priority) {
+        if (existing) {
+          this.logger.info(
+            `Plugin '${pluginName}' found in multiple locations, using: ${file}`
+          );
+        }
+        pluginMap.set(pluginName, { path: file, priority });
+      }
+    }
+
+    return Array.from(pluginMap.values()).map(entry => entry.path);
   }
 
   /**

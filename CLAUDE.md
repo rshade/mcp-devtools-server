@@ -98,6 +98,170 @@ it('returns error when file does not exist', async () => {
 
 **Code Review**: When reviewing code, explicitly check test quality against these standards.
 
+### GitHub Issue Management: Epics vs. Single Issues
+
+**Epic Issues** - Use for large, multi-week features requiring multiple discrete tasks:
+
+- **When to create an Epic:**
+  - Feature requires 40+ hours of work
+  - Multiple independent tasks that could be worked on in parallel
+  - Complex architecture changes affecting multiple components
+  - Features spanning multiple milestones or sprints
+  - Work that benefits from breaking into smaller, reviewable PRs
+
+- **Epic Structure:**
+
+  ```markdown
+  ## Epic: [Feature Name]
+
+  **Priority:** P1/P2/P3
+  **Milestone:** YYYY-Q[1-4]
+  **Estimated Effort:** X-Y weeks
+
+  ### Overview
+  [High-level description]
+
+  ### Implementation Tasks
+  - [ ] #issue1: Task 1 (X-Y hours)
+  - [ ] #issue2: Task 2 (X-Y hours)
+  - [ ] #issue3: Task 3 (X-Y hours)
+
+  ### Dependencies
+  - Task 1 must complete before Task 2
+  - Tasks 3-5 can be done in parallel
+
+  ### Acceptance Criteria
+  [Overall epic acceptance criteria]
+  ```
+
+- **Creating Sub-Issues from Epics:**
+  1. Break epic into discrete, completable tasks (4-16 hours each)
+  2. Create separate GitHub issues for each task
+  3. Link back to epic issue: "Part of Epic #XX"
+  4. Each sub-issue should be:
+     - Self-contained (can be completed independently)
+     - Testable (clear acceptance criteria)
+     - Reviewable (focused PR, not 50+ files changed)
+     - Complete prompt format (see below)
+
+**Single Issues** - Use for focused, discrete tasks:
+
+- **When to create a Single Issue:**
+  - Feature/fix can be completed in < 40 hours
+  - Single logical unit of work
+  - Changes confined to 1-3 files
+  - Can be completed in a single PR
+  - Does not require coordination across multiple PRs
+
+**Complete Prompt Format** - All GitHub issues should follow this structure:
+
+```markdown
+## Priority: P1 - High Priority
+
+## Problem Statement
+
+Clear description of the problem or need. Include:
+
+- Current limitations
+- Why this matters
+- Who it affects
+
+## Proposed Solution
+
+Detailed technical approach with:
+
+- Architecture/design overview
+- Key implementation details
+- Code examples or pseudocode
+- File structure changes
+
+## Acceptance Criteria
+
+Concrete, testable criteria:
+
+- [ ] Feature X implemented and working
+- [ ] Tests added with Y% coverage
+- [ ] Documentation updated
+- [ ] Linting passes
+- [ ] No breaking changes (or migration guide provided)
+
+## Implementation Phases (if multi-step)
+
+### Phase 1: Foundation (Week 1, X-Y hours)
+
+- Task 1
+- Task 2
+
+### Phase 2: Core Features (Week 2, X-Y hours)
+
+- Task 3
+- Task 4
+
+## Example Use Cases
+
+Real-world scenarios showing how this will be used:
+
+```bash
+# Example command or usage
+```
+
+## References
+
+- Related issues: #123, #456
+- Relevant documentation
+- External resources
+
+## Success Metrics
+
+How we'll know this is successful:
+
+- [ ] Metric 1
+- [ ] Metric 2
+
+```text
+End of template
+```
+
+### Example: Epic vs. Single Issue Decision
+
+❌ **BAD** - Single massive issue (#64 was initially this way):
+
+```text
+Title: Implement plugin architecture for extensible tool integration
+Body: [40+ acceptance criteria, 8+ weeks of work, multiple components]
+```
+
+✅ **GOOD** - Epic with sub-issues:
+
+```text
+Epic #64: Plugin Architecture
+├── Issue #65: Plugin interface and base classes (8-12 hours)
+├── Issue #66: Plugin discovery and loading (6-8 hours)
+├── Issue #67: Tool registration and routing (8-12 hours)
+├── Issue #90: Plugin CLI scaffolding tool (8-12 hours)
+├── Issue #91: Plugin testing infrastructure (6-8 hours)
+└── Issue #92: Hot-reloading support (8-12 hours)
+```
+
+**When Converting Large Issues to Epics:**
+
+1. Analyze the issue scope (is it > 40 hours?)
+2. Identify natural task boundaries
+3. Create Epic issue summarizing the overall goal
+4. Create sub-issues for each discrete task
+5. Link sub-issues to Epic
+6. Close or update original issue
+7. Use Epic for tracking overall progress
+
+**Benefits:**
+
+- ✅ Smaller, focused PRs (easier to review)
+- ✅ Parallel development possible
+- ✅ Clear progress tracking
+- ✅ Better prioritization (high-priority sub-tasks first)
+- ✅ Reduced merge conflicts
+- ✅ Faster feedback cycles
+
 ## Community Documentation
 
 This project has comprehensive community documentation:
