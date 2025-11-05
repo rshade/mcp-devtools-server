@@ -15,6 +15,7 @@
     "lint:md": "markdownlint '**/*.md' --ignore node_modules --ignore docs",
     "lint:yaml": "yamllint '**/*.yml' '**/*.yaml' || echo 'YAML linting skipped - yamllint not available'",
     "lint:changelog": "grep -q 'Keep a Changelog' CHANGELOG.md && echo 'CHANGELOG.md follows Keep a Changelog format'",
+    "lint:commit": "commitlint --edit",
     "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
     "test:watch": "node --experimental-vm-modules node_modules/jest/bin/jest.js --watch",
     "test:coverage": "node --experimental-vm-modules node_modules/jest/bin/jest.js --coverage",

@@ -428,18 +428,48 @@ npm start
 
 ### Development
 
+You can use either `make` commands or `npm` scripts (Makefile is a thin wrapper around npm):
+
 ```bash
-# Run in development mode
-npm run dev
+# View all available commands
+make help
 
-# Run linting
-npm run lint
+# Setup and build
+make install         # Install dependencies
+make build           # Build TypeScript
+make install-mcp     # Install to Claude Desktop
 
-# Run tests
-npm test
+# Development
+make dev             # Run in development mode
+make start           # Start production server
 
-# Clean build artifacts
-npm run clean
+# Testing
+make test            # Run tests
+make test-watch      # Run tests in watch mode
+make test-coverage   # Run tests with coverage
+
+# Linting
+make lint            # Run all linters
+make lint-ts         # Run TypeScript linting
+make lint-md         # Run Markdown linting
+make lint-yaml       # Run YAML linting
+make lint-commit     # Validate commit message format
+
+# Documentation
+make docs-api        # Generate API docs (TypeDoc)
+make docs-dev        # Start docs dev server
+make docs-build      # Build documentation
+make docs-preview    # Preview built docs
+
+# CI/CD
+make check           # Run all linters and tests
+make all             # Complete CI pipeline
+
+# Or use npm scripts directly
+npm run dev          # Run in development mode
+npm run lint         # Run TypeScript linting
+npm test             # Run tests
+npm run clean        # Clean build artifacts
 ```
 
 ## Configuration
