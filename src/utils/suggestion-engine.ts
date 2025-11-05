@@ -5,10 +5,13 @@
  * project context, and historical patterns.
  */
 
+import { createHash } from 'crypto';
 import { ExecutionResult } from './shell-executor.js';
 import { FailureAnalyzer, AnalysisResult, ErrorType } from './failure-analyzer.js';
 import { KnowledgeBase } from './knowledge-base.js';
 import { ProjectDetector, ProjectType } from './project-detector.js';
+import { getCacheManager } from './cache-manager.js';
+import { logger } from './logger.js';
 
 /**
  * Context information for generating more accurate suggestions
@@ -73,6 +76,7 @@ export class SuggestionEngine {
   private knowledgeBase: KnowledgeBase;
   private failureAnalyzer: FailureAnalyzer;
   private projectDetector: ProjectDetector;
+  private cacheManager = getCacheManager();
 
   /**
    * Creates a new SuggestionEngine instance
@@ -125,6 +129,23 @@ export class SuggestionEngine {
   ): Promise<SuggestionEngineResult> {
     const startTime = Date.now();
 
+    // Try cache first
+    const cacheKey = this.buildCacheKey(result, context);
+    const cached = this.cacheManager.get<SuggestionEngineResult>('smartSuggestions', cacheKey);
+
+    if (cached) {
+      logger.debug('Smart suggestions cache HIT', {
+        command: result.command,
+        exitCode: result.exitCode
+      });
+      return cached;
+    }
+
+    logger.debug('Smart suggestions cache MISS', {
+      command: result.command,
+      exitCode: result.exitCode
+    });
+
     // Analyze the failure
     const analysis = this.failureAnalyzer.analyze(result);
 
@@ -136,13 +157,18 @@ export class SuggestionEngine {
 
     const executionTime = Date.now() - startTime;
 
-    return {
+    const engineResult: SuggestionEngineResult = {
       success: !analysis.failureDetected,
       analysis,
       suggestions,
       summary,
       executionTime
     };
+
+    // Store in cache
+    this.cacheManager.set('smartSuggestions', cacheKey, engineResult);
+
+    return engineResult;
   }
 
   /**
@@ -547,5 +573,43 @@ export class SuggestionEngine {
    */
   getKnowledgeBaseStats(): { totalPatterns: number; byCategory: Record<string, number> } {
     return this.knowledgeBase.getStats();
+  }
+
+  /**
+   * Build a cache key for smart suggestions based on execution result and context
+   *
+   * The cache key is constructed from:
+   * - Command name and exit code
+   * - SHA-256 hash of output (first 500 chars of stdout + stderr)
+   * - Optional context parameters (tool, language, projectType)
+   *
+   * This ensures cache hits for identical failures while avoiding collisions.
+   *
+   * @param {ExecutionResult} result - The execution result
+   * @param {SuggestionContext} [context] - Optional context information
+   * @returns {string} Cache key string
+   * @private
+   */
+  private buildCacheKey(result: ExecutionResult, context?: SuggestionContext): string {
+    // Create a stable hash of the output (limit to first 500 chars to avoid huge keys)
+    const outputSample = (result.stdout + result.stderr).substring(0, 500);
+    const outputHash = createHash('sha256')
+      .update(outputSample)
+      .digest('hex')
+      .substring(0, 16); // First 16 chars of hash
+
+    // Build cache key with command, exit code, and output hash
+    const parts = [
+      result.command,
+      result.exitCode.toString(),
+      outputHash
+    ];
+
+    // Add context if available
+    if (context?.tool) parts.push(`tool:${context.tool}`);
+    if (context?.language) parts.push(`lang:${context.language}`);
+    if (context?.projectType) parts.push(`proj:${context.projectType}`);
+
+    return parts.join(':');
   }
 }

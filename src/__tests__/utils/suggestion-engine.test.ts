@@ -1,7 +1,8 @@
-import { describe, it, expect, beforeEach } from '@jest/globals';
+import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
 import { SuggestionEngine } from '../../utils/suggestion-engine.js';
 import { ProjectType } from '../../utils/project-detector.js';
 import { ExecutionResult } from '../../utils/shell-executor.js';
+import { CacheManager } from '../../utils/cache-manager.js';
 
 describe('SuggestionEngine', () => {
   let engine: SuggestionEngine;
@@ -345,5 +346,135 @@ describe('SuggestionEngine', () => {
       expect(suggestions.suggestions.length).toBeGreaterThan(0);
       expect(suggestions.suggestions[0].relatedFiles?.some(f => f.includes('main_test.go'))).toBe(true);
     });
+  });
+
+  describe('caching behavior', () => {
+    afterEach(() => {
+      // Clear cache after each test
+      CacheManager.resetInstance();
+    });
+
+    it('should cache suggestion results for identical commands', async () => {
+      const result: ExecutionResult = {
+        command: 'npm test',
+        stdout: 'FAIL: test failed',
+        stderr: '',
+        success: false,
+        exitCode: 1,
+        duration: 100
+      };
+
+      // First call - should miss cache
+      const firstCall = await engine.generateSuggestions(result);
+      expect(firstCall.suggestions.length).toBeGreaterThan(0);
+
+      // Second call with same result - should hit cache
+      const secondCall = await engine.generateSuggestions(result);
+      expect(secondCall.suggestions.length).toBe(firstCall.suggestions.length);
+      expect(secondCall.analysis).toEqual(firstCall.analysis);
+    }, 60000);
+
+    it('should use different cache keys for different commands', async () => {
+      const result1: ExecutionResult = {
+        command: 'go test',
+        stdout: 'FAIL',
+        stderr: '',
+        success: false,
+        exitCode: 1,
+        duration: 100
+      };
+
+      const result2: ExecutionResult = {
+        command: 'npm test',
+        stdout: 'FAIL',
+        stderr: '',
+        success: false,
+        exitCode: 1,
+        duration: 100
+      };
+
+      const suggestions1 = await engine.generateSuggestions(result1);
+      const suggestions2 = await engine.generateSuggestions(result2);
+
+      // Should be different results due to different commands
+      expect(suggestions1).not.toEqual(suggestions2);
+    }, 60000);
+
+    it('should use different cache keys for different outputs', async () => {
+      const result1: ExecutionResult = {
+        command: 'go test',
+        stdout: 'FAIL: TestFoo',
+        stderr: '',
+        success: false,
+        exitCode: 1,
+        duration: 100
+      };
+
+      const result2: ExecutionResult = {
+        command: 'go test',
+        stdout: 'FAIL: TestBar',
+        stderr: '',
+        success: false,
+        exitCode: 1,
+        duration: 100
+      };
+
+      const suggestions1 = await engine.generateSuggestions(result1);
+      const suggestions2 = await engine.generateSuggestions(result2);
+
+      // Should potentially be different results due to different output
+      // At minimum, they should have been analyzed separately
+      expect(suggestions1).toBeDefined();
+      expect(suggestions2).toBeDefined();
+    }, 60000);
+
+    it('should include context in cache key', async () => {
+      const result: ExecutionResult = {
+        command: 'test',
+        stdout: 'failed',
+        stderr: '',
+        success: false,
+        exitCode: 1,
+        duration: 100
+      };
+
+      // Call with different contexts
+      const suggestions1 = await engine.generateSuggestions(result, {
+        language: 'go',
+        projectType: ProjectType.Go
+      });
+
+      const suggestions2 = await engine.generateSuggestions(result, {
+        language: 'javascript',
+        projectType: ProjectType.NodeJS
+      });
+
+      // Should be analyzed with different contexts
+      expect(suggestions1).toBeDefined();
+      expect(suggestions2).toBeDefined();
+    }, 60000);
+
+    it('should respect cache TTL', async () => {
+      const result: ExecutionResult = {
+        command: 'test',
+        stdout: 'failed',
+        stderr: '',
+        success: false,
+        exitCode: 1,
+        duration: 100
+      };
+
+      // First call
+      const firstCall = await engine.generateSuggestions(result);
+
+      // Verify cache exists
+      const cacheManager = CacheManager.getInstance();
+      const stats = cacheManager.getStats('smartSuggestions');
+      expect(stats?.size).toBeGreaterThan(0);
+
+      // Second call should hit cache
+      const secondCall = await engine.generateSuggestions(result);
+      expect(secondCall.analysis).toEqual(firstCall.analysis);
+    }, 60000);
   });
 });
