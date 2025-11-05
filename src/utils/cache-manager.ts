@@ -43,6 +43,7 @@ export interface CacheConfig {
     fileLists: CacheNamespaceConfig;
     commandAvailability: CacheNamespaceConfig;
     testResults: CacheNamespaceConfig;
+    smartSuggestions: CacheNamespaceConfig;
   };
 }
 
@@ -59,6 +60,7 @@ export const DEFAULT_CACHE_CONFIG: CacheConfig = {
     fileLists: { max: 200, ttl: 30000 },             // 30s
     commandAvailability: { max: 50, ttl: 3600000 },  // 1hr
     testResults: { max: 100, ttl: 60000 },           // 60s
+    smartSuggestions: { max: 100, ttl: 300000 },     // 5min
   },
 };
 

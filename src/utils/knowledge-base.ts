@@ -361,6 +361,246 @@ export class KnowledgeBase {
         'Upgrade to a machine with more RAM'
       ]
     });
+
+    // Rust-specific patterns
+    this.addPattern({
+      id: 'rust-borrow-checker',
+      name: 'Rust Borrow Checker Violation',
+      category: Category.Build,
+      patterns: [
+        /cannot borrow.*as mutable/i,
+        /cannot move out of.*because it is borrowed/i,
+        /borrow of moved value/i,
+        /value borrowed here after move/i
+      ],
+      severity: 'high',
+      suggestions: [
+        'Review Rust ownership rules and borrowing principles',
+        'Consider using Rc<RefCell<T>> for shared mutability',
+        'Use .clone() if copying is acceptable for your use case',
+        'Restructure code to avoid conflicting borrows',
+        'Read: https://doc.rust-lang.org/book/ch04-00-understanding-ownership.html'
+      ],
+      context: 'Rust borrow checker enforces memory safety at compile time'
+    });
+
+    this.addPattern({
+      id: 'rust-lifetime-error',
+      name: 'Rust Lifetime Error',
+      category: Category.Build,
+      patterns: [
+        /lifetime.*may not live long enough/i,
+        /expected lifetime parameter/i,
+        /borrowed value does not live long enough/i,
+        /missing lifetime specifier/i
+      ],
+      severity: 'high',
+      suggestions: [
+        'Add explicit lifetime annotations to function signatures',
+        'Ensure borrowed values outlive their usage',
+        'Consider using \'static lifetime for constants',
+        'Restructure to avoid complex lifetime relationships',
+        'Read: https://doc.rust-lang.org/book/ch10-03-lifetime-syntax.html'
+      ],
+      context: 'Lifetimes ensure references are valid for their entire use'
+    });
+
+    this.addPattern({
+      id: 'rust-async-error',
+      name: 'Rust Async/Await Error',
+      category: Category.Build,
+      patterns: [
+        /expected opaque type.*`impl Future`/i,
+        /await.*is only allowed inside `async`/i,
+        /trait.*is not implemented for.*Future/i
+      ],
+      severity: 'medium',
+      suggestions: [
+        'Mark function as `async fn` to use await',
+        'Ensure async runtime is properly initialized (tokio, async-std)',
+        'Use .await on Future types',
+        'Check that all async dependencies are compatible',
+        'Read: https://rust-lang.github.io/async-book/'
+      ],
+      context: 'Async Rust requires explicit async/await syntax'
+    });
+
+    this.addPattern({
+      id: 'rust-cargo-dependency',
+      name: 'Rust Missing Dependency',
+      category: Category.Dependencies,
+      patterns: [
+        /no crate named ['`](.+?)['`]/i,
+        /failed to resolve.*crate/i,
+        /could not find.*in.*registry/i
+      ],
+      severity: 'high',
+      suggestions: [
+        'Add dependency to Cargo.toml: `cargo add <crate-name>`',
+        'Run `cargo update` to refresh dependencies',
+        'Check crate name spelling on https://crates.io',
+        'Verify version compatibility in Cargo.toml'
+      ]
+    });
+
+    // Java-specific patterns
+    this.addPattern({
+      id: 'java-null-pointer',
+      name: 'Java NullPointerException',
+      category: Category.Build,
+      patterns: [
+        /NullPointerException/,
+        /java\.lang\.NullPointerException/
+      ],
+      severity: 'high',
+      suggestions: [
+        'Add null checks before dereferencing objects',
+        'Use Optional<T> for values that may be absent',
+        'Enable compiler null safety warnings',
+        'Consider using @NonNull annotations',
+        'Review method signatures for nullable return values'
+      ],
+      context: 'NullPointerException is the most common Java runtime error'
+    });
+
+    this.addPattern({
+      id: 'java-class-not-found',
+      name: 'Java ClassNotFoundException',
+      category: Category.Dependencies,
+      patterns: [
+        /ClassNotFoundException/,
+        /NoClassDefFoundError/,
+        /java\.lang\.ClassNotFoundException/
+      ],
+      severity: 'high',
+      suggestions: [
+        'Verify all dependencies are in classpath',
+        'Check Maven/Gradle dependencies are downloaded',
+        'Run `mvn clean install` or `gradle clean build`',
+        'Ensure package names match directory structure',
+        'Check for typos in import statements'
+      ]
+    });
+
+    this.addPattern({
+      id: 'java-compilation-error',
+      name: 'Java Compilation Error',
+      category: Category.Build,
+      patterns: [
+        /error: cannot find symbol/i,
+        /error: incompatible types/i,
+        /error: method .+ cannot be applied/i,
+        /compilation failed/i
+      ],
+      severity: 'high',
+      suggestions: [
+        'Check for typos in class, method, or variable names',
+        'Verify all imports are present and correct',
+        'Ensure method signatures match their calls',
+        'Check for type mismatches in assignments',
+        'Run IDE code analysis for detailed error hints'
+      ]
+    });
+
+    this.addPattern({
+      id: 'java-maven-dependency',
+      name: 'Maven Dependency Issue',
+      category: Category.Dependencies,
+      patterns: [
+        /Could not resolve dependencies/i,
+        /Failed to execute goal.*dependency/i,
+        /artifact .+ not found/i
+      ],
+      severity: 'high',
+      suggestions: [
+        'Run `mvn clean install -U` to force update dependencies',
+        'Check pom.xml for correct dependency versions',
+        'Verify Maven repository accessibility',
+        'Clear local Maven repository: ~/.m2/repository',
+        'Check for dependency conflicts with `mvn dependency:tree`'
+      ]
+    });
+
+    // C++-specific patterns
+    this.addPattern({
+      id: 'cpp-segfault',
+      name: 'C++ Segmentation Fault',
+      category: Category.Security,
+      patterns: [
+        /segmentation fault/i,
+        /SIGSEGV/,
+        /core dumped/i
+      ],
+      severity: 'high',
+      suggestions: [
+        'Check for null pointer dereferences',
+        'Verify array bounds are not exceeded',
+        'Use AddressSanitizer: compile with -fsanitize=address',
+        'Run with debugger (gdb/lldb) to find crash location',
+        'Check for use-after-free and double-free errors'
+      ],
+      context: 'Segfaults indicate memory access violations'
+    });
+
+    this.addPattern({
+      id: 'cpp-linker-error',
+      name: 'C++ Linker Error',
+      category: Category.Build,
+      patterns: [
+        /undefined reference to/i,
+        /ld returned \d+ exit status/,
+        /cannot find -l(.+)/,
+        /multiple definition of/i
+      ],
+      severity: 'high',
+      suggestions: [
+        'Ensure all source files are included in build',
+        'Check library paths and link order',
+        'Verify function definitions match declarations',
+        'Add missing library flags to linker: -l<libname>',
+        'Check for duplicate symbol definitions across files'
+      ]
+    });
+
+    this.addPattern({
+      id: 'cpp-memory-leak',
+      name: 'C++ Memory Leak',
+      category: Category.Performance,
+      patterns: [
+        /memory leak/i,
+        /heap-use-after-free/i,
+        /heap-buffer-overflow/i
+      ],
+      severity: 'high',
+      suggestions: [
+        'Use smart pointers (unique_ptr, shared_ptr) instead of raw pointers',
+        'Ensure every new has a corresponding delete',
+        'Run with Valgrind: `valgrind --leak-check=full ./program`',
+        'Use AddressSanitizer: compile with -fsanitize=address',
+        'Follow RAII principles for resource management'
+      ],
+      context: 'Memory leaks can lead to performance degradation'
+    });
+
+    this.addPattern({
+      id: 'cpp-compilation-error',
+      name: 'C++ Compilation Error',
+      category: Category.Build,
+      patterns: [
+        /error: ['`](.+)['`] was not declared in this scope/i,
+        /error: no matching function for call to/i,
+        /error: expected .+ before/i,
+        /error: invalid use of/i
+      ],
+      severity: 'high',
+      suggestions: [
+        'Check for missing #include directives',
+        'Verify namespace declarations and using statements',
+        'Ensure template specializations are defined',
+        'Check for typos in function/variable names',
+        'Verify compiler version supports C++ standard used (C++11/14/17/20)'
+      ]
+    });
   }
 
   /**

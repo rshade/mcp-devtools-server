@@ -11,6 +11,7 @@ import { ShellExecutor, ExecutionResult } from '../utils/shell-executor.js';
 import { AnalysisResult } from '../utils/failure-analyzer.js';
 import { MCPRecommendations, MCPCategory, MCPServerRecommendation } from '../utils/mcp-recommendations.js';
 import { ProjectDetector } from '../utils/project-detector.js';
+import { getCacheManager } from '../utils/cache-manager.js';
 
 // Schema for analyze_command arguments
 const AnalyzeCommandArgsSchema = z.object({
@@ -52,10 +53,16 @@ const RecommendMCPServersArgsSchema = z.object({
   includeConfig: z.boolean().optional().describe('Include .mcp.json configuration example')
 });
 
+// Schema for get_performance_metrics arguments
+const GetPerformanceMetricsArgsSchema = z.object({
+  namespace: z.string().optional().describe('Specific cache namespace to get metrics for (smartSuggestions, projectDetection, etc.)')
+});
+
 export type AnalyzeCommandArgs = z.infer<typeof AnalyzeCommandArgsSchema>;
 export type AnalyzeResultArgs = z.infer<typeof AnalyzeResultArgsSchema>;
 export type GetKnowledgeBaseStatsArgs = z.infer<typeof GetKnowledgeBaseStatsArgsSchema>;
 export type RecommendMCPServersArgs = z.infer<typeof RecommendMCPServersArgsSchema>;
+export type GetPerformanceMetricsArgs = z.infer<typeof GetPerformanceMetricsArgsSchema>;
 
 /**
  * Result from analyzing and executing a command with smart suggestions
@@ -116,13 +123,44 @@ export interface RecommendMCPServersResult {
 }
 
 /**
+ * Performance metrics for smart suggestions and caching
+ * @property {object} cache - Cache performance statistics
+ * @property {object} patterns - Pattern matching statistics
+ * @property {object} overall - Overall system performance metrics
+ */
+export interface PerformanceMetricsResult {
+  cache: {
+    enabled: boolean;
+    namespaces: Array<{
+      namespace: string;
+      hits: number;
+      misses: number;
+      hitRate: number;
+      size: number;
+      maxSize: number;
+      memoryMB: number;
+    }>;
+    totalMemoryMB: number;
+  };
+  patterns: {
+    totalPatterns: number;
+    byCategory: Record<string, number>;
+  };
+  overall: {
+    cacheEffectiveness: string;
+    recommendations: string[];
+  };
+}
+
+/**
  * MCP tools for AI-powered smart suggestions and failure analysis
  *
- * Provides four MCP tools for intelligent command analysis and recommendations:
+ * Provides five MCP tools for intelligent command analysis and recommendations:
  * - analyze_command: Execute commands with AI-powered failure analysis
  * - analyze_result: Analyze pre-executed command results
  * - get_knowledge_base_stats: Inspect failure pattern database
  * - recommend_mcp_servers: Get contextual MCP server recommendations
+ * - get_performance_metrics: Get caching and performance statistics
  *
  * Each tool combines multiple analysis engines to provide actionable insights.
  */
@@ -198,6 +236,17 @@ export class SmartSuggestionsTools {
    */
   static validateRecommendMCPServersArgs(args: unknown): RecommendMCPServersArgs {
     return RecommendMCPServersArgsSchema.parse(args);
+  }
+
+  /**
+   * Validate and parse get_performance_metrics arguments using Zod schema
+   *
+   * @param {unknown} args - Arguments to validate
+   * @returns {GetPerformanceMetricsArgs} Validated and typed arguments
+   * @throws {z.ZodError} If validation fails
+   */
+  static validateGetPerformanceMetricsArgs(args: unknown): GetPerformanceMetricsArgs {
+    return GetPerformanceMetricsArgsSchema.parse(args);
   }
 
   /**
@@ -469,5 +518,101 @@ export class SmartSuggestionsTools {
     }
 
     return result;
+  }
+
+  /**
+   * Get performance metrics for smart suggestions and caching system
+   *
+   * Provides detailed performance statistics including:
+   * - Cache hit rates and memory usage per namespace
+   * - Pattern matching statistics
+   * - Overall system effectiveness
+   * - Performance optimization recommendations
+   *
+   * @param {GetPerformanceMetricsArgs} args - Metrics query parameters
+   * @param {string} [args.namespace] - Optional specific namespace to query
+   * @returns {Promise<PerformanceMetricsResult>} Comprehensive performance metrics
+   *
+   * @example
+   * ```typescript
+   * // Get all metrics
+   * const metrics = await tools.getPerformanceMetrics({});
+   * console.log(`Cache hit rate: ${metrics.cache.namespaces[0].hitRate}%`);
+   *
+   * // Get metrics for specific namespace
+   * const smartMetrics = await tools.getPerformanceMetrics({
+   *   namespace: 'smartSuggestions'
+   * });
+   * ```
+   */
+  async getPerformanceMetrics(
+    args: GetPerformanceMetricsArgs
+  ): Promise<PerformanceMetricsResult> {
+    const cacheManager = getCacheManager();
+    const patternStats = this.suggestionEngine.getKnowledgeBaseStats();
+
+    // Get cache stats
+    let namespaceStats;
+    if (args.namespace) {
+      const stats = cacheManager.getStats(args.namespace);
+      namespaceStats = stats ? [stats] : [];
+    } else {
+      namespaceStats = cacheManager.getAllStats();
+    }
+
+    const totalMemoryMB = cacheManager.getTotalMemoryUsage();
+
+    // Calculate overall effectiveness
+    const avgHitRate = namespaceStats.length > 0
+      ? namespaceStats.reduce((sum, ns) => sum + ns.hitRate, 0) / namespaceStats.length
+      : 0;
+
+    const cacheEffectiveness =
+      avgHitRate > 0.8 ? 'Excellent' :
+      avgHitRate > 0.6 ? 'Good' :
+      avgHitRate > 0.4 ? 'Fair' :
+      avgHitRate > 0 ? 'Poor' :
+      'No data yet';
+
+    // Generate recommendations
+    const recommendations: string[] = [];
+
+    if (avgHitRate < 0.5 && namespaceStats.some(ns => ns.hits + ns.misses > 10)) {
+      recommendations.push('Low cache hit rate detected. Consider increasing TTL or reviewing cache key design.');
+    }
+
+    if (totalMemoryMB > 80) {
+      recommendations.push('Cache memory usage is high. Consider reducing max items per namespace.');
+    }
+
+    const smartSuggestionsStats = namespaceStats.find(ns => ns.namespace === 'smartSuggestions');
+    if (smartSuggestionsStats && smartSuggestionsStats.hitRate < 0.3 && smartSuggestionsStats.hits + smartSuggestionsStats.misses > 5) {
+      recommendations.push('Smart suggestions cache hit rate is low. This is normal if commands produce varied output.');
+    }
+
+    if (recommendations.length === 0) {
+      recommendations.push('Cache performance is optimal. No action needed.');
+    }
+
+    return {
+      cache: {
+        enabled: cacheManager.isEnabled(),
+        namespaces: namespaceStats.map(ns => ({
+          namespace: ns.namespace,
+          hits: ns.hits,
+          misses: ns.misses,
+          hitRate: ns.hitRate,
+          size: ns.size,
+          maxSize: ns.maxSize,
+          memoryMB: ns.memoryEstimateMB
+        })),
+        totalMemoryMB
+      },
+      patterns: patternStats,
+      overall: {
+        cacheEffectiveness,
+        recommendations
+      }
+    };
   }
 }
