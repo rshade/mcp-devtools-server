@@ -472,6 +472,168 @@ npm test             # Run tests
 npm run clean        # Clean build artifacts
 ```
 
+## Docker Support
+
+### Using Docker Images
+
+The MCP DevTools Server is available as Docker images for easy deployment and consistent environments across different systems.
+
+#### Quick Start with Docker
+
+```bash
+# Pull the latest image
+docker pull ghcr.io/rshade/mcp-devtools-server:latest
+
+# Run with stdio (for MCP protocol)
+docker run -i --rm ghcr.io/rshade/mcp-devtools-server:latest
+```
+
+#### Claude Desktop Integration with Docker
+
+Update your Claude Desktop configuration (`~/.claude/claude_desktop_config.json`):
+
+```json
+{
+  "mcpServers": {
+    "mcp-devtools-server": {
+      "command": "docker",
+      "args": [
+        "run",
+        "-i",
+        "--rm",
+        "-v",
+        "/path/to/your/project:/workspace",
+        "-w",
+        "/workspace",
+        "ghcr.io/rshade/mcp-devtools-server:latest"
+      ]
+    }
+  }
+}
+```
+
+**Replace `/path/to/your/project` with your actual project directory.**
+
+#### Development with Docker Compose
+
+For local development with hot-reload:
+
+```bash
+# Start development server
+docker-compose up mcp-devtools-dev
+
+# Run tests
+docker-compose run --rm mcp-devtools-test
+
+# Run linters
+docker-compose run --rm mcp-devtools-lint
+
+# Production-like testing
+docker-compose up mcp-devtools
+```
+
+**docker-compose.yml features:**
+
+- Hot-reload for source code changes
+- Volume mounts for project access
+- Separate services for dev, test, and lint
+- Environment variable configuration
+
+#### Building Custom Images
+
+Build your own image with custom tools:
+
+```dockerfile
+# Extend the base image
+FROM ghcr.io/rshade/mcp-devtools-server:latest
+
+# Install additional tools
+RUN apk add --no-cache \
+    docker-cli \
+    kubectl
+
+# Copy custom configuration
+COPY .mcp-devtools.json /app/
+```
+
+Build and run:
+
+```bash
+docker build -t my-mcp-devtools:latest .
+docker run -i --rm my-mcp-devtools:latest
+```
+
+#### CI/CD Integration
+
+The project includes automated Docker builds via GitHub Actions:
+
+- **Automatic builds** on push to main and tags
+- **Multi-platform support** (linux/amd64, linux/arm64)
+- **Security scanning** with Trivy
+- **Layer caching** for fast builds
+- **Published to GitHub Container Registry** (ghcr.io)
+
+Available image tags:
+
+- `latest` - Latest stable release
+- `v1.2.3` - Specific version tags
+- `main-abc123` - Branch-specific builds with commit SHA
+- `dev` - Development builds (not published)
+
+#### Configuration Options
+
+Control Docker behavior with environment variables:
+
+```bash
+# Set log level
+docker run -i --rm \
+  -e LOG_LEVEL=debug \
+  ghcr.io/rshade/mcp-devtools-server:latest
+
+# Set Node environment
+docker run -i --rm \
+  -e NODE_ENV=production \
+  ghcr.io/rshade/mcp-devtools-server:latest
+```
+
+#### Volume Mounts for Project Access
+
+Mount your project directory to work with your code:
+
+```bash
+docker run -i --rm \
+  -v "$(pwd):/workspace" \
+  -w /workspace \
+  ghcr.io/rshade/mcp-devtools-server:latest
+```
+
+#### Troubleshooting Docker
+
+##### Issue: Permission denied when accessing files
+
+- Ensure volume mount paths are correct
+- Check file permissions in mounted directory
+- Use `--user` flag to match host user ID:
+
+```bash
+docker run -i --rm \
+  --user $(id -u):$(id -g) \
+  -v "$(pwd):/workspace" \
+  ghcr.io/rshade/mcp-devtools-server:latest
+```
+
+##### Issue: Container exits immediately
+
+- MCP protocol uses stdio - ensure `-i` (interactive) flag is set
+- Check logs with `docker logs <container_id>`
+- Verify environment variables are set correctly
+
+##### Issue: Cannot connect to Claude Desktop
+
+- Ensure `command` is `"docker"` not `"docker run"`
+- Check `args` array formatting in claude_desktop_config.json
+- Verify image is pulled: `docker pull ghcr.io/rshade/mcp-devtools-server:latest`
+
 ## Configuration
 
 ### Claude Desktop Integration
