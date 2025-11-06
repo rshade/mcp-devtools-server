@@ -1,0 +1,10 @@
+{
+  "name": "pnpm-test-project",
+  "version": "1.0.0",
+  "dependencies": {
+    "vue": "^3.3.0"
+  },
+  "devDependencies": {
+    "vitest": "^1.0.0"
+  }
+}
