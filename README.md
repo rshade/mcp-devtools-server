@@ -392,9 +392,9 @@ mcp-devtools detect_project
 
 ### Prerequisites
 
-- Node.js 18+
+- Node.js 20+
 - TypeScript
-- **Go 1.19+** (for Go language support - **PRIORITY**)
+- **Go 1.24+** (for Go language support - **PRIORITY**)
 - Make (for make-based commands)
 - Go tools: `golangci-lint`, `staticcheck` (for enhanced Go support)
 - Project-specific tools (eslint, markdownlint, yamllint, etc.)
