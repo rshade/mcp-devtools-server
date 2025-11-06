@@ -643,10 +643,50 @@ Located at `src/plugins/git-spice-plugin.ts` - Study this for best practices:
 - User-friendly error messages
 - 888 lines with extensive documentation
 
-### 2. Docker Tools Plugin (Example)
+### 2. Docker Tools Plugin (Illustrative Educational Example)
+
+> **⚠️ EDUCATIONAL EXAMPLE ONLY**
+>
+> This is a **simplified pseudocode example** designed to teach plugin development patterns.
+> It is **NOT** intended for production use or inclusion in the codebase.
+>
+> **Security Note:** A production Docker plugin would require:
+>
+> - Image validation (allowlisting, vulnerability scanning)
+> - Resource limits (CPU, memory, disk quotas)
+> - Network security (firewall rules, network isolation)
+> - Volume mount restrictions (prevent host filesystem access)
+> - Container escape prevention
+> - Audit logging for all operations
+> - Rate limiting and quota enforcement
+
+**What You'll Learn From This Example:**
+
+1. **External tool integration** - How to wrap CLI tools like Docker
+2. **Multi-tool patterns** - Single plugin providing multiple related tools (run, stop, list)
+3. **Complex validation** - Validating ports, environment variables, container names
+4. **Health checking** - Verifying external dependencies (Docker daemon status)
+5. **Argument construction** - Building safe command arguments dynamically
+6. **Error mapping** - Converting tool errors to user-friendly messages
+
+**What's Simplified (Production Requirements NOT Shown):**
+
+- No image allowlisting or vulnerability scanning
+- No resource limit enforcement
+- No volume mount validation
+- Simplified error handling (no retry logic, circuit breakers)
+- No rate limiting or quota enforcement
+- No audit logging or security monitoring
+- No container lifecycle management
+- No network security controls
+
+<details>
+<summary>Click to view full example code (pseudocode for learning)</summary>
 
 ```typescript
-// src/plugins/docker-tools-plugin.ts
+// ILLUSTRATIVE EXAMPLE - SIMPLIFIED FOR TEACHING PURPOSES
+// Conceptual file path: src/plugins/docker-tools-plugin.ts
+// (This is NOT actual source code in the repository)
 import { z } from 'zod';
 import {
   Plugin,
@@ -655,11 +695,13 @@ import {
   PluginTool,
 } from './plugin-interface.js';
 
+// ↓ Pattern: Zod schema for complex input validation
 const ContainerArgsSchema = z.object({
-  name: z.string().regex(/^[a-zA-Z0-9_.-]+$/),
+  name: z.string().regex(/^[a-zA-Z0-9_.-]+$/), // ← Regex validation for container names
   image: z.string(),
   ports: z.array(z.string()).optional(),
   env: z.record(z.string()).optional(),
+  // PRODUCTION: Add validation for allowed images, port ranges, resource limits
 });
 
 export class DockerToolsPlugin implements Plugin {
@@ -667,8 +709,8 @@ export class DockerToolsPlugin implements Plugin {
     name: 'docker-tools',
     version: '1.0.0',
     description: 'Docker container management',
-    requiredCommands: ['docker'],
-    tags: ['containers', 'devops'],
+    requiredCommands: ['docker'], // ← Pattern: Declare external dependencies
+    tags: ['containers', 'devops'], // ← Pattern: Categorize plugins
   };
 
   private context!: PluginContext;
@@ -676,11 +718,15 @@ export class DockerToolsPlugin implements Plugin {
   async initialize(context: PluginContext): Promise<void> {
     this.context = context;
 
-    // Verify Docker is running
+    // ↓ Pattern: Verify external tool availability during initialization
     const result = await context.shellExecutor.execute('docker info');
     if (!result.success) {
       throw new Error('Docker daemon not running');
     }
+
+    // PRODUCTION: Add version check, permissions check, resource verification
+    // PRODUCTION: Check Docker daemon configuration (security settings)
+    // PRODUCTION: Validate available resources (CPU, memory limits)
   }
 
   async registerTools(): Promise<PluginTool[]> {
@@ -744,8 +790,12 @@ export class DockerToolsPlugin implements Plugin {
   }
 
   private async containerRun(args: unknown) {
+    // ↓ Pattern: Parse and validate inputs with Zod
     const validated = ContainerArgsSchema.parse(args);
+    // PRODUCTION: Check image against allowlist before proceeding
+    // PRODUCTION: Validate ports are not privileged (<1024) or in use
 
+    // ↓ Pattern: Build command arguments dynamically
     const cmdArgs = ['run', '-d', '--name', validated.name];
 
     // Add port mappings
@@ -753,27 +803,37 @@ export class DockerToolsPlugin implements Plugin {
       for (const port of validated.ports) {
         cmdArgs.push('-p', port);
       }
+      // PRODUCTION: Validate port format, check for conflicts
+      // PRODUCTION: Restrict port ranges (e.g., no privileged ports)
     }
 
     // Add environment variables
     if (validated.env) {
       for (const [key, value] of Object.entries(validated.env)) {
         cmdArgs.push('-e', `${key}=${value}`);
+        // PRODUCTION: Sanitize env vars, prevent secret exposure
+        // PRODUCTION: Validate against allowed env var patterns
       }
     }
 
     cmdArgs.push(validated.image);
+    // PRODUCTION: Add resource limits: --memory, --cpus, --storage-opt
+    // PRODUCTION: Add security options: --security-opt, --cap-drop
 
+    // ↓ Pattern: Execute external command via ShellExecutor
     const result = await this.context.shellExecutor.execute('docker', {
       args: cmdArgs,
       cwd: this.context.projectRoot,
     });
 
+    // ↓ Pattern: Return structured results
     return {
       success: result.success,
       containerId: result.success ? result.stdout.trim() : undefined,
       error: result.error,
     };
+    // PRODUCTION: Log container creation for audit trail
+    // PRODUCTION: Register container for lifecycle management
   }
 
   private async containerStop(args: unknown) {
@@ -815,6 +875,68 @@ export class DockerToolsPlugin implements Plugin {
   }
 }
 ```
+
+</details>
+
+**Key Takeaways:**
+
+- ✅ **Use this pattern** - Multi-tool plugin structure with shared context
+- ✅ **Use this pattern** - External tool integration via ShellExecutor
+- ✅ **Use this pattern** - Zod validation for complex inputs
+- ✅ **Use this pattern** - Health checks in initialize()
+- ⚠️ **Do NOT copy-paste** - Missing critical security controls
+- ⚠️ **Do NOT use in production** - Simplified error handling insufficient
+- ⚠️ **Do NOT assume complete** - Requires extensive hardening
+
+For a production Docker plugin, see the **Production Considerations** section below.
+
+## Production Considerations Not Shown in Examples
+
+The examples in this guide are simplified for educational clarity. Production plugins should include:
+
+### Security
+
+- **Input validation** - Validate against OWASP Top 10 (injection, XSS, etc.)
+- **Resource limits** - CPU, memory, disk quotas to prevent abuse
+- **Audit logging** - Log all sensitive operations with user context
+- **Secret management** - Never log secrets, use secure storage
+- **Least privilege** - Run with minimum necessary permissions
+- **Allowlisting** - Validate images/packages against approved lists
+- **Rate limiting** - Prevent abuse and DoS attacks
+
+### Reliability
+
+- **Timeout enforcement** - All operations should have timeouts
+- **Retry logic** - Exponential backoff for transient failures
+- **Circuit breakers** - Fail fast when external services are down
+- **Graceful degradation** - Provide limited functionality when dependencies fail
+- **Resource cleanup** - Always clean up (containers, temp files, connections)
+
+### Observability
+
+- **Structured logging** - Use Winston/Bunyan with proper log levels
+- **Metrics collection** - Track success rate, latency, errors
+- **Health check endpoints** - Expose plugin health status
+- **Error tracking** - Integrate with Sentry/Rollbar for production
+- **Distributed tracing** - Track requests across plugin boundaries
+
+### Performance
+
+- **Caching** - Cache expensive operations (with TTL and invalidation)
+- **Connection pooling** - Reuse connections to external services
+- **Async operations** - Use async/await, avoid blocking the event loop
+- **Resource cleanup** - Close file handles, terminate child processes
+- **Memory management** - Monitor memory usage, prevent leaks
+
+### Testing
+
+- **Unit tests** - 85-90%+ coverage for all plugin code
+- **Integration tests** - Test with real external tools
+- **Security tests** - Test injection attacks, privilege escalation
+- **Performance tests** - Load testing, memory leak detection
+- **Error scenario tests** - Simulate failures (network, disk, external tools)
+
+Refer to the **Security Best Practices** section for detailed guidance on securing plugins.
 
 ## Publishing
 
