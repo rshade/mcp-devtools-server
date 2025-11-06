@@ -2,12 +2,14 @@ import { z } from 'zod';
 import { ShellExecutor, ExecutionResult } from '../utils/shell-executor.js';
 import * as fs from 'fs/promises';
 import * as path from 'path';
+import { getCacheManager } from '../utils/cache-manager.js';
+import { createHash } from 'crypto';
 
 // Constants
 const MAX_PR_TITLE_LENGTH = 72; // GitHub's recommended PR title length
 const MAX_CHANGES_TO_DISPLAY = 10;
 const MAX_LINE_LENGTH = 120;
-const MAX_DIFF_SIZE_BYTES = 10 * 1024 * 1024; // 10MB
+const MAX_DIFF_SIZE_BYTES = 1000000; // 1MB
 const MAX_CONCERNS = 1000;
 const MAX_FILES_TO_REVIEW = 100;
 const NESTED_LOOP_THRESHOLD = 2; // Number of loops on same line to consider nested
@@ -28,6 +30,12 @@ const SECURITY_PATTERNS = [
   /\.pem/i,
   /-----BEGIN/i
 ];
+
+// Helper function to check if line is a comment
+function isCommentLine(line: string): boolean {
+  const trimmed = line.trim();
+  return trimmed.startsWith('//') || trimmed.startsWith('#') || trimmed.startsWith('/*') || trimmed.startsWith('*');
+}
 
 // Schema for Git tool arguments
 const GitDiffArgsSchema = z.object({
@@ -115,6 +123,7 @@ export interface PRMessageResult {
 export class GitTools {
   private executor: ShellExecutor;
   private projectRoot: string;
+  private cacheManager = getCacheManager();
 
   constructor(projectRoot?: string) {
     this.projectRoot = projectRoot || process.cwd();
@@ -122,9 +131,27 @@ export class GitTools {
   }
 
   /**
+   * Build cache key for git operations
+   * Includes all parameters that affect the result
+   */
+  private buildGitCacheKey(operation: string, args: Record<string, unknown>): string {
+    const dir = path.resolve((args.directory as string | undefined) || this.projectRoot);
+    const argsJson = JSON.stringify(args, Object.keys(args).sort());
+    const argsHash = createHash('sha256').update(argsJson).digest('hex').substring(0, 16);
+    return `${operation}:${dir}:${argsHash}`;
+  }
+
+  /**
    * Get git diff
    */
   async gitDiff(args: GitDiffArgs): Promise<GitToolResult> {
+    // Try cache first
+    const cacheKey = this.buildGitCacheKey('diff', args);
+    const cached = this.cacheManager.get<GitToolResult>('gitOperations', cacheKey);
+    if (cached) {
+      return cached;
+    }
+
     const commandArgs: string[] = ['diff'];
 
     // Add flags
@@ -149,7 +176,12 @@ export class GitTools {
       args: commandArgs
     });
 
-    return this.processGitResult(result, 'git diff');
+    const toolResult = this.processGitResult(result, 'git diff');
+
+    // Cache the result
+    this.cacheManager.set('gitOperations', cacheKey, toolResult);
+
+    return toolResult;
   }
 
   /**
@@ -176,6 +208,13 @@ export class GitTools {
    * SECURITY: All user inputs are passed as separate arguments to prevent command injection
    */
   async gitLog(args: GitLogArgs): Promise<GitToolResult> {
+    // Try cache first
+    const cacheKey = this.buildGitCacheKey('log', args);
+    const cached = this.cacheManager.get<GitToolResult>('gitOperations', cacheKey);
+    if (cached) {
+      return cached;
+    }
+
     const commandArgs: string[] = ['log'];
 
     if (args.count) commandArgs.push(`-${args.count}`);
@@ -205,7 +244,12 @@ export class GitTools {
       args: commandArgs
     });
 
-    return this.processGitResult(result, 'git log');
+    const toolResult = this.processGitResult(result, 'git log');
+
+    // Cache the result
+    this.cacheManager.set('gitOperations', cacheKey, toolResult);
+
+    return toolResult;
   }
 
   /**
@@ -238,7 +282,7 @@ export class GitTools {
     }
 
     // Check diff size to prevent memory exhaustion
-    const diffSize = Buffer.byteLength(diffResult.output, 'utf-8');
+    const diffSize = diffResult.output.length;
     if (diffSize > MAX_DIFF_SIZE_BYTES) {
       return {
         success: false,
@@ -482,8 +526,7 @@ export class GitTools {
         for (const pattern of SECURITY_PATTERNS) {
           if (pattern.test(cleanLine)) {
             // Reduce false positives: skip comments and documentation
-            const lowerLine = cleanLine.toLowerCase().trim();
-            if (lowerLine.startsWith('//') || lowerLine.startsWith('#') || lowerLine.startsWith('*')) {
+            if (isCommentLine(cleanLine)) {
               continue;
             }
 
@@ -500,23 +543,25 @@ export class GitTools {
         }
 
         // Dangerous code execution
-        if (/\beval\s*\(/.test(cleanLine) || /\bexec\s*\(/.test(cleanLine)) {
-          concerns.push({
-            file: currentFile,
-            line: lineNumber,
-            severity: 'high',
-            category: 'security',
-            message: 'Potentially dangerous code execution (eval/exec)'
-          });
-          concernCount++;
+        if (/eval\s*\(/.test(cleanLine) || /exec\s*\(/.test(cleanLine)) {
+          if (!isCommentLine(cleanLine)) {
+            concerns.push({
+              file: currentFile,
+              line: lineNumber,
+              severity: 'high',
+              category: 'security',
+              message: 'Potentially dangerous code execution (eval/exec)'
+            });
+            concernCount++;
+          }
         }
       }
 
       // Performance checks
       if (!focus || focus === 'performance' || focus === 'all') {
         // Detect nested loops (more realistic check)
-        const forCount = (cleanLine.match(/\bfor\s*\(/g) || []).length;
-        const whileCount = (cleanLine.match(/\bwhile\s*\(/g) || []).length;
+        const forCount = (cleanLine.match(/for\s*\(/g) || []).length;
+        const whileCount = (cleanLine.match(/while\s*\(/g) || []).length;
         if (forCount + whileCount >= NESTED_LOOP_THRESHOLD) {
           concerns.push({
             file: currentFile,
