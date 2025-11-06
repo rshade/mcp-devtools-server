@@ -456,6 +456,13 @@ progress.
 
 ## Session Learnings & Important Notes
 
+### Recent Fixes (2025-11-06)
+
+- **GitTools Test Fixes**: Fixed failing tests by resetting CacheManager in test setup to prevent
+  cached results from interfering between tests
+- **Diff Size Limit**: Updated MAX_DIFF_SIZE_BYTES from 1MB to 10MB to match test expectations
+- **Test Isolation**: Added CacheManager.resetInstance() in beforeEach to ensure clean test state
+
 ### Critical Implementation Details
 
 #### MCP Protocol Integration
