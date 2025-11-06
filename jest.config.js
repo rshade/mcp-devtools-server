@@ -5,7 +5,7 @@ export default {
   injectGlobals: true,
   roots: ['<rootDir>/src'],
   testMatch: [
-    '**/__tests__/**/*.ts',
+    '**/__tests__/**/*.test.ts',
     '**/?(*.)+(spec|test).ts'
   ],
   transform: {
@@ -31,6 +31,6 @@ export default {
     'lcov',
     'html'
   ],
-  setupFilesAfterEnv: [],
+  setupFilesAfterEnv: ['<rootDir>/src/__tests__/setup.ts'],
   testTimeout: 30000
 };

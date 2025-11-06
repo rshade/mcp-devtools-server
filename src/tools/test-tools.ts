@@ -479,7 +479,7 @@ export class TestTools {
         break;
         
       case 'go':
-        const goPassMatch = output.match(/PASS.*?(\d+\.\d+s)/);
+        const goPassMatch = output.match(/PASS/);
         const goFailMatch = output.match(/FAIL/);
         if (goPassMatch && !goFailMatch) {
           stats.testsPassed = 1; // Go doesn't report individual test counts easily
