@@ -111,6 +111,9 @@ export class ProjectDetector {
       
       // Package files
       { pattern: '**/package.json', type: 'package' as const },
+      { pattern: '**/package-lock.json', type: 'package' as const },
+      { pattern: '**/yarn.lock', type: 'package' as const },
+      { pattern: '**/pnpm-lock.yaml', type: 'package' as const },
       { pattern: '**/requirements.txt', type: 'package' as const },
       { pattern: '**/Pipfile', type: 'package' as const },
       { pattern: '**/pyproject.toml', type: 'package' as const },

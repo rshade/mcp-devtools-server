@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, jest } from '@jest/globals';
 import { GitTools } from '../../tools/git-tools';
 import { ShellExecutor } from '../../utils/shell-executor';
+import { CacheManager } from '../../utils/cache-manager';
 
 // Mock type for jest.fn()
 type MockFn = ReturnType<typeof jest.fn>;
@@ -10,6 +11,9 @@ describe('GitTools', () => {
   let mockExecute: MockFn;
 
   beforeEach(() => {
+    // Reset cache to avoid test interference
+    CacheManager.resetInstance();
+
     // Create mock executor
     const mockExecutor = {
       execute: jest.fn(),

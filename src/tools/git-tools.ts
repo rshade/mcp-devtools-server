@@ -9,7 +9,7 @@ import { createHash } from 'crypto';
 const MAX_PR_TITLE_LENGTH = 72; // GitHub's recommended PR title length
 const MAX_CHANGES_TO_DISPLAY = 10;
 const MAX_LINE_LENGTH = 120;
-const MAX_DIFF_SIZE_BYTES = 1000000; // 1MB
+const MAX_DIFF_SIZE_BYTES = 10000000; // 10MB
 const MAX_CONCERNS = 1000;
 const MAX_FILES_TO_REVIEW = 100;
 const NESTED_LOOP_THRESHOLD = 2; // Number of loops on same line to consider nested
