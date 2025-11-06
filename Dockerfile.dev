@@ -1,0 +1,36 @@
+# Development Dockerfile for mcp-devtools-server
+FROM node:24-alpine
+
+# Install common development tools
+RUN apk add --no-cache \
+    make \
+    git \
+    curl \
+    bash \
+    python3 \
+    py3-pip
+
+# Create app directory
+WORKDIR /app
+
+# Copy package files first for better caching
+COPY package*.json ./
+
+# Install all dependencies (including dev dependencies)
+RUN npm install
+
+# Copy all source files
+COPY . .
+
+# Build TypeScript
+RUN npm run build
+
+# Set environment to development
+ENV NODE_ENV=development
+ENV LOG_LEVEL=debug
+
+# Expose stdio for MCP protocol
+# MCP uses stdio, so no ports to expose
+
+# Run development server with hot reload
+CMD ["npm", "run", "dev"]

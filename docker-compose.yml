@@ -1,0 +1,61 @@
+version: '3.8'
+
+services:
+  # Development service with hot-reload
+  mcp-devtools-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    volumes:
+      # Mount source code for hot-reload
+      - .:/app
+      # Prevent node_modules from being overwritten
+      - /app/node_modules
+      # Mount project directory for testing
+      - ${PROJECT_DIR:-.}:/workspace
+    environment:
+      - LOG_LEVEL=${LOG_LEVEL:-debug}
+      - NODE_ENV=development
+    working_dir: /workspace
+    stdin_open: true
+    tty: true
+    command: npm run dev
+
+  # Production-like service for testing
+  mcp-devtools:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: production
+    volumes:
+      # Mount project directory for testing
+      - ${PROJECT_DIR:-.}:/workspace
+    environment:
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+      - NODE_ENV=production
+    working_dir: /workspace
+    stdin_open: true
+    tty: true
+
+  # Test runner service
+  mcp-devtools-test:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    volumes:
+      - .:/app
+      - /app/node_modules
+    environment:
+      - NODE_ENV=test
+      - LOG_LEVEL=error
+    command: npm test
+
+  # Linter service
+  mcp-devtools-lint:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    volumes:
+      - .:/app
+      - /app/node_modules
+    command: npm run lint
