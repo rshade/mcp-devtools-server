@@ -2,6 +2,7 @@ import { execa, ExecaError } from 'execa';
 import * as path from 'path';
 import * as fs from 'fs/promises';
 import winston from 'winston';
+import { getCacheManager } from './cache-manager.js';
 
 // Configure logger
 const logger = winston.createLogger({
@@ -87,6 +88,7 @@ const DANGEROUS_ARGS = [
 export class ShellExecutor {
   private defaultTimeout: number;
   private projectRoot: string;
+  private cacheManager = getCacheManager();
 
   constructor(projectRoot?: string, defaultTimeout = 30000) {
     this.projectRoot = projectRoot || process.cwd();
@@ -269,12 +271,26 @@ export class ShellExecutor {
    * Check if a command is available in the system
    */
   async isCommandAvailable(command: string): Promise<boolean> {
+    // Try cache first
+    const cacheKey = `cmd:${command}`;
+    const cached = this.cacheManager.get<boolean>('commandAvailability', cacheKey);
+    if (cached !== null) {
+      return cached;
+    }
+
     try {
       const result = await execa('which', [command], {
         reject: false
       });
-      return result.exitCode === 0;
+      const isAvailable = result.exitCode === 0;
+
+      // Cache the result (commands rarely change availability during runtime)
+      this.cacheManager.set('commandAvailability', cacheKey, isAvailable);
+
+      return isAvailable;
     } catch {
+      // Cache negative result too
+      this.cacheManager.set('commandAvailability', cacheKey, false);
       return false;
     }
   }

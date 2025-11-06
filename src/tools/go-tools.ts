@@ -2,6 +2,8 @@ import { z } from 'zod';
 import { ShellExecutor, ExecutionResult } from '../utils/shell-executor.js';
 import * as path from 'path';
 import * as fs from 'fs/promises';
+import { getCacheManager } from '../utils/cache-manager.js';
+import { createHash } from 'crypto';
 
 // Schema for Go tool arguments
 const GoToolArgsSchema = z.object({
@@ -131,10 +133,22 @@ export interface GoProjectInfo {
 export class GoTools {
   private executor: ShellExecutor;
   private projectRoot: string;
+  private cacheManager = getCacheManager();
 
   constructor(projectRoot?: string) {
     this.projectRoot = projectRoot || process.cwd();
     this.executor = new ShellExecutor(this.projectRoot);
+  }
+
+  /**
+   * Build cache key for go operations
+   * Includes all parameters that affect the result
+   */
+  private buildGoCacheKey(operation: string, args: Record<string, unknown>): string {
+    const dir = path.resolve((args.directory as string | undefined) || this.projectRoot);
+    const argsJson = JSON.stringify(args, Object.keys(args).sort());
+    const argsHash = createHash('sha256').update(argsJson).digest('hex').substring(0, 16);
+    return `${operation}:${dir}:${argsHash}`;
   }
 
   /**
@@ -562,6 +576,14 @@ export class GoTools {
    */
   async getProjectInfo(directory?: string): Promise<GoProjectInfo> {
     const dir = directory || this.projectRoot;
+
+    // Try cache first
+    const cacheKey = this.buildGoCacheKey('project-info', { directory: dir });
+    const cached = this.cacheManager.get<GoProjectInfo>('goModules', cacheKey);
+    if (cached) {
+      return cached;
+    }
+
     const info: GoProjectInfo = {
       hasGoMod: false,
       dependencies: [],
@@ -730,7 +752,10 @@ export class GoTools {
       // Return partial results instead of empty object to provide useful info
       // even when some operations fail
     }
-    
+
+    // Cache the result
+    this.cacheManager.set('goModules', cacheKey, info);
+
     return info;
   }
 
