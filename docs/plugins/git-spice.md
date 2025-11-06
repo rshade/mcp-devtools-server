@@ -454,6 +454,6 @@ A: Just disable the plugin in `.mcp-devtools.json` or uninstall the `gs` CLI.
 
 ## See Also
 
-- [Plugin Development Guide](../plugin-development.md)
-- [MCP DevTools Documentation](../../README.md)
+- [Plugin Development Guide](https://github.com/rshade/mcp-devtools-server/blob/main/docs/plugin-development.md)
+- [MCP DevTools Documentation](https://github.com/rshade/mcp-devtools-server/blob/main/README.md)
 - [git-spice Quick Start](https://abhinav.github.io/git-spice/quickstart/)

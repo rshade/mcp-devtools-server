@@ -24,7 +24,7 @@ Create `.mcp-devtools.json` in your project root directory.
 
 ## Full Configuration Reference
 
-For complete configuration options, see the [JSON Schema](.mcp-devtools.schema.json) in the project root.
+For complete configuration options, see the [JSON Schema](https://github.com/rshade/mcp-devtools-server/blob/main/.mcp-devtools.schema.json) in the project root.
 
 ## Auto-Generate Configuration
 
