@@ -155,6 +155,9 @@ it('returns error when file does not exist', async () => {
 
 **Complete Prompt Format** - All GitHub issues should follow this structure:
 
+**CRITICAL**: Issues must be complete, actionable prompts that guide implementation from start to finish,
+including all quality gates.
+
 ```markdown
 ## Priority: P1 - High Priority
 
@@ -175,15 +178,73 @@ Detailed technical approach with:
 - Code examples or pseudocode
 - File structure changes
 
+## Implementation Guidance
+
+### Development Steps
+
+1. **Codebase Analysis** (if needed)
+   - Search for existing patterns: `grep -r "pattern" src/`
+   - Review related files: [list specific files]
+   - Understand integration points
+
+2. **Implementation**
+   - Create/modify files: [list specific files]
+   - Follow existing patterns in [reference file]
+   - Ensure TypeScript types are correct
+
+3. **Testing Requirements**
+   - Add unit tests in `src/__tests__/[category]/[feature].test.ts`
+   - Target coverage: 85-90%+
+   - Test edge cases, error conditions, and integration points
+   - Follow test quality standards (see CLAUDE.md)
+
+4. **Linting & Validation**
+   - **MUST RUN BEFORE PR**:
+     ```bash
+     make lint      # TypeScript/JavaScript linting
+     make lint-md   # Markdown linting (for any .md changes)
+     make test      # Full test suite
+     make build     # Verify build passes
+     ```
+   - Fix all linting errors (zero tolerance)
+   - Ensure 100% test pass rate
+
+5. **Documentation Updates**
+   - Update README.md if adding new features/tools
+   - Add JSDoc comments for all public APIs
+   - Update CLAUDE.md for significant changes
+
+6. **PR Message Generation**
+   - Use conventional commit format: `type(scope): description`
+   - Generate comprehensive PR_MESSAGE.md including:
+     - Summary of changes (what and why)
+     - Testing performed
+     - Breaking changes (if any)
+     - Related issues
+
 ## Acceptance Criteria
 
-Concrete, testable criteria:
-
+**Feature Complete:**
 - [ ] Feature X implemented and working
-- [ ] Tests added with Y% coverage
-- [ ] Documentation updated
-- [ ] Linting passes
+- [ ] Code follows project patterns and conventions
+- [ ] TypeScript types are correct and complete
+
+**Quality Gates (MUST PASS):**
+- [ ] `make lint` passes with zero errors
+- [ ] `make lint-md` passes (if .md files changed)
+- [ ] `make test` passes with 85-90%+ coverage
+- [ ] `make build` completes successfully
+- [ ] All tests are meaningful (not AI slop - see Test Quality Standards)
+
+**Documentation:**
+- [ ] JSDoc comments added for all public APIs
+- [ ] README.md updated (if needed)
+- [ ] CLAUDE.md updated (if significant architectural changes)
+
+**PR Ready:**
+- [ ] PR_MESSAGE.md generated with conventional commit format
 - [ ] No breaking changes (or migration guide provided)
+- [ ] Related issues referenced
 
 ## Implementation Phases (if multi-step)
 
@@ -210,6 +271,7 @@ Real-world scenarios showing how this will be used:
 - Related issues: #123, #456
 - Relevant documentation
 - External resources
+- Similar implementations: [file references]
 
 ## Success Metrics
 
@@ -217,6 +279,8 @@ How we'll know this is successful:
 
 - [ ] Metric 1
 - [ ] Metric 2
+- [ ] All quality gates passed
+- [ ] PR merged without revision requests
 
 ```text
 End of template
