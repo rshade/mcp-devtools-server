@@ -11,6 +11,55 @@ The server provides standardized development tool integration for AI assistants.
 [Milestones](https://github.com/rshade/mcp-devtools-server/milestones) for active development
 priorities.
 
+## Specialized Agents Available
+
+This project has custom agents in `.claude/` for common tasks. **Use these instead of implementing manually:**
+
+### Implementation Agents
+
+**`/implement-python-tool [issue-number]`** (Haiku, ~$0.10-0.25, 1.5-3 hours)
+
+- Implements Python tools from Epic #131
+- Follows Go tools pattern with cache optimization
+- Enforces 85-90%+ test coverage
+- Runs all quality gates
+
+**`/quick-fix [issue-number]`** (Haiku, ~$0.10-0.25, 30-60 min)
+
+- Fast bug fixes (<1 hour, <50 lines)
+- Best for linting errors, test failures, docs
+- Rejects complex issues
+
+### Issue Management
+
+**`/triage-issues [filter]`** (Haiku, ~$0.05-0.10/issue, 5-10 min)
+
+- Categorizes and labels issues using `gh issue list/view/edit`
+- Assigns priorities (P0-P3)
+- Detects duplicates and stale issues
+- Filters: all, unlabeled, stale, P1
+
+### Code Review
+
+**`/review-pr [pr-number] [--fix]`** (Sonnet, ~$2-5, 30-60 min)
+
+- Deep review across 5 dimensions (correctness, security, performance, maintainability, best practices)
+- Uses `gh pr view/diff/checks`
+- Optional: implements fixes with --fix flag
+- Enforces quality gates
+
+**When to use agents:**
+
+- ✅ Implementing Python tools (issues #132-144)
+- ✅ Quick bug fixes
+- ✅ Issue triage before sprint planning
+- ✅ Comprehensive PR reviews
+
+**Cost efficiency:** Haiku is 95% cheaper than Sonnet for straightforward tasks.
+Use Sonnet only for deep reasoning (code reviews).
+
+See `.claude/README.md` for complete documentation.
+
 ## Build and Test Commands
 
 You can use either `make` commands (recommended) or `npm` scripts directly.
@@ -235,7 +284,6 @@ Detailed technical approach with:
 - [ ] `make test` passes with 85-90%+ coverage
 - [ ] `make build` completes successfully
 - [ ] All tests are meaningful (not AI slop - see Test Quality Standards)
-
 **Documentation:**
 - [ ] JSDoc comments added for all public APIs
 - [ ] README.md updated (if needed)
@@ -630,6 +678,49 @@ progress.
 
 ## Recent Major Updates
 
+### 2025-11-06: Python Support Epic & Specialized Agents
+
+**Epic #131** - Python Language Support with Modern Tooling (pyright, ruff, uv, pytest)
+
+**GitHub Issues Created:**
+
+- Phase 1 (Core): #132-137 - project_info, test, lint/format, check_types, install_deps, version detection
+- Phase 2 (Advanced): #138-141 - security, build, venv, benchmark
+- Phase 3 (Specialized): #142-144 - update_deps, compatibility, profile
+
+**Key Features:**
+
+- All 13 tools include **cache optimization from the start** (not optional)
+- Follows Go tools pattern (src/tools/go-tools.ts)
+- Modern Python stack: uv, ruff, pyright (not mypy), pytest
+- Python 3.9 upgrade recommendations built-in
+- Cache TTLs: 5min (quick ops) to 2hr (dep checks)
+
+**Specialized Agents Created:**
+
+- `.claude/agents/python-implementation.md` - Haiku agent for Python tool implementation
+- `.claude/agents/issue-triage.md` - Haiku agent for issue categorization using gh CLI
+- `.claude/agents/code-review-fix.md` - Sonnet agent for comprehensive PR review
+
+**Slash Commands:**
+
+- `/implement-python-tool [issue]` - Implement Python tool (Haiku, $0.10-0.25)
+- `/quick-fix [issue]` - Fast bug fixes (Haiku, $0.10-0.25)
+- `/triage-issues [filter]` - Categorize issues (Haiku, $0.05-0.10)
+- `/review-pr [number] [--fix]` - Code review (Sonnet, $2-5)
+
+**Cost Efficiency:**
+
+- Haiku: 95% cheaper than Sonnet for straightforward tasks
+- Strategic Sonnet use only for deep reasoning (code reviews)
+- Estimated savings: $25-62 for 13 Python tools
+
+**Documentation:**
+
+- `.claude/README.md` - Complete agent documentation
+- Cache optimization requirements in all issue comments
+- Integration with GitHub CLI (gh issue/pr commands)
+
 ### 2025-11-04: Intelligent Caching System (Phases 1-2)
 
 **PR #78** - Implemented intelligent in-process LRU caching with file-based invalidation
@@ -691,7 +782,6 @@ progress.
 - Large files (>100MB) use mtime + size only (no checksum)
 - Race conditions between TTL and file-based invalidation (minor)
 - Cache keys must include all parameters (documented pattern)
-
 **Documentation:**
 
 - Complete implementation guide in `CACHING.md` (550+ lines)
