@@ -1,7 +1,8 @@
 import { z } from 'zod';
-import { glob } from 'glob';
+import path from 'path';
 import { ShellExecutor, ExecutionResult } from '../utils/shell-executor.js';
 import { ProjectDetector } from '../utils/project-detector.js';
+import { FileScanner } from '../utils/file-scanner.js';
 
 // Schema for lint tool arguments
 const LintToolArgsSchema = z.object({
@@ -308,33 +309,32 @@ export class LintTools {
   }
 
   /**
-   * Expand glob patterns to actual file paths
+   * Expand glob patterns to actual file paths using cached FileScanner
    */
   private async expandGlobPatterns(patterns: string[], directory?: string): Promise<string[]> {
     const cwd = directory || this.projectRoot;
-    const files: string[] = [];
+    const scanner = new FileScanner();
 
-    for (const pattern of patterns) {
-      try {
-        const matches = await glob(pattern, {
-          cwd,
-          ignore: [
-            '**/node_modules/**',
-            '**/dist/**',
-            '**/build/**',
-            '**/.git/**',
-            '**/coverage/**'
-          ]
-        });
-        
-        files.push(...matches);
-      } catch (error) {
-        console.warn(`Error expanding pattern ${pattern}: ${error}`);
-      }
+    try {
+      // Use FileScanner which provides caching
+      const files = await scanner.scan({
+        patterns,
+        exclude: [
+          '**/node_modules/**',
+          '**/dist/**',
+          '**/build/**',
+          '**/.git/**',
+          '**/coverage/**'
+        ],
+        cwd
+      });
+
+      // FileScanner returns absolute paths, convert to relative for compatibility
+      return files.map(file => path.relative(cwd, file));
+    } catch (error) {
+      console.warn(`Error expanding patterns ${patterns.join(', ')}: ${error}`);
+      return [];
     }
-
-    // Remove duplicates and return relative paths
-    return [...new Set(files)];
   }
 
   /**

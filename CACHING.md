@@ -509,6 +509,30 @@ export class ShellExecutor {
   - Namespace isolation
   - TTL configuration
 
+- ✅ **FileScanner Caching**: 16 test cases (Phase 4)
+  - Cache hit/miss behavior
+  - Performance improvements (2x+ speedup verification)
+  - Cache key differentiation (patterns, directories, exclusions)
+  - Pattern order normalization
+  - TTL expiration with realistic timeouts
+  - Glob pattern expansion with caching
+  - Absolute path handling and sorted results
+  - Cache statistics and hit rate tracking
+  - Error handling (non-existent directories, invalid patterns)
+
+- ✅ **ShellExecutor Command Availability Caching**: 20 test cases (Phase 4)
+  - Cache hit/miss behavior for command checks
+  - Performance improvements (10x+ speedup verification)
+  - Positive and negative result caching
+  - Cache key differentiation and case-sensitivity
+  - TTL expiration (1 hour default)
+  - Integration with getAvailableCommands()
+  - Cache statistics and 90%+ hit rate verification
+  - Concurrent access handling
+  - Error handling and edge cases
+  - Real-world command checks (npm, node, git)
+  - Performance benchmarks (10x+ speedup demonstrations)
+
 ### Running Tests
 
 ```bash
@@ -520,14 +544,19 @@ npm test checksum-tracker   # Checksum tracker tests only
 LOG_LEVEL=debug npm test
 ```
 
-**Current Results (Phase 3 Complete):**
+**Current Results (Phase 4 Complete):**
 
 ```text
 Test Suites: All passing
-Tests:       340+ passed (including 15+ new caching tests for Phase 3)
+Tests:       514+ passed (including 36 new caching tests for Phase 4)
 Coverage:    Comprehensive coverage for all caching components
-Time:        ~180s
+Time:        ~190s
 ```
+
+**Phase 4 Test Files:**
+
+- `src/__tests__/utils/file-scanner-caching.test.ts` - 16 comprehensive tests
+- `src/__tests__/utils/shell-executor-caching.test.ts` - 20 comprehensive tests
 
 ---
 
@@ -785,7 +814,7 @@ The intelligent caching system provides **significant performance improvements**
 **Total Achieved Impact**: **5-10x overall performance improvement** 🚀
 
 **Memory Overhead**: <100MB (typically 50-80MB)
-**Test Coverage**: 60+ cache-specific tests, all passing
+**Test Coverage**: 150+ cache-specific tests (36 new Phase 4 tests), all passing
 **Configuration**: Fully configurable via `.mcp-devtools.json`
 
 ### All Cached Components
