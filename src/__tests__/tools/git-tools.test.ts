@@ -821,4 +821,229 @@ ${diff}`;
     });
   });
 
+  describe('Caching Behavior', () => {
+    describe('gitDiff caching', () => {
+      it('should cache git diff results', async () => {
+        const diffOutput = 'diff --git a/file.ts b/file.ts\n+new line';
+        mockExecute.mockResolvedValue({
+          success: true,
+          stdout: diffOutput,
+          stderr: '',
+          exitCode: 0,
+          duration: 100
+        });
+
+        // First call - should execute git command
+        const result1 = await tools.gitDiff({ base: 'main' });
+        expect(mockExecute).toHaveBeenCalledTimes(1);
+        expect(result1.output).toBe(diffOutput);
+
+        // Second call with same args - should use cache
+        const result2 = await tools.gitDiff({ base: 'main' });
+        expect(mockExecute).toHaveBeenCalledTimes(1); // Still 1, not called again
+        expect(result2.output).toBe(diffOutput);
+        expect(result2).toEqual(result1);
+      });
+
+      it('should create different cache keys for different arguments', async () => {
+        mockExecute.mockResolvedValue({
+          success: true,
+          stdout: 'diff output',
+          stderr: '',
+          exitCode: 0,
+          duration: 100
+        });
+
+        // Call with different bases
+        await tools.gitDiff({ base: 'main' });
+        await tools.gitDiff({ base: 'develop' });
+
+        expect(mockExecute).toHaveBeenCalledTimes(2);
+      });
+
+      it('should create different cache keys for different flags', async () => {
+        mockExecute.mockResolvedValue({
+          success: true,
+          stdout: 'diff output',
+          stderr: '',
+          exitCode: 0,
+          duration: 100
+        });
+
+        // Call with different unified values
+        await tools.gitDiff({ base: 'main', unified: 3 });
+        await tools.gitDiff({ base: 'main', unified: 5 });
+
+        expect(mockExecute).toHaveBeenCalledTimes(2);
+      });
+
+      it('should create different cache keys for cached flag', async () => {
+        mockExecute.mockResolvedValue({
+          success: true,
+          stdout: 'diff output',
+          stderr: '',
+          exitCode: 0,
+          duration: 100
+        });
+
+        // Call with and without cached flag
+        await tools.gitDiff({ base: 'main' });
+        await tools.gitDiff({ base: 'main', cached: true });
+
+        expect(mockExecute).toHaveBeenCalledTimes(2);
+      });
+
+      it('should handle cache for duplicate calls in code review', async () => {
+        const fullDiff = 'diff --git a/file.ts b/file.ts\n+new line';
+        const fileList = 'file.ts';
+
+        mockExecute
+          .mockResolvedValueOnce({
+            success: true,
+            stdout: fullDiff,
+            stderr: '',
+            exitCode: 0,
+            duration: 100
+          })
+          .mockResolvedValueOnce({
+            success: true,
+            stdout: fileList,
+            stderr: '',
+            exitCode: 0,
+            duration: 100
+          });
+
+        // Code review makes two git diff calls
+        await tools.codeReview({ base: 'main' });
+
+        // The second diff call with nameOnly should not hit cache
+        // because it has different parameters
+        expect(mockExecute).toHaveBeenCalledTimes(2);
+      });
+    });
+
+    describe('gitLog caching', () => {
+      it('should cache git log results', async () => {
+        const logOutput = 'commit abc123\nAuthor: Test\nDate: 2024-01-01\n\nfeat: new feature';
+        mockExecute.mockResolvedValue({
+          success: true,
+          stdout: logOutput,
+          stderr: '',
+          exitCode: 0,
+          duration: 100
+        });
+
+        // First call - should execute git command
+        const result1 = await tools.gitLog({ count: 10 });
+        expect(mockExecute).toHaveBeenCalledTimes(1);
+        expect(result1.output).toBe(logOutput);
+
+        // Second call with same args - should use cache
+        const result2 = await tools.gitLog({ count: 10 });
+        expect(mockExecute).toHaveBeenCalledTimes(1); // Still 1, not called again
+        expect(result2.output).toBe(logOutput);
+        expect(result2).toEqual(result1);
+      });
+
+      it('should create different cache keys for different counts', async () => {
+        mockExecute.mockResolvedValue({
+          success: true,
+          stdout: 'log output',
+          stderr: '',
+          exitCode: 0,
+          duration: 100
+        });
+
+        // Call with different counts
+        await tools.gitLog({ count: 10 });
+        await tools.gitLog({ count: 20 });
+
+        expect(mockExecute).toHaveBeenCalledTimes(2);
+      });
+
+      it('should create different cache keys for different authors', async () => {
+        mockExecute.mockResolvedValue({
+          success: true,
+          stdout: 'log output',
+          stderr: '',
+          exitCode: 0,
+          duration: 100
+        });
+
+        // Call with different authors
+        await tools.gitLog({ author: 'user1@example.com' });
+        await tools.gitLog({ author: 'user2@example.com' });
+
+        expect(mockExecute).toHaveBeenCalledTimes(2);
+      });
+
+      it('should create different cache keys for different since values', async () => {
+        mockExecute.mockResolvedValue({
+          success: true,
+          stdout: 'log output',
+          stderr: '',
+          exitCode: 0,
+          duration: 100
+        });
+
+        // Call with different since values
+        await tools.gitLog({ since: '2024-01-01' });
+        await tools.gitLog({ since: '2024-02-01' });
+
+        expect(mockExecute).toHaveBeenCalledTimes(2);
+      });
+    });
+
+    describe('Cache statistics', () => {
+      it('should track cache hits and misses', async () => {
+        const { getCacheManager } = await import('../../utils/cache-manager');
+        const cache = getCacheManager();
+
+        mockExecute.mockResolvedValue({
+          success: true,
+          stdout: 'diff output',
+          stderr: '',
+          exitCode: 0,
+          duration: 100
+        });
+
+        // First call - cache miss
+        await tools.gitDiff({ base: 'main' });
+
+        // Second call - cache hit
+        await tools.gitDiff({ base: 'main' });
+
+        const stats = cache.getStats('gitOperations');
+        expect(stats).not.toBeNull();
+        if (stats) {
+          expect(stats.hits).toBeGreaterThanOrEqual(1);
+          expect(stats.misses).toBeGreaterThanOrEqual(1);
+        }
+      });
+    });
+
+    describe('Cache performance', () => {
+      it('should not execute git command on cache hit', async () => {
+        mockExecute.mockResolvedValue({
+          success: true,
+          stdout: 'diff output',
+          stderr: '',
+          exitCode: 0,
+          duration: 100
+        });
+
+        // First call - cache miss (will execute git)
+        await tools.gitDiff({ base: 'main' });
+        expect(mockExecute).toHaveBeenCalledTimes(1);
+
+        // Second call - cache hit (should not execute git again)
+        await tools.gitDiff({ base: 'main' });
+        expect(mockExecute).toHaveBeenCalledTimes(1); // Still 1, proving cache was used
+
+        // The fact that mockExecute wasn't called again proves
+        // the cache is working and much faster than re-execution
+      });
+    });
+  });
+
 });
