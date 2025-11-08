@@ -1,0 +1,69 @@
+---
+# yamllint disable rule:line-length
+# OpenCode Code Review Workflow
+#
+# This workflow uses OpenCode (https://opencode.ai) to provide AI-powered
+# code reviews on-demand when users comment "/oc-review" on pull requests.
+# It analyzes code quality, security, testing, and MCP protocol compliance.
+#
+# Usage: Comment "/oc-review" on any pull request to trigger a review
+#
+# Required Secrets:
+#   - XAI_API_KEY: X.AI API key for grok-code-free model
+#
+# Required Permissions:
+#   - id-token: write (OpenCode session management)
+#   - contents: write (checkout and analyze code)
+#   - pull-requests: write (post review comments)
+#   - issues: write (interact with linked issues)
+
+name: OpenCode Code Review
+
+on:
+  issue_comment:
+    types: [created]
+
+jobs:
+  opencode-review:
+    if: |
+      github.event.issue.pull_request &&
+      contains(github.event.comment.body, '/oc-review')
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: write
+      pull-requests: write
+      issues: write
+
+    steps:
+      - name: Run OpenCode Review
+        uses: sst/opencode/github@latest
+        with:
+          model: xai/grok-code-free
+          prompt: |
+            Please review this pull request for the MCP DevTools server project and provide feedback on:
+            - Code quality and best practices (TypeScript/Node.js)
+            - Potential bugs or security issues
+            - Performance considerations
+            - Test coverage and testing best practices
+            - **MCP protocol compliance** and tool registration
+            - **Security validation** in shell command execution
+            - **GitHub Actions workflow configuration issues**
+            - Adherence to project conventions in CLAUDE.md
+
+            **IMPORTANT**: If this PR modifies any `.github/workflows/*.yml` files, pay special attention to:
+            - Valid action inputs and parameters
+            - Required permissions
+            - Workflow syntax and structure
+            - Environment variable passing and configuration
+
+            **For this MCP DevTools project specifically**:
+            - Ensure proper tool registration in index.ts
+            - Validate security measures in ShellExecutor
+            - Check TypeScript types and JSDoc documentation
+            - Verify test coverage meets 80%+ target
+            - Confirm linting passes (npm run lint, lint:md, lint:yaml)
+
+            Be constructive and helpful in your feedback. Reference CLAUDE.md for project-specific guidance.
+        env:
+          XAI_API_KEY: ${{ secrets.XAI_API_KEY }}
