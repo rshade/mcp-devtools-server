@@ -5,8 +5,8 @@
  * and contextual information for generating smart suggestions.
  */
 
-import { ExecutionResult } from './shell-executor.js';
-import { KnowledgeBase, FailurePattern } from './knowledge-base.js';
+import { ExecutionResult } from "./shell-executor.js";
+import { KnowledgeBase, FailurePattern } from "./knowledge-base.js";
 
 /**
  * Result of analyzing a command execution for failures and patterns
@@ -33,23 +33,23 @@ export interface AnalysisResult {
  */
 export enum ErrorType {
   /** Build and compilation failures */
-  BuildError = 'build',
+  BuildError = "build",
   /** Test execution failures and test-related issues */
-  TestFailure = 'test',
+  TestFailure = "test",
   /** Linting and code style violations */
-  LintIssue = 'lint',
+  LintIssue = "lint",
   /** Dependency resolution and package management issues */
-  DependencyIssue = 'dependency',
+  DependencyIssue = "dependency",
   /** Configuration and environment setup problems */
-  ConfigurationIssue = 'configuration',
+  ConfigurationIssue = "configuration",
   /** Security vulnerabilities and unsafe practices */
-  SecurityIssue = 'security',
+  SecurityIssue = "security",
   /** Performance issues and bottlenecks */
-  PerformanceIssue = 'performance',
+  PerformanceIssue = "performance",
   /** Runtime errors during execution */
-  RuntimeError = 'runtime',
+  RuntimeError = "runtime",
   /** Unknown or unclassified error types */
-  Unknown = 'unknown'
+  Unknown = "unknown",
 }
 
 /**
@@ -113,10 +113,10 @@ export class FailureAnalyzer {
         failureDetected: false,
         patterns: [],
         errorType: ErrorType.Unknown,
-        errorSummary: '',
+        errorSummary: "",
         affectedFiles: [],
-        suggestedActions: ['No issues detected'],
-        confidence: 1.0
+        suggestedActions: ["No issues detected"],
+        confidence: 1.0,
       };
     }
 
@@ -130,7 +130,7 @@ export class FailureAnalyzer {
     // This allows us to detect compound failures (e.g., dependency + race condition)
     const matchedPatterns = this.knowledgeBase.findMatchingPatterns(
       combinedOutput,
-      undefined // undefined means search all categories
+      undefined, // undefined means search all categories
     );
 
     // Extract affected files
@@ -140,14 +140,17 @@ export class FailureAnalyzer {
     const errorSummary = this.generateErrorSummary(
       result,
       matchedPatterns,
-      errorType
+      errorType,
     );
 
     // Aggregate suggestions from matched patterns
     const suggestedActions = this.aggregateSuggestions(matchedPatterns);
 
     // Calculate confidence based on pattern matches
-    const confidence = this.calculateConfidence(matchedPatterns, combinedOutput);
+    const confidence = this.calculateConfidence(
+      matchedPatterns,
+      combinedOutput,
+    );
 
     return {
       failureDetected: true,
@@ -156,7 +159,7 @@ export class FailureAnalyzer {
       errorSummary,
       affectedFiles,
       suggestedActions,
-      confidence
+      confidence,
     };
   }
 
@@ -174,7 +177,7 @@ export class FailureAnalyzer {
    */
   private determineErrorType(
     output: string,
-    result: ExecutionResult
+    result: ExecutionResult,
   ): ErrorType {
     // Pattern-based detection (more specific) should come BEFORE command-based detection
     // This ensures we catch specific error types even when command suggests something else
@@ -191,8 +194,8 @@ export class FailureAnalyzer {
     }
 
     // Use command context as secondary indicator
-    if (result.command.includes('test')) return ErrorType.TestFailure;
-    if (result.command.includes('lint')) return ErrorType.LintIssue;
+    if (result.command.includes("test")) return ErrorType.TestFailure;
+    if (result.command.includes("lint")) return ErrorType.LintIssue;
 
     // More pattern-based detection
     if (/FAIL|failed|failure/i.test(output) && /test/i.test(output)) {
@@ -209,7 +212,7 @@ export class FailureAnalyzer {
     }
 
     // Build-related command comes after specific pattern checks
-    if (result.command.includes('build')) return ErrorType.BuildError;
+    if (result.command.includes("build")) return ErrorType.BuildError;
 
     if (/undefined|undeclared|not found/i.test(output)) {
       return ErrorType.BuildError;
@@ -217,7 +220,6 @@ export class FailureAnalyzer {
 
     return ErrorType.Unknown;
   }
-
 
   /**
    * Extract file paths from error output using common error message patterns
@@ -244,7 +246,7 @@ export class FailureAnalyzer {
       // Python-style: File "/path/to/file.py", line 123
       /File\s+"([^"]+\.py)".*?line\s+\d+/g,
       // Generic: /path/to/file.ext
-      /(?:^|\s)([a-zA-Z0-9_/-]+\.[a-z]{2,4})(?:\s|$)/g
+      /(?:^|\s)([a-zA-Z0-9_/-]+\.[a-z]{2,4})(?:\s|$)/g,
     ];
 
     for (const pattern of filePatterns) {
@@ -274,7 +276,7 @@ export class FailureAnalyzer {
   private generateErrorSummary(
     result: ExecutionResult,
     patterns: FailurePattern[],
-    errorType: ErrorType
+    errorType: ErrorType,
   ): string {
     if (patterns.length > 0) {
       const primaryPattern = patterns[0];
@@ -283,15 +285,15 @@ export class FailureAnalyzer {
 
     // Fallback to generic summary
     const errorTypeMap: Record<ErrorType, string> = {
-      [ErrorType.BuildError]: 'Build failed with compilation errors',
-      [ErrorType.TestFailure]: 'Tests failed',
-      [ErrorType.LintIssue]: 'Linting issues detected',
-      [ErrorType.DependencyIssue]: 'Dependency resolution failed',
-      [ErrorType.ConfigurationIssue]: 'Configuration error',
-      [ErrorType.SecurityIssue]: 'Security vulnerability detected',
-      [ErrorType.PerformanceIssue]: 'Performance issue identified',
-      [ErrorType.RuntimeError]: 'Runtime error occurred',
-      [ErrorType.Unknown]: `Command failed with exit code ${result.exitCode}`
+      [ErrorType.BuildError]: "Build failed with compilation errors",
+      [ErrorType.TestFailure]: "Tests failed",
+      [ErrorType.LintIssue]: "Linting issues detected",
+      [ErrorType.DependencyIssue]: "Dependency resolution failed",
+      [ErrorType.ConfigurationIssue]: "Configuration error",
+      [ErrorType.SecurityIssue]: "Security vulnerability detected",
+      [ErrorType.PerformanceIssue]: "Performance issue identified",
+      [ErrorType.RuntimeError]: "Runtime error occurred",
+      [ErrorType.Unknown]: `Command failed with exit code ${result.exitCode}`,
     };
 
     return errorTypeMap[errorType];
@@ -308,9 +310,7 @@ export class FailureAnalyzer {
    * @returns {string[]} Array of unique, prioritized suggestions (max 5)
    * @private
    */
-  private aggregateSuggestions(
-    patterns: FailurePattern[]
-  ): string[] {
+  private aggregateSuggestions(patterns: FailurePattern[]): string[] {
     const suggestions: string[] = [];
 
     // Add pattern-specific suggestions
@@ -321,8 +321,8 @@ export class FailureAnalyzer {
 
     // Add general suggestions if no patterns matched
     if (suggestions.length === 0) {
-      suggestions.push('Review the error output above for details');
-      suggestions.push('Check recent code changes for potential issues');
+      suggestions.push("Review the error output above for details");
+      suggestions.push("Check recent code changes for potential issues");
     }
 
     // Remove duplicates and limit total
@@ -356,7 +356,7 @@ export class FailureAnalyzer {
    */
   private calculateConfidence(
     patterns: FailurePattern[],
-    output: string
+    output: string,
   ): number {
     if (patterns.length === 0) return 0.3; // Low confidence with no matches
 
@@ -367,7 +367,9 @@ export class FailureAnalyzer {
     confidence += Math.min(patterns.length * 0.15, 0.3);
 
     // Increase confidence for high-severity matches
-    const highSeverityMatches = patterns.filter(p => p.severity === 'high').length;
+    const highSeverityMatches = patterns.filter(
+      (p) => p.severity === "high",
+    ).length;
     confidence += highSeverityMatches * 0.1;
 
     // Decrease confidence for very long output (likely multiple issues)
@@ -413,7 +415,7 @@ export class FailureAnalyzer {
     recommendations: string[];
   } {
     const totalResults = results.length;
-    const successfulResults = results.filter(r => r.success).length;
+    const successfulResults = results.filter((r) => r.success).length;
     const successRate = totalResults > 0 ? successfulResults / totalResults : 0;
 
     // Collect all error types
@@ -439,21 +441,27 @@ export class FailureAnalyzer {
     const recommendations: string[] = [];
 
     if (successRate < 0.5) {
-      recommendations.push('Low success rate detected - consider reviewing recent changes');
+      recommendations.push(
+        "Low success rate detected - consider reviewing recent changes",
+      );
     }
 
     if (commonErrors.length > 0) {
-      recommendations.push(`Focus on fixing: ${commonErrors[0]} (most common issue)`);
+      recommendations.push(
+        `Focus on fixing: ${commonErrors[0]} (most common issue)`,
+      );
     }
 
     if (successRate > 0.9) {
-      recommendations.push('Excellent success rate - current workflow is effective');
+      recommendations.push(
+        "Excellent success rate - current workflow is effective",
+      );
     }
 
     return {
       commonErrors,
       successRate,
-      recommendations
+      recommendations,
     };
   }
 }

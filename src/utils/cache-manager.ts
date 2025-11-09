@@ -1,5 +1,5 @@
-import { LRUCache } from 'lru-cache';
-import { logger } from './logger.js';
+import { LRUCache } from "lru-cache";
+import { logger } from "./logger.js";
 
 /**
  * Cache entry metadata
@@ -13,8 +13,8 @@ export interface CacheEntry<T> {
  * Cache namespace configuration
  */
 export interface CacheNamespaceConfig {
-  max: number;  // Maximum number of items
-  ttl: number;  // Time-to-live in milliseconds
+  max: number; // Maximum number of items
+  ttl: number; // Time-to-live in milliseconds
 }
 
 /**
@@ -40,6 +40,7 @@ export interface CacheConfig {
     projectDetection: CacheNamespaceConfig;
     gitOperations: CacheNamespaceConfig;
     goModules: CacheNamespaceConfig;
+    nodeModules: CacheNamespaceConfig;
     fileLists: CacheNamespaceConfig;
     commandAvailability: CacheNamespaceConfig;
     testResults: CacheNamespaceConfig;
@@ -54,13 +55,14 @@ export const DEFAULT_CACHE_CONFIG: CacheConfig = {
   enabled: true,
   maxMemoryMB: 100,
   namespaces: {
-    projectDetection: { max: 50, ttl: 60000 },       // 60s
-    gitOperations: { max: 100, ttl: 30000 },         // 30s
-    goModules: { max: 50, ttl: 300000 },             // 5min
-    fileLists: { max: 200, ttl: 30000 },             // 30s
-    commandAvailability: { max: 50, ttl: 3600000 },  // 1hr
-    testResults: { max: 100, ttl: 60000 },           // 60s
-    smartSuggestions: { max: 100, ttl: 300000 },     // 5min
+    projectDetection: { max: 50, ttl: 60000 }, // 60s
+    gitOperations: { max: 100, ttl: 30000 }, // 30s
+    goModules: { max: 50, ttl: 300000 }, // 5min
+    nodeModules: { max: 50, ttl: 300000 }, // 5min
+    fileLists: { max: 200, ttl: 30000 }, // 30s
+    commandAvailability: { max: 50, ttl: 3600000 }, // 1hr
+    testResults: { max: 100, ttl: 60000 }, // 60s
+    smartSuggestions: { max: 100, ttl: 300000 }, // 5min
   },
 };
 
@@ -87,7 +89,7 @@ export class CacheManager {
     this.stats = new Map();
 
     if (!this.config.enabled) {
-      logger.info('CacheManager: Caching disabled via configuration');
+      logger.info("CacheManager: Caching disabled via configuration");
       return;
     }
 
@@ -98,23 +100,30 @@ export class CacheManager {
         new LRUCache<string, CacheEntry<unknown>>({
           max: nsConfig.max,
           ttl: nsConfig.ttl,
-          updateAgeOnGet: true,  // LRU behavior
+          updateAgeOnGet: true, // LRU behavior
           updateAgeOnHas: true,
           // Track evictions for debugging
-          dispose: (value: CacheEntry<unknown>, key: string, reason: LRUCache.DisposeReason) => {
+          dispose: (
+            value: CacheEntry<unknown>,
+            key: string,
+            reason: LRUCache.DisposeReason,
+          ) => {
             logger.debug(`Cache eviction in ${namespace}`, {
               key,
               reason,
               timestamp: value.timestamp,
             });
           },
-        })
+        }),
       );
       this.stats.set(namespace, { hits: 0, misses: 0 });
-      logger.debug(`CacheManager: Initialized namespace '${namespace}'`, nsConfig);
+      logger.debug(
+        `CacheManager: Initialized namespace '${namespace}'`,
+        nsConfig,
+      );
     });
 
-    logger.info('CacheManager: Initialized with config', {
+    logger.info("CacheManager: Initialized with config", {
       enabled: this.config.enabled,
       maxMemoryMB: this.config.maxMemoryMB,
       namespaces: Object.keys(this.config.namespaces),
@@ -253,7 +262,7 @@ export class CacheManager {
       cache.clear();
       logger.debug(`Cache CLEAR: ${namespace}`);
     });
-    logger.info('CacheManager: Cleared all caches');
+    logger.info("CacheManager: Cleared all caches");
   }
 
   /**

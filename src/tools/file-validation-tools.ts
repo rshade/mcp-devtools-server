@@ -1,12 +1,12 @@
-import { NewlineChecker } from '../utils/newline-checker.js';
-import { FileScanner } from '../utils/file-scanner.js';
+import { NewlineChecker } from "../utils/newline-checker.js";
+import { FileScanner } from "../utils/file-scanner.js";
 
 export interface EnsureNewlineParams {
   // File patterns to check (glob syntax)
   patterns: string[];
 
   // Operation mode
-  mode: 'check' | 'fix' | 'validate';
+  mode: "check" | "fix" | "validate";
 
   // Exclude patterns (e.g., ['node_modules/**', '*.min.js'])
   exclude?: string[];
@@ -18,10 +18,10 @@ export interface EnsureNewlineParams {
   cwd?: string;
 
   // Skip binary files automatically
-  skipBinary?: boolean;  // default: true
+  skipBinary?: boolean; // default: true
 
   // Maximum file size to process (in MB)
-  maxFileSizeMB?: number;  // default: 10
+  maxFileSizeMB?: number; // default: 10
 }
 
 export interface EnsureNewlineResult {
@@ -35,10 +35,10 @@ export interface EnsureNewlineResult {
   filesFixed: string[];
 
   // Files skipped (binary, too large, etc.)
-  filesSkipped: Array<{file: string; reason: string}>;
+  filesSkipped: Array<{ file: string; reason: string }>;
 
   // Errors encountered
-  errors: Array<{file: string; error: string}>;
+  errors: Array<{ file: string; error: string }>;
 
   // Summary message
   summary: string;
@@ -66,7 +66,9 @@ export class FileValidationTools {
    * @param params - Tool parameters
    * @returns Result with files checked, fixed, and any errors
    */
-  async ensureNewline(params: EnsureNewlineParams): Promise<EnsureNewlineResult> {
+  async ensureNewline(
+    params: EnsureNewlineParams,
+  ): Promise<EnsureNewlineResult> {
     const {
       patterns,
       mode,
@@ -74,7 +76,7 @@ export class FileValidationTools {
       fileTypes,
       cwd,
       skipBinary = true,
-      maxFileSizeMB = 10
+      maxFileSizeMB = 10,
     } = params;
 
     const result: EnsureNewlineResult = {
@@ -83,8 +85,8 @@ export class FileValidationTools {
       filesFixed: [],
       filesSkipped: [],
       errors: [],
-      summary: '',
-      exitCode: 0
+      summary: "",
+      exitCode: 0,
     };
 
     try {
@@ -93,7 +95,7 @@ export class FileValidationTools {
         patterns,
         exclude,
         fileTypes,
-        cwd
+        cwd,
       });
 
       result.totalFiles = files.length;
@@ -105,14 +107,17 @@ export class FileValidationTools {
 
           // Skip binary files
           if (skipBinary && checkResult.isBinary) {
-            result.filesSkipped.push({ file, reason: 'binary file' });
+            result.filesSkipped.push({ file, reason: "binary file" });
             continue;
           }
 
           // Skip oversized files
           const fileSizeMB = checkResult.fileSize / (1024 * 1024);
           if (fileSizeMB > maxFileSizeMB) {
-            result.filesSkipped.push({ file, reason: `exceeds ${maxFileSizeMB}MB limit` });
+            result.filesSkipped.push({
+              file,
+              reason: `exceeds ${maxFileSizeMB}MB limit`,
+            });
             continue;
           }
 
@@ -121,8 +126,11 @@ export class FileValidationTools {
             result.filesWithoutNewline.push(file);
 
             // Fix if requested
-            if (mode === 'fix') {
-              const fixed = await this.newlineChecker.fix(file, checkResult.lineEnding || '\n');
+            if (mode === "fix") {
+              const fixed = await this.newlineChecker.fix(
+                file,
+                checkResult.lineEnding || "\n",
+              );
               if (fixed) {
                 result.filesFixed.push(file);
               }
@@ -131,7 +139,7 @@ export class FileValidationTools {
         } catch (error) {
           result.errors.push({
             file,
-            error: error instanceof Error ? error.message : String(error)
+            error: error instanceof Error ? error.message : String(error),
           });
         }
       }
@@ -142,14 +150,13 @@ export class FileValidationTools {
       // Set exit code
       if (result.errors.length > 0) {
         result.exitCode = 2;
-      } else if (mode === 'validate' && result.filesWithoutNewline.length > 0) {
+      } else if (mode === "validate" && result.filesWithoutNewline.length > 0) {
         result.exitCode = 1;
       }
-
     } catch (error) {
       result.errors.push({
-        file: 'scanner',
-        error: error instanceof Error ? error.message : String(error)
+        file: "scanner",
+        error: error instanceof Error ? error.message : String(error),
       });
       result.exitCode = 2;
       result.summary = `Failed to scan files: ${error}`;
@@ -171,13 +178,15 @@ export class FileValidationTools {
     parts.push(`Checked ${result.totalFiles} files`);
 
     if (result.filesWithoutNewline.length > 0) {
-      parts.push(`found ${result.filesWithoutNewline.length} without trailing newlines`);
+      parts.push(
+        `found ${result.filesWithoutNewline.length} without trailing newlines`,
+      );
 
-      if (mode === 'fix') {
+      if (mode === "fix") {
         parts.push(`fixed ${result.filesFixed.length}`);
       }
     } else {
-      parts.push('all files compliant');
+      parts.push("all files compliant");
     }
 
     if (result.filesSkipped.length > 0) {
@@ -188,6 +197,6 @@ export class FileValidationTools {
       parts.push(`${result.errors.length} errors`);
     }
 
-    return parts.join(', ') + '.';
+    return parts.join(", ") + ".";
   }
 }

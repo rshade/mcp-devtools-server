@@ -5,4 +5,4 @@
  */
 
 // Set LOG_LEVEL to ERROR to silence INFO/DEBUG logs during tests
-process.env.LOG_LEVEL = 'ERROR';
+process.env.LOG_LEVEL = "ERROR";

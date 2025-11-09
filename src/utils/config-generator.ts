@@ -1,11 +1,11 @@
-import winston from 'winston';
-import { ProjectProfile, MCPDevToolsConfig } from './onboarding-wizard.js';
-import { ProjectType, BuildSystem } from './project-detector.js';
+import winston from "winston";
+import { ProjectProfile, MCPDevToolsConfig } from "./onboarding-wizard.js";
+import { ProjectType, BuildSystem } from "./project-detector.js";
 
 const logger = winston.createLogger({
-  level: process.env.LOG_LEVEL || 'info',
+  level: process.env.LOG_LEVEL || "info",
   format: winston.format.simple(),
-  transports: [new winston.transports.Console()]
+  transports: [new winston.transports.Console()],
 });
 
 /**
@@ -20,7 +20,7 @@ export class ConfigGenerator {
     logger.info(`Generating configuration for ${profile.projectType} project`);
 
     const config: MCPDevToolsConfig = {
-      $schema: './.mcp-devtools.schema.json'
+      $schema: "./.mcp-devtools.schema.json",
     };
 
     // Core configuration
@@ -47,7 +47,10 @@ export class ConfigGenerator {
     config.security = this.generateSecuritySettings(profile);
 
     // Make targets (if available)
-    if (profile.projectInfo.makeTargets && profile.projectInfo.makeTargets.length > 0) {
+    if (
+      profile.projectInfo.makeTargets &&
+      profile.projectInfo.makeTargets.length > 0
+    ) {
       config.makeTargets = profile.projectInfo.makeTargets;
     }
 
@@ -72,15 +75,20 @@ export class ConfigGenerator {
     const commands: Record<string, string> = {};
 
     // If Makefile exists, prefer make commands
-    if (profile.buildSystem === BuildSystem.Make && profile.projectInfo.makeTargets) {
+    if (
+      profile.buildSystem === BuildSystem.Make &&
+      profile.projectInfo.makeTargets
+    ) {
       const targets = profile.projectInfo.makeTargets;
 
-      if (targets.includes('lint')) commands.lint = 'make lint';
-      if (targets.includes('test')) commands.test = 'make test';
-      if (targets.includes('build')) commands.build = 'make build';
-      if (targets.includes('clean')) commands.clean = 'make clean';
-      if (targets.includes('depend') || targets.includes('deps')) {
-        commands.depend = targets.includes('depend') ? 'make depend' : 'make deps';
+      if (targets.includes("lint")) commands.lint = "make lint";
+      if (targets.includes("test")) commands.test = "make test";
+      if (targets.includes("build")) commands.build = "make build";
+      if (targets.includes("clean")) commands.clean = "make clean";
+      if (targets.includes("depend") || targets.includes("deps")) {
+        commands.depend = targets.includes("depend")
+          ? "make depend"
+          : "make deps";
       }
 
       // If make has all standard targets, we're done
@@ -106,107 +114,134 @@ export class ConfigGenerator {
     }
   }
 
-  private generateNodeCommands(profile: ProjectProfile): Record<string, string> {
-    const pm = profile.buildSystem === BuildSystem.NPM ? 'npm' :
-               profile.buildSystem === BuildSystem.Yarn ? 'yarn' :
-               profile.buildSystem === BuildSystem.PNPM ? 'pnpm' : 'npm';
+  private generateNodeCommands(
+    profile: ProjectProfile,
+  ): Record<string, string> {
+    const pm =
+      profile.buildSystem === BuildSystem.NPM
+        ? "npm"
+        : profile.buildSystem === BuildSystem.Yarn
+          ? "yarn"
+          : profile.buildSystem === BuildSystem.PNPM
+            ? "pnpm"
+            : "npm";
 
     // Check for make targets
-    const hasMakeClean = profile.projectInfo.makeTargets?.includes('clean') || false;
+    const hasMakeClean =
+      profile.projectInfo.makeTargets?.includes("clean") || false;
 
     return {
       lint: `${pm} run lint`,
       test: `${pm} test`,
       build: `${pm} run build`,
-      clean: hasMakeClean ? 'make clean' : 'rm -rf dist build',
-      depend: pm === 'npm' ? 'npm install' : `${pm} install`
+      clean: hasMakeClean ? "make clean" : "rm -rf dist build",
+      depend: pm === "npm" ? "npm install" : `${pm} install`,
     };
   }
 
   private generateGoCommands(profile: ProjectProfile): Record<string, string> {
     const useMake = profile.buildSystem === BuildSystem.Make;
-    const hasGoMod = profile.projectInfo.configFiles.some(f => f.name === 'go.mod');
+    const hasGoMod = profile.projectInfo.configFiles.some(
+      (f) => f.name === "go.mod",
+    );
 
     return {
-      lint: useMake && profile.projectInfo.makeTargets?.includes('lint')
-        ? 'make lint'
-        : 'golangci-lint run',
-      test: useMake && profile.projectInfo.makeTargets?.includes('test')
-        ? 'make test'
-        : 'go test -v -cover ./...',
-      build: useMake && profile.projectInfo.makeTargets?.includes('build')
-        ? 'make build'
-        : 'go build ./...',
-      clean: useMake && profile.projectInfo.makeTargets?.includes('clean')
-        ? 'make clean'
-        : 'go clean',
-      depend: hasGoMod ? 'go mod download' : 'go get -d ./...'
+      lint:
+        useMake && profile.projectInfo.makeTargets?.includes("lint")
+          ? "make lint"
+          : "golangci-lint run",
+      test:
+        useMake && profile.projectInfo.makeTargets?.includes("test")
+          ? "make test"
+          : "go test -v -cover ./...",
+      build:
+        useMake && profile.projectInfo.makeTargets?.includes("build")
+          ? "make build"
+          : "go build ./...",
+      clean:
+        useMake && profile.projectInfo.makeTargets?.includes("clean")
+          ? "make clean"
+          : "go clean",
+      depend: hasGoMod ? "go mod download" : "go get -d ./...",
     };
   }
 
-  private generatePythonCommands(profile: ProjectProfile): Record<string, string> {
+  private generatePythonCommands(
+    profile: ProjectProfile,
+  ): Record<string, string> {
     const usePoetry = profile.buildSystem === BuildSystem.Poetry;
     const useMake = profile.buildSystem === BuildSystem.Make;
 
     return {
-      lint: useMake && profile.projectInfo.makeTargets?.includes('lint')
-        ? 'make lint'
-        : 'flake8',
-      test: useMake && profile.projectInfo.makeTargets?.includes('test')
-        ? 'make test'
-        : 'pytest',
-      build: usePoetry ? 'poetry build' : 'python setup.py build',
-      clean: 'rm -rf build dist *.egg-info __pycache__',
-      depend: usePoetry ? 'poetry install' : 'pip install -r requirements.txt'
+      lint:
+        useMake && profile.projectInfo.makeTargets?.includes("lint")
+          ? "make lint"
+          : "flake8",
+      test:
+        useMake && profile.projectInfo.makeTargets?.includes("test")
+          ? "make test"
+          : "pytest",
+      build: usePoetry ? "poetry build" : "python setup.py build",
+      clean: "rm -rf build dist *.egg-info __pycache__",
+      depend: usePoetry ? "poetry install" : "pip install -r requirements.txt",
     };
   }
 
-  private generateRustCommands(profile: ProjectProfile): Record<string, string> {
+  private generateRustCommands(
+    profile: ProjectProfile,
+  ): Record<string, string> {
     const useMake = profile.buildSystem === BuildSystem.Make;
 
     return {
-      lint: useMake && profile.projectInfo.makeTargets?.includes('lint')
-        ? 'make lint'
-        : 'cargo clippy',
-      test: useMake && profile.projectInfo.makeTargets?.includes('test')
-        ? 'make test'
-        : 'cargo test',
-      build: useMake && profile.projectInfo.makeTargets?.includes('build')
-        ? 'make build'
-        : 'cargo build',
-      clean: 'cargo clean',
-      depend: 'cargo fetch'
+      lint:
+        useMake && profile.projectInfo.makeTargets?.includes("lint")
+          ? "make lint"
+          : "cargo clippy",
+      test:
+        useMake && profile.projectInfo.makeTargets?.includes("test")
+          ? "make test"
+          : "cargo test",
+      build:
+        useMake && profile.projectInfo.makeTargets?.includes("build")
+          ? "make build"
+          : "cargo build",
+      clean: "cargo clean",
+      depend: "cargo fetch",
     };
   }
 
-  private generateJavaCommands(profile: ProjectProfile): Record<string, string> {
+  private generateJavaCommands(
+    profile: ProjectProfile,
+  ): Record<string, string> {
     const useMaven = profile.buildSystem === BuildSystem.Maven;
     const useGradle = profile.buildSystem === BuildSystem.Gradle;
 
     if (useMaven) {
       return {
-        lint: 'mvn checkstyle:check',
-        test: 'mvn test',
-        build: 'mvn package',
-        clean: 'mvn clean',
-        depend: 'mvn dependency:resolve'
+        lint: "mvn checkstyle:check",
+        test: "mvn test",
+        build: "mvn package",
+        clean: "mvn clean",
+        depend: "mvn dependency:resolve",
       };
     }
 
     if (useGradle) {
       return {
-        lint: './gradlew check',
-        test: './gradlew test',
-        build: './gradlew build',
-        clean: './gradlew clean',
-        depend: './gradlew dependencies'
+        lint: "./gradlew check",
+        test: "./gradlew test",
+        build: "./gradlew build",
+        clean: "./gradlew clean",
+        depend: "./gradlew dependencies",
       };
     }
 
     return this.generateDefaultCommands(profile);
   }
 
-  private generateDefaultCommands(profile: ProjectProfile): Record<string, string> {
+  private generateDefaultCommands(
+    profile: ProjectProfile,
+  ): Record<string, string> {
     // Unused parameter - stub implementation for future enhancement
     void profile;
     return {
@@ -214,7 +249,7 @@ export class ConfigGenerator {
       test: 'echo "No test command configured"',
       build: 'echo "No build command configured"',
       clean: 'echo "No clean command configured"',
-      depend: 'echo "No dependency command configured"'
+      depend: 'echo "No dependency command configured"',
     };
   }
 
@@ -232,23 +267,23 @@ export class ConfigGenerator {
     // Add recommended linters based on project type
     switch (profile.projectType) {
       case ProjectType.NodeJS:
-        linters.add('eslint');
-        linters.add('markdownlint');
+        linters.add("eslint");
+        linters.add("markdownlint");
         break;
       case ProjectType.Go:
-        linters.add('golangci-lint');
+        linters.add("golangci-lint");
         break;
       case ProjectType.Python:
-        linters.add('flake8');
+        linters.add("flake8");
         break;
       case ProjectType.Rust:
-        linters.add('clippy');
+        linters.add("clippy");
         break;
     }
 
     // Always include markdownlint and yamllint for documentation
-    linters.add('markdownlint');
-    linters.add('yamllint');
+    linters.add("markdownlint");
+    linters.add("yamllint");
 
     return Array.from(linters).sort();
   }
@@ -263,19 +298,20 @@ export class ConfigGenerator {
 
     switch (profile.projectType) {
       case ProjectType.NodeJS:
-        return profile.framework?.includes('Next') || profile.framework?.includes('React')
-          ? 'jest'
-          : 'jest';
+        return profile.framework?.includes("Next") ||
+          profile.framework?.includes("React")
+          ? "jest"
+          : "jest";
       case ProjectType.Python:
-        return 'pytest';
+        return "pytest";
       case ProjectType.Go:
-        return 'go';
+        return "go";
       case ProjectType.Rust:
-        return 'cargo';
+        return "cargo";
       case ProjectType.Java:
-        return profile.buildSystem === BuildSystem.Maven ? 'maven' : 'gradle';
+        return profile.buildSystem === BuildSystem.Maven ? "maven" : "gradle";
       default:
-        return 'make';
+        return "make";
     }
   }
 
@@ -302,19 +338,20 @@ export class ConfigGenerator {
    * Generate exclude paths based on project type
    */
   private generateExcludePaths(profile: ProjectProfile): string[] {
-    const common = [
-      'node_modules/**',
-      'dist/**',
-      'build/**',
-      '.git/**'
-    ];
+    const common = ["node_modules/**", "dist/**", "build/**", ".git/**"];
 
     const typeSpecific: Record<string, string[]> = {
-      [ProjectType.NodeJS]: ['coverage/**', '.next/**', '.nuxt/**'],
-      [ProjectType.Python]: ['__pycache__/**', '*.pyc', '.venv/**', 'venv/**', '.pytest_cache/**'],
-      [ProjectType.Go]: ['vendor/**', 'bin/**'],
-      [ProjectType.Rust]: ['target/**'],
-      [ProjectType.Java]: ['target/**', '.gradle/**', 'out/**']
+      [ProjectType.NodeJS]: ["coverage/**", ".next/**", ".nuxt/**"],
+      [ProjectType.Python]: [
+        "__pycache__/**",
+        "*.pyc",
+        ".venv/**",
+        "venv/**",
+        ".pytest_cache/**",
+      ],
+      [ProjectType.Go]: ["vendor/**", "bin/**"],
+      [ProjectType.Rust]: ["target/**"],
+      [ProjectType.Java]: ["target/**", ".gradle/**", "out/**"],
     };
 
     const specific = typeSpecific[profile.projectType] || [];
@@ -328,11 +365,11 @@ export class ConfigGenerator {
     const env: Record<string, string> = {};
 
     if (profile.projectType === ProjectType.NodeJS) {
-      env.NODE_ENV = 'development';
+      env.NODE_ENV = "development";
     }
 
     if (profile.projectType === ProjectType.Python) {
-      env.PYTHONPATH = '.';
+      env.PYTHONPATH = ".";
     }
 
     return env;
@@ -376,7 +413,7 @@ export class ConfigGenerator {
     void profile;
     return {
       allowedCommands: [],
-      restrictedPaths: ['/', '/etc', '/usr', '/bin', '/sbin', '/root']
+      restrictedPaths: ["/", "/etc", "/usr", "/bin", "/sbin", "/root"],
     };
   }
 
@@ -389,8 +426,12 @@ export class ConfigGenerator {
     testFlags?: string[];
     lintConfig?: string;
   } {
-    const hasGoMod = profile.projectInfo.configFiles.some(f => f.name === 'go.mod');
-    const hasLintConfig = profile.projectInfo.configFiles.some(f => f.name === '.golangci.yml' || f.name === '.golangci.yaml');
+    const hasGoMod = profile.projectInfo.configFiles.some(
+      (f) => f.name === "go.mod",
+    );
+    const hasLintConfig = profile.projectInfo.configFiles.some(
+      (f) => f.name === ".golangci.yml" || f.name === ".golangci.yaml",
+    );
 
     const config: {
       goPath?: string;
@@ -399,11 +440,11 @@ export class ConfigGenerator {
       lintConfig?: string;
     } = {
       goModule: hasGoMod,
-      testFlags: ['-race', '-cover']
+      testFlags: ["-race", "-cover"],
     };
 
     if (hasLintConfig) {
-      config.lintConfig = '.golangci.yml';
+      config.lintConfig = ".golangci.yml";
     }
 
     return config;
@@ -420,23 +461,23 @@ export class ConfigGenerator {
       fileTypes?: string[];
     };
   } {
-    const fileTypes: string[] = ['*.md', '*.json', '*.yaml', '*.yml'];
+    const fileTypes: string[] = ["*.md", "*.json", "*.yaml", "*.yml"];
 
     switch (profile.projectType) {
       case ProjectType.NodeJS:
-        fileTypes.push('*.ts', '*.js', '*.tsx', '*.jsx', '*.mjs', '*.cjs');
+        fileTypes.push("*.ts", "*.js", "*.tsx", "*.jsx", "*.mjs", "*.cjs");
         break;
       case ProjectType.Go:
-        fileTypes.push('*.go');
+        fileTypes.push("*.go");
         break;
       case ProjectType.Python:
-        fileTypes.push('*.py');
+        fileTypes.push("*.py");
         break;
       case ProjectType.Rust:
-        fileTypes.push('*.rs', '*.toml');
+        fileTypes.push("*.rs", "*.toml");
         break;
       case ProjectType.Java:
-        fileTypes.push('*.java', '*.xml');
+        fileTypes.push("*.java", "*.xml");
         break;
     }
 
@@ -445,24 +486,27 @@ export class ConfigGenerator {
         enabled: true,
         autoFix: false,
         exclude: [
-          'node_modules/**',
-          'dist/**',
-          'build/**',
-          '*.min.js',
-          '*.min.css',
-          'vendor/**',
-          'target/**'
+          "node_modules/**",
+          "dist/**",
+          "build/**",
+          "*.min.js",
+          "*.min.css",
+          "vendor/**",
+          "target/**",
         ],
-        fileTypes
-      }
+        fileTypes,
+      },
     };
   }
 
   /**
    * Merge generated config with existing config
    */
-  mergeWithExisting(generated: MCPDevToolsConfig, existing: MCPDevToolsConfig): MCPDevToolsConfig {
-    logger.info('Merging generated config with existing config');
+  mergeWithExisting(
+    generated: MCPDevToolsConfig,
+    existing: MCPDevToolsConfig,
+  ): MCPDevToolsConfig {
+    logger.info("Merging generated config with existing config");
 
     const merged: MCPDevToolsConfig = { ...generated };
 
@@ -473,7 +517,10 @@ export class ConfigGenerator {
 
     if (existing.linters) {
       // Combine linters, preferring existing
-      const allLinters = new Set([...(generated.linters || []), ...existing.linters]);
+      const allLinters = new Set([
+        ...(generated.linters || []),
+        ...existing.linters,
+      ]);
       merged.linters = Array.from(allLinters);
     }
 
@@ -482,7 +529,10 @@ export class ConfigGenerator {
     }
 
     if (existing.environment) {
-      merged.environment = { ...generated.environment, ...existing.environment };
+      merged.environment = {
+        ...generated.environment,
+        ...existing.environment,
+      };
     }
 
     if (existing.parallel) {
@@ -501,8 +551,8 @@ export class ConfigGenerator {
       merged.fileValidation = {
         newline: {
           ...generated.fileValidation?.newline,
-          ...existing.fileValidation.newline
-        }
+          ...existing.fileValidation.newline,
+        },
       };
     }
 
@@ -529,30 +579,38 @@ export class ConfigGenerator {
 
     // Check required fields
     if (!config.commands || Object.keys(config.commands).length === 0) {
-      warnings.push('No commands defined in configuration');
+      warnings.push("No commands defined in configuration");
     }
 
     // Validate timeout
     if (config.timeout !== undefined) {
       if (config.timeout < 1000) {
-        errors.push('Timeout must be at least 1000ms');
+        errors.push("Timeout must be at least 1000ms");
       }
       if (config.timeout > 3600000) {
-        warnings.push('Timeout is very high (> 1 hour)');
+        warnings.push("Timeout is very high (> 1 hour)");
       }
     }
 
     // Validate parallel settings
     if (config.parallel?.makeJobs !== undefined) {
       if (config.parallel.makeJobs < 1 || config.parallel.makeJobs > 32) {
-        errors.push('makeJobs must be between 1 and 32');
+        errors.push("makeJobs must be between 1 and 32");
       }
     }
 
     // Validate linters
     const validLinters = [
-      'eslint', 'markdownlint', 'yamllint', 'flake8', 'black',
-      'clippy', 'rustfmt', 'golangci-lint', 'gofmt', 'staticcheck'
+      "eslint",
+      "markdownlint",
+      "yamllint",
+      "flake8",
+      "black",
+      "clippy",
+      "rustfmt",
+      "golangci-lint",
+      "gofmt",
+      "staticcheck",
     ];
 
     if (config.linters) {
@@ -566,7 +624,7 @@ export class ConfigGenerator {
     return {
       valid: errors.length === 0,
       errors,
-      warnings
+      warnings,
     };
   }
 }

@@ -7,10 +7,10 @@
  * Coverage target: 90%+
  */
 
-import { describe, it, expect, beforeEach } from '@jest/globals';
-import winston from 'winston';
-import { PluginManager } from '../../plugins/plugin-manager.js';
-import { ShellExecutor } from '../../utils/shell-executor.js';
+import { describe, it, expect, beforeEach } from "@jest/globals";
+import winston from "winston";
+import { PluginManager } from "../../plugins/plugin-manager.js";
+import { ShellExecutor } from "../../utils/shell-executor.js";
 import {
   Plugin,
   PluginMetadata,
@@ -21,7 +21,7 @@ import {
   PluginRegistrationError,
   PluginExecutionError,
   PluginDependencyError,
-} from '../../plugins/plugin-interface.js';
+} from "../../plugins/plugin-interface.js";
 
 // Mock logger
 const mockLogger = winston.createLogger({
@@ -32,23 +32,23 @@ const mockLogger = winston.createLogger({
 // Mock ShellExecutor
 class MockShellExecutor extends ShellExecutor {
   constructor() {
-    super('/test/project');
+    super("/test/project");
   }
 
   async isCommandAvailable(command: string): Promise<boolean> {
     // Simulate gs being available
-    return command === 'gs';
+    return command === "gs";
   }
 }
 
 // Mock plugin for testing
 class MockPlugin implements Plugin {
   metadata: PluginMetadata = {
-    name: 'mock-plugin',
-    version: '1.0.0',
-    description: 'Mock plugin for testing',
-    requiredCommands: ['gs'],
-    tags: ['test'],
+    name: "mock-plugin",
+    version: "1.0.0",
+    description: "Mock plugin for testing",
+    requiredCommands: ["gs"],
+    tags: ["test"],
     defaultEnabled: true,
   };
 
@@ -60,12 +60,12 @@ class MockPlugin implements Plugin {
   async registerTools(): Promise<PluginTool[]> {
     return [
       {
-        name: 'mock_action',
-        description: 'Mock action',
+        name: "mock_action",
+        description: "Mock action",
         inputSchema: {
-          type: 'object',
+          type: "object",
           properties: {
-            value: { type: 'string' },
+            value: { type: "string" },
           },
         },
       },
@@ -74,8 +74,8 @@ class MockPlugin implements Plugin {
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   async handleToolCall(toolName: string, _args: unknown): Promise<unknown> {
-    if (toolName === 'mock_action') {
-      return { success: true, message: 'Mock action executed' };
+    if (toolName === "mock_action") {
+      return { success: true, message: "Mock action executed" };
     }
     throw new Error(`Unknown tool: ${toolName}`);
   }
@@ -84,10 +84,10 @@ class MockPlugin implements Plugin {
 // Plugin with missing dependencies
 class PluginWithMissingDeps implements Plugin {
   metadata: PluginMetadata = {
-    name: 'missing-deps',
-    version: '1.0.0',
-    description: 'Plugin with missing dependencies',
-    requiredCommands: ['nonexistent-command'],
+    name: "missing-deps",
+    version: "1.0.0",
+    description: "Plugin with missing dependencies",
+    requiredCommands: ["nonexistent-command"],
   };
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -104,14 +104,14 @@ class PluginWithMissingDeps implements Plugin {
 // Plugin that fails initialization
 class FailingPlugin implements Plugin {
   metadata: PluginMetadata = {
-    name: 'failing-plugin',
-    version: '1.0.0',
-    description: 'Plugin that fails',
+    name: "failing-plugin",
+    version: "1.0.0",
+    description: "Plugin that fails",
   };
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   async initialize(_context: PluginContext): Promise<void> {
-    throw new Error('Initialization failed');
+    throw new Error("Initialization failed");
   }
 
   async registerTools(): Promise<PluginTool[]> {
@@ -127,9 +127,9 @@ class FailingPlugin implements Plugin {
 // Plugin with health check
 class HealthCheckPlugin implements Plugin {
   metadata: PluginMetadata = {
-    name: 'health-plugin',
-    version: '1.0.0',
-    description: 'Plugin with health check',
+    name: "health-plugin",
+    version: "1.0.0",
+    description: "Plugin with health check",
   };
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -146,10 +146,10 @@ class HealthCheckPlugin implements Plugin {
 
   async healthCheck(): Promise<PluginHealth> {
     return {
-      status: 'healthy',
-      message: 'All systems operational',
+      status: "healthy",
+      message: "All systems operational",
       checks: {
-        'test-check': true,
+        "test-check": true,
       },
       timestamp: new Date(),
     };
@@ -159,9 +159,9 @@ class HealthCheckPlugin implements Plugin {
 // Plugin with config validation
 class ConfigValidationPlugin implements Plugin {
   metadata: PluginMetadata = {
-    name: 'config-plugin',
-    version: '1.0.0',
-    description: 'Plugin with config validation',
+    name: "config-plugin",
+    version: "1.0.0",
+    description: "Plugin with config validation",
   };
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -182,110 +182,155 @@ class ConfigValidationPlugin implements Plugin {
   }
 }
 
-describe('PluginManager', () => {
+describe("PluginManager", () => {
   let shellExecutor: ShellExecutor;
   let projectRoot: string;
 
   beforeEach(() => {
     shellExecutor = new MockShellExecutor();
-    projectRoot = '/test/project';
+    projectRoot = "/test/project";
   });
 
-  describe('constructor', () => {
-    it('should create a PluginManager instance', () => {
+  describe("constructor", () => {
+    it("should create a PluginManager instance", () => {
       const config: PluginConfiguration = {};
-      const manager = new PluginManager(projectRoot, config, shellExecutor, mockLogger);
+      const manager = new PluginManager(
+        projectRoot,
+        config,
+        shellExecutor,
+        mockLogger,
+      );
 
       expect(manager).toBeInstanceOf(PluginManager);
     });
   });
 
-  describe('registerPlugin', () => {
-    it('should register a plugin successfully', async () => {
+  describe("registerPlugin", () => {
+    it("should register a plugin successfully", async () => {
       const config: PluginConfiguration = {};
-      const manager = new PluginManager(projectRoot, config, shellExecutor, mockLogger);
+      const manager = new PluginManager(
+        projectRoot,
+        config,
+        shellExecutor,
+        mockLogger,
+      );
       const plugin = new MockPlugin();
 
       await manager.registerPlugin(plugin);
 
-      expect(manager.getLoadedPlugins()).toContain('mock-plugin');
+      expect(manager.getLoadedPlugins()).toContain("mock-plugin");
     });
 
-    it('should throw error if plugin already registered', async () => {
+    it("should throw error if plugin already registered", async () => {
       const config: PluginConfiguration = {};
-      const manager = new PluginManager(projectRoot, config, shellExecutor, mockLogger);
+      const manager = new PluginManager(
+        projectRoot,
+        config,
+        shellExecutor,
+        mockLogger,
+      );
       const plugin = new MockPlugin();
 
       await manager.registerPlugin(plugin);
 
       await expect(manager.registerPlugin(plugin)).rejects.toThrow(
-        PluginRegistrationError
+        PluginRegistrationError,
       );
     });
 
-    it('should throw error if required dependencies are missing', async () => {
+    it("should throw error if required dependencies are missing", async () => {
       const config: PluginConfiguration = {};
-      const manager = new PluginManager(projectRoot, config, shellExecutor, mockLogger);
+      const manager = new PluginManager(
+        projectRoot,
+        config,
+        shellExecutor,
+        mockLogger,
+      );
       const plugin = new PluginWithMissingDeps();
 
       await expect(manager.registerPlugin(plugin)).rejects.toThrow(
-        PluginDependencyError
+        PluginDependencyError,
       );
     });
 
-    it('should throw error if plugin initialization fails', async () => {
+    it("should throw error if plugin initialization fails", async () => {
       const config: PluginConfiguration = {};
-      const manager = new PluginManager(projectRoot, config, shellExecutor, mockLogger);
+      const manager = new PluginManager(
+        projectRoot,
+        config,
+        shellExecutor,
+        mockLogger,
+      );
       const plugin = new FailingPlugin();
 
       await expect(manager.registerPlugin(plugin)).rejects.toThrow();
     });
 
-    it('should validate plugin configuration if validateConfig is implemented', async () => {
+    it("should validate plugin configuration if validateConfig is implemented", async () => {
       const config: PluginConfiguration = {
-        'config-plugin': {
+        "config-plugin": {
           required: true,
         },
       };
-      const manager = new PluginManager(projectRoot, config, shellExecutor, mockLogger);
+      const manager = new PluginManager(
+        projectRoot,
+        config,
+        shellExecutor,
+        mockLogger,
+      );
       const plugin = new ConfigValidationPlugin();
 
       await manager.registerPlugin(plugin);
 
-      expect(manager.getLoadedPlugins()).toContain('config-plugin');
+      expect(manager.getLoadedPlugins()).toContain("config-plugin");
     });
 
-    it('should fail if plugin configuration validation fails', async () => {
+    it("should fail if plugin configuration validation fails", async () => {
       const config: PluginConfiguration = {
-        'config-plugin': {
+        "config-plugin": {
           required: false,
         },
       };
-      const manager = new PluginManager(projectRoot, config, shellExecutor, mockLogger);
+      const manager = new PluginManager(
+        projectRoot,
+        config,
+        shellExecutor,
+        mockLogger,
+      );
       const plugin = new ConfigValidationPlugin();
 
       await expect(manager.registerPlugin(plugin)).rejects.toThrow(
-        PluginRegistrationError
+        PluginRegistrationError,
       );
     });
 
-    it('should perform initial health check on registration', async () => {
+    it("should perform initial health check on registration", async () => {
       const config: PluginConfiguration = {};
-      const manager = new PluginManager(projectRoot, config, shellExecutor, mockLogger);
+      const manager = new PluginManager(
+        projectRoot,
+        config,
+        shellExecutor,
+        mockLogger,
+      );
       const plugin = new HealthCheckPlugin();
 
       await manager.registerPlugin(plugin);
 
-      const health = await manager.getPluginHealth('health-plugin');
+      const health = await manager.getPluginHealth("health-plugin");
       expect(health).not.toBeNull();
-      expect(health?.status).toBe('healthy');
+      expect(health?.status).toBe("healthy");
     });
   });
 
-  describe('getAllTools', () => {
-    it('should return all tools from registered plugins', async () => {
+  describe("getAllTools", () => {
+    it("should return all tools from registered plugins", async () => {
       const config: PluginConfiguration = {};
-      const manager = new PluginManager(projectRoot, config, shellExecutor, mockLogger);
+      const manager = new PluginManager(
+        projectRoot,
+        config,
+        shellExecutor,
+        mockLogger,
+      );
       const plugin = new MockPlugin();
 
       await manager.registerPlugin(plugin);
@@ -293,22 +338,32 @@ describe('PluginManager', () => {
       const tools = await manager.getAllTools();
 
       expect(tools).toHaveLength(1);
-      expect(tools[0].name).toBe('mock_plugin_mock_action');
-      expect(tools[0].description).toContain('[mock-plugin]');
+      expect(tools[0].name).toBe("mock_plugin_mock_action");
+      expect(tools[0].description).toContain("[mock-plugin]");
     });
 
-    it('should return empty array if no plugins registered', async () => {
+    it("should return empty array if no plugins registered", async () => {
       const config: PluginConfiguration = {};
-      const manager = new PluginManager(projectRoot, config, shellExecutor, mockLogger);
+      const manager = new PluginManager(
+        projectRoot,
+        config,
+        shellExecutor,
+        mockLogger,
+      );
 
       const tools = await manager.getAllTools();
 
       expect(tools).toHaveLength(0);
     });
 
-    it('should namespace tool names correctly', async () => {
+    it("should namespace tool names correctly", async () => {
       const config: PluginConfiguration = {};
-      const manager = new PluginManager(projectRoot, config, shellExecutor, mockLogger);
+      const manager = new PluginManager(
+        projectRoot,
+        config,
+        shellExecutor,
+        mockLogger,
+      );
       const plugin = new MockPlugin();
 
       await manager.registerPlugin(plugin);
@@ -317,74 +372,107 @@ describe('PluginManager', () => {
 
       // Plugin name: mock-plugin, Tool name: mock_action
       // Expected: mock_plugin_mock_action
-      expect(tools[0].name).toBe('mock_plugin_mock_action');
+      expect(tools[0].name).toBe("mock_plugin_mock_action");
     });
   });
 
-  describe('executeToolCall', () => {
-    it('should execute tool call successfully', async () => {
+  describe("executeToolCall", () => {
+    it("should execute tool call successfully", async () => {
       const config: PluginConfiguration = {};
-      const manager = new PluginManager(projectRoot, config, shellExecutor, mockLogger);
+      const manager = new PluginManager(
+        projectRoot,
+        config,
+        shellExecutor,
+        mockLogger,
+      );
       const plugin = new MockPlugin();
 
       await manager.registerPlugin(plugin);
 
-      const result = await manager.executeToolCall('mock_plugin_mock_action', {
-        value: 'test',
+      const result = await manager.executeToolCall("mock_plugin_mock_action", {
+        value: "test",
       });
 
-      expect(result).toEqual({ success: true, message: 'Mock action executed' });
+      expect(result).toEqual({
+        success: true,
+        message: "Mock action executed",
+      });
     });
 
-    it('should throw error for unknown tool', async () => {
+    it("should throw error for unknown tool", async () => {
       const config: PluginConfiguration = {};
-      const manager = new PluginManager(projectRoot, config, shellExecutor, mockLogger);
+      const manager = new PluginManager(
+        projectRoot,
+        config,
+        shellExecutor,
+        mockLogger,
+      );
 
-      await expect(
-        manager.executeToolCall('unknown_tool', {})
-      ).rejects.toThrow(PluginExecutionError);
+      await expect(manager.executeToolCall("unknown_tool", {})).rejects.toThrow(
+        PluginExecutionError,
+      );
     });
 
-    it('should throw error if plugin not loaded', async () => {
+    it("should throw error if plugin not loaded", async () => {
       const config: PluginConfiguration = {};
-      const manager = new PluginManager(projectRoot, config, shellExecutor, mockLogger);
+      const manager = new PluginManager(
+        projectRoot,
+        config,
+        shellExecutor,
+        mockLogger,
+      );
 
       // Manually add tool to registry without loading plugin
       // This simulates a corrupted state
       await expect(
-        manager.executeToolCall('nonexistent_plugin_tool', {})
+        manager.executeToolCall("nonexistent_plugin_tool", {}),
       ).rejects.toThrow(PluginExecutionError);
     });
   });
 
-  describe('checkDependencies', () => {
-    it('should return all dependencies available', async () => {
+  describe("checkDependencies", () => {
+    it("should return all dependencies available", async () => {
       const config: PluginConfiguration = {};
-      const manager = new PluginManager(projectRoot, config, shellExecutor, mockLogger);
+      const manager = new PluginManager(
+        projectRoot,
+        config,
+        shellExecutor,
+        mockLogger,
+      );
       const plugin = new MockPlugin();
 
       const result = await manager.checkDependencies(plugin);
 
       expect(result.allAvailable).toBe(true);
-      expect(result.available).toContain('gs');
+      expect(result.available).toContain("gs");
       expect(result.missing).toHaveLength(0);
     });
 
-    it('should return missing dependencies', async () => {
+    it("should return missing dependencies", async () => {
       const config: PluginConfiguration = {};
-      const manager = new PluginManager(projectRoot, config, shellExecutor, mockLogger);
+      const manager = new PluginManager(
+        projectRoot,
+        config,
+        shellExecutor,
+        mockLogger,
+      );
       const plugin = new PluginWithMissingDeps();
 
       const result = await manager.checkDependencies(plugin);
 
       expect(result.allAvailable).toBe(false);
-      expect(result.missing).toContain('nonexistent-command');
+      expect(result.missing).toContain("nonexistent-command");
       expect(result.installInstructions).toBeDefined();
     });
 
-    it('should return empty result if no required commands', async () => {
+    it("should return empty result if no required commands", async () => {
       const config: PluginConfiguration = {};
-      const manager = new PluginManager(projectRoot, config, shellExecutor, mockLogger);
+      const manager = new PluginManager(
+        projectRoot,
+        config,
+        shellExecutor,
+        mockLogger,
+      );
       const plugin = new HealthCheckPlugin(); // No required commands
 
       const result = await manager.checkDependencies(plugin);
@@ -395,49 +483,69 @@ describe('PluginManager', () => {
     });
   });
 
-  describe('getPluginHealth', () => {
-    it('should return health status for plugin with health check', async () => {
+  describe("getPluginHealth", () => {
+    it("should return health status for plugin with health check", async () => {
       const config: PluginConfiguration = {};
-      const manager = new PluginManager(projectRoot, config, shellExecutor, mockLogger);
+      const manager = new PluginManager(
+        projectRoot,
+        config,
+        shellExecutor,
+        mockLogger,
+      );
       const plugin = new HealthCheckPlugin();
 
       await manager.registerPlugin(plugin);
 
-      const health = await manager.getPluginHealth('health-plugin');
+      const health = await manager.getPluginHealth("health-plugin");
 
       expect(health).not.toBeNull();
-      expect(health?.status).toBe('healthy');
-      expect(health?.message).toBe('All systems operational');
-      expect(health?.checks).toEqual({ 'test-check': true });
+      expect(health?.status).toBe("healthy");
+      expect(health?.message).toBe("All systems operational");
+      expect(health?.checks).toEqual({ "test-check": true });
     });
 
-    it('should return cached health for plugin without health check', async () => {
+    it("should return cached health for plugin without health check", async () => {
       const config: PluginConfiguration = {};
-      const manager = new PluginManager(projectRoot, config, shellExecutor, mockLogger);
+      const manager = new PluginManager(
+        projectRoot,
+        config,
+        shellExecutor,
+        mockLogger,
+      );
       const plugin = new MockPlugin();
 
       await manager.registerPlugin(plugin);
 
-      const health = await manager.getPluginHealth('mock-plugin');
+      const health = await manager.getPluginHealth("mock-plugin");
 
       expect(health).not.toBeNull();
-      expect(health?.status).toBe('healthy');
+      expect(health?.status).toBe("healthy");
     });
 
-    it('should return null for non-existent plugin', async () => {
+    it("should return null for non-existent plugin", async () => {
       const config: PluginConfiguration = {};
-      const manager = new PluginManager(projectRoot, config, shellExecutor, mockLogger);
+      const manager = new PluginManager(
+        projectRoot,
+        config,
+        shellExecutor,
+        mockLogger,
+      );
 
-      const health = await manager.getPluginHealth('nonexistent');
+      const health = await manager.getPluginHealth("nonexistent");
 
       expect(health).toBeNull();
     });
   });
 
-  describe('getAllPluginHealth', () => {
-    it('should return health status for all plugins', async () => {
+  describe("getAllPluginHealth", () => {
+    it("should return health status for all plugins", async () => {
       const config: PluginConfiguration = {};
-      const manager = new PluginManager(projectRoot, config, shellExecutor, mockLogger);
+      const manager = new PluginManager(
+        projectRoot,
+        config,
+        shellExecutor,
+        mockLogger,
+      );
       const plugin1 = new MockPlugin();
       const plugin2 = new HealthCheckPlugin();
 
@@ -447,13 +555,18 @@ describe('PluginManager', () => {
       const healthMap = await manager.getAllPluginHealth();
 
       expect(healthMap.size).toBe(2);
-      expect(healthMap.has('mock-plugin')).toBe(true);
-      expect(healthMap.has('health-plugin')).toBe(true);
+      expect(healthMap.has("mock-plugin")).toBe(true);
+      expect(healthMap.has("health-plugin")).toBe(true);
     });
 
-    it('should return empty map if no plugins', async () => {
+    it("should return empty map if no plugins", async () => {
       const config: PluginConfiguration = {};
-      const manager = new PluginManager(projectRoot, config, shellExecutor, mockLogger);
+      const manager = new PluginManager(
+        projectRoot,
+        config,
+        shellExecutor,
+        mockLogger,
+      );
 
       const healthMap = await manager.getAllPluginHealth();
 
@@ -461,22 +574,32 @@ describe('PluginManager', () => {
     });
   });
 
-  describe('getLoadedPlugins', () => {
-    it('should return list of loaded plugin names', async () => {
+  describe("getLoadedPlugins", () => {
+    it("should return list of loaded plugin names", async () => {
       const config: PluginConfiguration = {};
-      const manager = new PluginManager(projectRoot, config, shellExecutor, mockLogger);
+      const manager = new PluginManager(
+        projectRoot,
+        config,
+        shellExecutor,
+        mockLogger,
+      );
       const plugin = new MockPlugin();
 
       await manager.registerPlugin(plugin);
 
       const plugins = manager.getLoadedPlugins();
 
-      expect(plugins).toContain('mock-plugin');
+      expect(plugins).toContain("mock-plugin");
     });
 
-    it('should return empty array if no plugins loaded', () => {
+    it("should return empty array if no plugins loaded", () => {
       const config: PluginConfiguration = {};
-      const manager = new PluginManager(projectRoot, config, shellExecutor, mockLogger);
+      const manager = new PluginManager(
+        projectRoot,
+        config,
+        shellExecutor,
+        mockLogger,
+      );
 
       const plugins = manager.getLoadedPlugins();
 
@@ -484,35 +607,50 @@ describe('PluginManager', () => {
     });
   });
 
-  describe('getPluginMetadata', () => {
-    it('should return plugin metadata', async () => {
+  describe("getPluginMetadata", () => {
+    it("should return plugin metadata", async () => {
       const config: PluginConfiguration = {};
-      const manager = new PluginManager(projectRoot, config, shellExecutor, mockLogger);
+      const manager = new PluginManager(
+        projectRoot,
+        config,
+        shellExecutor,
+        mockLogger,
+      );
       const plugin = new MockPlugin();
 
       await manager.registerPlugin(plugin);
 
-      const metadata = manager.getPluginMetadata('mock-plugin');
+      const metadata = manager.getPluginMetadata("mock-plugin");
 
       expect(metadata).not.toBeNull();
-      expect(metadata?.name).toBe('mock-plugin');
-      expect(metadata?.version).toBe('1.0.0');
+      expect(metadata?.name).toBe("mock-plugin");
+      expect(metadata?.version).toBe("1.0.0");
     });
 
-    it('should return null for non-existent plugin', () => {
+    it("should return null for non-existent plugin", () => {
       const config: PluginConfiguration = {};
-      const manager = new PluginManager(projectRoot, config, shellExecutor, mockLogger);
+      const manager = new PluginManager(
+        projectRoot,
+        config,
+        shellExecutor,
+        mockLogger,
+      );
 
-      const metadata = manager.getPluginMetadata('nonexistent');
+      const metadata = manager.getPluginMetadata("nonexistent");
 
       expect(metadata).toBeNull();
     });
   });
 
-  describe('shutdownAll', () => {
-    it('should shutdown all plugins', async () => {
+  describe("shutdownAll", () => {
+    it("should shutdown all plugins", async () => {
       const config: PluginConfiguration = {};
-      const manager = new PluginManager(projectRoot, config, shellExecutor, mockLogger);
+      const manager = new PluginManager(
+        projectRoot,
+        config,
+        shellExecutor,
+        mockLogger,
+      );
       const plugin = new MockPlugin();
 
       await manager.registerPlugin(plugin);
@@ -522,9 +660,14 @@ describe('PluginManager', () => {
       expect(manager.getLoadedPlugins()).toHaveLength(0);
     });
 
-    it('should continue on shutdown errors', async () => {
+    it("should continue on shutdown errors", async () => {
       const config: PluginConfiguration = {};
-      const manager = new PluginManager(projectRoot, config, shellExecutor, mockLogger);
+      const manager = new PluginManager(
+        projectRoot,
+        config,
+        shellExecutor,
+        mockLogger,
+      );
 
       // Create plugin with failing shutdown
       const basePlugin = new MockPlugin();
@@ -534,7 +677,7 @@ describe('PluginManager', () => {
         registerTools: basePlugin.registerTools.bind(basePlugin),
         handleToolCall: basePlugin.handleToolCall.bind(basePlugin),
         shutdown: async () => {
-          throw new Error('Shutdown failed');
+          throw new Error("Shutdown failed");
         },
       };
 
@@ -545,12 +688,17 @@ describe('PluginManager', () => {
     });
   });
 
-  describe('plugin filtering', () => {
-    it('should load only enabled plugins', async () => {
+  describe("plugin filtering", () => {
+    it("should load only enabled plugins", async () => {
       const config: PluginConfiguration = {
-        enabled: ['mock-plugin'],
+        enabled: ["mock-plugin"],
       };
-      const manager = new PluginManager(projectRoot, config, shellExecutor, mockLogger);
+      const manager = new PluginManager(
+        projectRoot,
+        config,
+        shellExecutor,
+        mockLogger,
+      );
       const plugin1 = new MockPlugin();
 
       await manager.registerPlugin(plugin1);
@@ -558,7 +706,7 @@ describe('PluginManager', () => {
       // health-plugin should not be loaded because enabled list exists
       // We'd need to test this with loadPlugins(), but since we can't easily
       // mock the filesystem, we'll skip this integration test
-      expect(manager.getLoadedPlugins()).toContain('mock-plugin');
+      expect(manager.getLoadedPlugins()).toContain("mock-plugin");
     });
   });
 });

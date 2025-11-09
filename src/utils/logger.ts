@@ -6,10 +6,10 @@
  */
 
 export enum LogLevel {
-  ERROR = 'ERROR',
-  WARN = 'WARN',
-  INFO = 'INFO',
-  DEBUG = 'DEBUG',
+  ERROR = "ERROR",
+  WARN = "WARN",
+  INFO = "INFO",
+  DEBUG = "DEBUG",
 }
 
 const LOG_LEVEL_PRIORITY = {
@@ -34,9 +34,13 @@ class Logger {
     return LOG_LEVEL_PRIORITY[level] <= LOG_LEVEL_PRIORITY[this.currentLevel];
   }
 
-  private formatMessage(level: LogLevel, message: string, meta?: unknown): string {
+  private formatMessage(
+    level: LogLevel,
+    message: string,
+    meta?: unknown,
+  ): string {
     const timestamp = new Date().toISOString();
-    const metaStr = meta ? ` ${JSON.stringify(meta)}` : '';
+    const metaStr = meta ? ` ${JSON.stringify(meta)}` : "";
     return `[${timestamp}] [${level}] ${message}${metaStr}`;
   }
 

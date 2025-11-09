@@ -1,12 +1,17 @@
-import * as fs from 'fs/promises';
-import * as path from 'path';
-import winston from 'winston';
-import { ProjectDetector, ProjectInfo, ProjectType, BuildSystem } from './project-detector.js';
+import * as fs from "fs/promises";
+import * as path from "path";
+import winston from "winston";
+import {
+  ProjectDetector,
+  ProjectInfo,
+  ProjectType,
+  BuildSystem,
+} from "./project-detector.js";
 
 const logger = winston.createLogger({
-  level: process.env.LOG_LEVEL || 'info',
+  level: process.env.LOG_LEVEL || "info",
   format: winston.format.simple(),
-  transports: [new winston.transports.Console()]
+  transports: [new winston.transports.Console()],
 });
 
 // ============================================================================
@@ -14,12 +19,12 @@ const logger = winston.createLogger({
 // ============================================================================
 
 export interface OnboardingOptions {
-  interactive: boolean;          // Enable interactive prompts
-  autoInstall: boolean;          // Auto-install missing tools
-  generateConfig: boolean;       // Generate .mcp-devtools.json
-  validateSetup: boolean;        // Run validation after setup
-  backupExisting: boolean;       // Backup existing configs
-  dryRun: boolean;              // Preview without changes
+  interactive: boolean; // Enable interactive prompts
+  autoInstall: boolean; // Auto-install missing tools
+  generateConfig: boolean; // Generate .mcp-devtools.json
+  validateSetup: boolean; // Run validation after setup
+  backupExisting: boolean; // Backup existing configs
+  dryRun: boolean; // Preview without changes
   skipToolVerification: boolean; // Skip tool installation checks
 }
 
@@ -36,8 +41,14 @@ export interface OnboardingResult {
 }
 
 export interface Recommendation {
-  category: 'tool' | 'config' | 'workflow' | 'integration' | 'security' | 'performance';
-  priority: 'high' | 'medium' | 'low';
+  category:
+    | "tool"
+    | "config"
+    | "workflow"
+    | "integration"
+    | "security"
+    | "performance";
+  priority: "high" | "medium" | "low";
   title: string;
   description: string;
   actions: string[];
@@ -50,7 +61,7 @@ export interface ValidationResult {
   errors: ValidationError[];
   warnings: ValidationWarning[];
   recommendations: Recommendation[];
-  score: number;  // 0-100
+  score: number; // 0-100
 }
 
 export interface Validation {
@@ -66,7 +77,7 @@ export interface ValidationError {
   message: string;
   file?: string;
   line?: number;
-  severity: 'error' | 'critical';
+  severity: "error" | "critical";
 }
 
 export interface ValidationWarning {
@@ -118,7 +129,7 @@ export interface ProjectProfile {
 
   // Confidence scores
   detectionConfidence: {
-    projectType: number;      // 0-1
+    projectType: number; // 0-1
     framework: number;
     buildSystem: number;
   };
@@ -127,7 +138,7 @@ export interface ProjectProfile {
 export interface DependencyInfo {
   name: string;
   version: string;
-  type: 'production' | 'development';
+  type: "production" | "development";
   installed: boolean;
 }
 
@@ -137,12 +148,12 @@ export interface ToolInfo {
   version?: string;
   required: boolean;
   installCommand?: string;
-  category: 'build' | 'test' | 'lint' | 'format' | 'security' | 'other';
+  category: "build" | "test" | "lint" | "format" | "security" | "other";
   packageManager?: string;
 }
 
 export interface EditorConfig {
-  type: 'vscode' | 'vim' | 'editorconfig' | 'unknown';
+  type: "vscode" | "vim" | "editorconfig" | "unknown";
   path: string;
   hasSettings: boolean;
 }
@@ -227,17 +238,17 @@ export class OnboardingWizard {
     const relativeToCwd = path.relative(cwd, resolvedPath);
 
     // Check if path tries to escape via ..
-    if (relativeToCwd.startsWith('..')) {
+    if (relativeToCwd.startsWith("..")) {
       throw new Error(
         `Invalid project root: ${projectRoot}. ` +
-        `Path must be within or below the current working directory. ` +
-        `Attempted path: ${resolvedPath}, CWD: ${cwd}`
+          `Path must be within or below the current working directory. ` +
+          `Attempted path: ${resolvedPath}, CWD: ${cwd}`,
       );
     }
 
     // Additional security: prevent common suspicious patterns
-    if (resolvedPath.includes('\0')) {
-      throw new Error('Invalid project root: null bytes not allowed in path');
+    if (resolvedPath.includes("\0")) {
+      throw new Error("Invalid project root: null bytes not allowed in path");
     }
 
     // Note: We don't validate path existence here to avoid blocking I/O
@@ -252,33 +263,33 @@ export class OnboardingWizard {
    */
   async run(options: OnboardingOptions): Promise<OnboardingResult> {
     const startTime = Date.now();
-    logger.info('Starting onboarding wizard...');
+    logger.info("Starting onboarding wizard...");
 
     try {
       // Phase 1: Detection
-      logger.info('Phase 1: Detecting project characteristics...');
+      logger.info("Phase 1: Detecting project characteristics...");
       const profile = await this.detectProjectCharacteristics();
 
       if (options.dryRun) {
-        logger.info('Dry run mode - showing what would be done');
+        logger.info("Dry run mode - showing what would be done");
         return this.generateDryRunResult(profile, startTime);
       }
 
       // Phase 2: Configuration Generation
-      logger.info('Phase 2: Generating configuration...');
+      logger.info("Phase 2: Generating configuration...");
       const config = await this.generateConfiguration(profile);
 
       // Phase 3: Interactive Review (if enabled)
       let finalConfig = config;
       if (options.interactive) {
-        logger.info('Phase 3: Interactive review...');
+        logger.info("Phase 3: Interactive review...");
         finalConfig = await this.interactiveReview(config);
       }
 
       // Phase 4: Backup existing config
       let backupPath: string | undefined;
       if (options.backupExisting) {
-        logger.info('Phase 4: Backing up existing configuration...');
+        logger.info("Phase 4: Backing up existing configuration...");
         backupPath = await this.backupExistingConfig();
       }
 
@@ -286,7 +297,7 @@ export class OnboardingWizard {
       const installedTools: string[] = [];
       const skippedTools: string[] = [];
       if (!options.skipToolVerification) {
-        logger.info('Phase 5: Verifying tools...');
+        logger.info("Phase 5: Verifying tools...");
         const toolResults = await this.verifyTools(profile);
         installedTools.push(...toolResults.installed);
         skippedTools.push(...toolResults.skipped);
@@ -295,19 +306,22 @@ export class OnboardingWizard {
       // Phase 6: Configuration Writing
       let configPath: string | undefined;
       if (options.generateConfig) {
-        logger.info('Phase 6: Writing configuration...');
+        logger.info("Phase 6: Writing configuration...");
         configPath = await this.writeConfiguration(finalConfig);
       }
 
       // Phase 7: Validation
       let validationResults: ValidationResult | undefined;
       if (options.validateSetup && configPath) {
-        logger.info('Phase 7: Validating setup...');
+        logger.info("Phase 7: Validating setup...");
         validationResults = await this.validateSetup(finalConfig, profile);
       }
 
       // Generate recommendations
-      const recommendations = this.generateRecommendations(profile, finalConfig);
+      const recommendations = this.generateRecommendations(
+        profile,
+        finalConfig,
+      );
 
       const duration = Date.now() - startTime;
       logger.info(`Onboarding complete in ${duration}ms`);
@@ -320,12 +334,11 @@ export class OnboardingWizard {
         recommendations,
         validationResults,
         backupPath,
-        duration
+        duration,
       };
-
     } catch (error) {
       const duration = Date.now() - startTime;
-      logger.error('Onboarding failed:', error);
+      logger.error("Onboarding failed:", error);
 
       return {
         success: false,
@@ -333,7 +346,7 @@ export class OnboardingWizard {
         skippedTools: [],
         recommendations: [],
         duration,
-        error: error instanceof Error ? error.message : 'Unknown error'
+        error: error instanceof Error ? error.message : "Unknown error",
       };
     }
   }
@@ -348,7 +361,8 @@ export class OnboardingWizard {
     const detectionConfidence = this.calculateConfidence(projectInfo);
 
     // Detect dependencies
-    const { dependencies, devDependencies, missing } = await this.analyzeDependencies(projectInfo);
+    const { dependencies, devDependencies, missing } =
+      await this.analyzeDependencies(projectInfo);
 
     // Detect available and recommended tools
     const availableTools = await this.detectAvailableTools(projectInfo);
@@ -386,16 +400,18 @@ export class OnboardingWizard {
       hasKubernetes: containerInfo.hasKubernetes,
       editorConfig,
       hasGitHooks,
-      detectionConfidence
+      detectionConfidence,
     };
   }
 
   /**
    * Phase 2: Generate configuration
    */
-  private async generateConfiguration(profile: ProjectProfile): Promise<MCPDevToolsConfig> {
+  private async generateConfiguration(
+    profile: ProjectProfile,
+  ): Promise<MCPDevToolsConfig> {
     const config: MCPDevToolsConfig = {
-      $schema: './.mcp-devtools.schema.json'
+      $schema: "./.mcp-devtools.schema.json",
     };
 
     // Generate commands based on project type
@@ -435,7 +451,10 @@ export class OnboardingWizard {
     config.fileValidation = this.generateFileValidationConfig(profile);
 
     // Make targets (if available)
-    if (profile.projectInfo.makeTargets && profile.projectInfo.makeTargets.length > 0) {
+    if (
+      profile.projectInfo.makeTargets &&
+      profile.projectInfo.makeTargets.length > 0
+    ) {
       config.makeTargets = profile.projectInfo.makeTargets;
     }
 
@@ -455,9 +474,13 @@ export class OnboardingWizard {
    * Planned implementation: Use inquirer.js or prompts library
    * Tracked in: Future enhancement (see PR_MESSAGE.md)
    */
-  private async interactiveReview(config: MCPDevToolsConfig): Promise<MCPDevToolsConfig> {
+  private async interactiveReview(
+    config: MCPDevToolsConfig,
+  ): Promise<MCPDevToolsConfig> {
     // Interactive mode not yet implemented - using generated config
-    logger.info('Interactive mode not yet implemented - using generated config');
+    logger.info(
+      "Interactive mode not yet implemented - using generated config",
+    );
     return config;
   }
 
@@ -465,16 +488,19 @@ export class OnboardingWizard {
    * Phase 4: Backup existing configuration
    */
   private async backupExistingConfig(): Promise<string | undefined> {
-    const configPath = path.join(this.projectRoot, '.mcp-devtools.json');
+    const configPath = path.join(this.projectRoot, ".mcp-devtools.json");
 
     try {
       await fs.access(configPath);
 
       // Config exists, create backup
-      const backupDir = path.join(this.projectRoot, '.mcp-devtools-backups');
+      const backupDir = path.join(this.projectRoot, ".mcp-devtools-backups");
       await fs.mkdir(backupDir, { recursive: true });
 
-      const timestamp = new Date().toISOString().replace(/[:.]/g, '-').split('.')[0];
+      const timestamp = new Date()
+        .toISOString()
+        .replace(/[:.]/g, "-")
+        .split(".")[0];
       const backupPath = path.join(backupDir, `${timestamp}.json`);
 
       await fs.copyFile(configPath, backupPath);
@@ -483,8 +509,8 @@ export class OnboardingWizard {
       return backupPath;
     } catch (error) {
       // Expected: config doesn't exist, no backup needed
-      logger.debug('No existing config found to backup', {
-        error: error instanceof Error ? error.message : 'Unknown error'
+      logger.debug("No existing config found to backup", {
+        error: error instanceof Error ? error.message : "Unknown error",
       });
       return undefined;
     }
@@ -522,10 +548,10 @@ export class OnboardingWizard {
    * Phase 6: Write configuration to file
    */
   private async writeConfiguration(config: MCPDevToolsConfig): Promise<string> {
-    const configPath = path.join(this.projectRoot, '.mcp-devtools.json');
-    const content = JSON.stringify(config, null, 2) + '\n';
+    const configPath = path.join(this.projectRoot, ".mcp-devtools.json");
+    const content = JSON.stringify(config, null, 2) + "\n";
 
-    await fs.writeFile(configPath, content, 'utf8');
+    await fs.writeFile(configPath, content, "utf8");
     logger.info(`Configuration written to ${configPath}`);
 
     return configPath;
@@ -544,7 +570,7 @@ export class OnboardingWizard {
    */
   private async validateSetup(
     config: MCPDevToolsConfig,
-    profile: ProjectProfile
+    profile: ProjectProfile,
   ): Promise<ValidationResult> {
     // Unused parameters - stub implementation for future enhancement
     void config;
@@ -552,11 +578,11 @@ export class OnboardingWizard {
     // Basic validation - comprehensive validation available via SetupValidator
     const validations: Validation[] = [
       {
-        category: 'configuration',
-        name: 'Config file created',
+        category: "configuration",
+        name: "Config file created",
         passed: true,
-        message: 'Configuration file created successfully'
-      }
+        message: "Configuration file created successfully",
+      },
     ];
 
     return {
@@ -565,7 +591,7 @@ export class OnboardingWizard {
       errors: [],
       warnings: [],
       recommendations: [],
-      score: 100
+      score: 100,
     };
   }
 
@@ -573,7 +599,7 @@ export class OnboardingWizard {
    * Rollback to a previous configuration
    */
   async rollback(backupPath: string): Promise<void> {
-    const configPath = path.join(this.projectRoot, '.mcp-devtools.json');
+    const configPath = path.join(this.projectRoot, ".mcp-devtools.json");
 
     await fs.copyFile(backupPath, configPath);
     logger.info(`Rolled back configuration from ${backupPath}`);
@@ -583,19 +609,29 @@ export class OnboardingWizard {
   // Helper Methods
   // ============================================================================
 
-  private generateDryRunResult(profile: ProjectProfile, startTime: number): OnboardingResult {
-    const recommendations = this.generateRecommendations(profile, {} as MCPDevToolsConfig);
+  private generateDryRunResult(
+    profile: ProjectProfile,
+    startTime: number,
+  ): OnboardingResult {
+    const recommendations = this.generateRecommendations(
+      profile,
+      {} as MCPDevToolsConfig,
+    );
 
     return {
       success: true,
       installedTools: [],
-      skippedTools: profile.recommendedTools.filter(t => !t.installed).map(t => t.name),
+      skippedTools: profile.recommendedTools
+        .filter((t) => !t.installed)
+        .map((t) => t.name),
       recommendations,
-      duration: Date.now() - startTime
+      duration: Date.now() - startTime,
     };
   }
 
-  private calculateConfidence(projectInfo: ProjectInfo): ProjectProfile['detectionConfidence'] {
+  private calculateConfidence(
+    projectInfo: ProjectInfo,
+  ): ProjectProfile["detectionConfidence"] {
     // Simple confidence calculation based on available indicators
     let projectTypeConfidence = 0.5;
     let frameworkConfidence = 0.5;
@@ -619,7 +655,7 @@ export class OnboardingWizard {
     return {
       projectType: projectTypeConfidence,
       framework: frameworkConfidence,
-      buildSystem: buildSystemConfidence
+      buildSystem: buildSystemConfidence,
     };
   }
 
@@ -645,7 +681,7 @@ export class OnboardingWizard {
     return {
       dependencies: [],
       devDependencies: [],
-      missing: []
+      missing: [],
     };
   }
 
@@ -659,7 +695,9 @@ export class OnboardingWizard {
    *
    * Tracked in: Future enhancement (see PR_MESSAGE.md)
    */
-  private async detectAvailableTools(projectInfo: ProjectInfo): Promise<ToolInfo[]> {
+  private async detectAvailableTools(
+    projectInfo: ProjectInfo,
+  ): Promise<ToolInfo[]> {
     // Unused parameter - stub implementation for future enhancement
     void projectInfo;
     // Stub - tool detection planned for future implementation
@@ -673,25 +711,79 @@ export class OnboardingWizard {
     switch (projectInfo.type) {
       case ProjectType.NodeJS:
         tools.push(
-          { name: 'eslint', installed: false, required: true, category: 'lint', packageManager: 'npm' },
-          { name: 'markdownlint-cli', installed: false, required: false, category: 'lint', packageManager: 'npm' },
-          { name: 'yamllint', installed: false, required: false, category: 'lint', packageManager: 'npm' }
+          {
+            name: "eslint",
+            installed: false,
+            required: true,
+            category: "lint",
+            packageManager: "npm",
+          },
+          {
+            name: "markdownlint-cli",
+            installed: false,
+            required: false,
+            category: "lint",
+            packageManager: "npm",
+          },
+          {
+            name: "yamllint",
+            installed: false,
+            required: false,
+            category: "lint",
+            packageManager: "npm",
+          },
         );
         break;
 
       case ProjectType.Go:
         tools.push(
-          { name: 'golangci-lint', installed: false, required: true, category: 'lint', packageManager: 'go' },
-          { name: 'staticcheck', installed: false, required: false, category: 'lint', packageManager: 'go' },
-          { name: 'govulncheck', installed: false, required: false, category: 'security', packageManager: 'go' }
+          {
+            name: "golangci-lint",
+            installed: false,
+            required: true,
+            category: "lint",
+            packageManager: "go",
+          },
+          {
+            name: "staticcheck",
+            installed: false,
+            required: false,
+            category: "lint",
+            packageManager: "go",
+          },
+          {
+            name: "govulncheck",
+            installed: false,
+            required: false,
+            category: "security",
+            packageManager: "go",
+          },
         );
         break;
 
       case ProjectType.Python:
         tools.push(
-          { name: 'flake8', installed: false, required: true, category: 'lint', packageManager: 'pip' },
-          { name: 'black', installed: false, required: false, category: 'format', packageManager: 'pip' },
-          { name: 'pytest', installed: false, required: true, category: 'test', packageManager: 'pip' }
+          {
+            name: "flake8",
+            installed: false,
+            required: true,
+            category: "lint",
+            packageManager: "pip",
+          },
+          {
+            name: "black",
+            installed: false,
+            required: false,
+            category: "format",
+            packageManager: "pip",
+          },
+          {
+            name: "pytest",
+            installed: false,
+            required: true,
+            category: "test",
+            packageManager: "pip",
+          },
         );
         break;
     }
@@ -699,14 +791,17 @@ export class OnboardingWizard {
     return tools;
   }
 
-  private async detectCICD(): Promise<{ platform?: string; hasWorkflows: boolean }> {
+  private async detectCICD(): Promise<{
+    platform?: string;
+    hasWorkflows: boolean;
+  }> {
     // Check for common CI/CD platforms
     const cicdFiles = [
-      { file: '.github/workflows', platform: 'GitHub Actions' },
-      { file: '.gitlab-ci.yml', platform: 'GitLab CI' },
-      { file: '.circleci/config.yml', platform: 'CircleCI' },
-      { file: '.travis.yml', platform: 'Travis CI' },
-      { file: 'azure-pipelines.yml', platform: 'Azure Pipelines' }
+      { file: ".github/workflows", platform: "GitHub Actions" },
+      { file: ".gitlab-ci.yml", platform: "GitLab CI" },
+      { file: ".circleci/config.yml", platform: "CircleCI" },
+      { file: ".travis.yml", platform: "Travis CI" },
+      { file: "azure-pipelines.yml", platform: "Azure Pipelines" },
     ];
 
     for (const { file, platform } of cicdFiles) {
@@ -717,34 +812,37 @@ export class OnboardingWizard {
       } catch (error) {
         // Expected: file doesn't exist, try next
         logger.debug(`CI/CD file not found: ${file}`, {
-          error: error instanceof Error ? error.message : 'Unknown error'
+          error: error instanceof Error ? error.message : "Unknown error",
         });
         continue;
       }
     }
 
-    logger.debug('No CI/CD workflows detected');
+    logger.debug("No CI/CD workflows detected");
     return { hasWorkflows: false };
   }
 
-  private async detectContainerization(): Promise<{ hasDocker: boolean; hasKubernetes: boolean }> {
+  private async detectContainerization(): Promise<{
+    hasDocker: boolean;
+    hasKubernetes: boolean;
+  }> {
     let hasDocker = false;
     let hasKubernetes = false;
 
     // Check for Docker
     try {
-      await fs.access(path.join(this.projectRoot, 'Dockerfile'));
+      await fs.access(path.join(this.projectRoot, "Dockerfile"));
       hasDocker = true;
-      logger.debug('Dockerfile found');
+      logger.debug("Dockerfile found");
     } catch (error) {
       // Expected: no Dockerfile
-      logger.debug('No Dockerfile found', {
-        error: error instanceof Error ? error.message : 'Unknown error'
+      logger.debug("No Dockerfile found", {
+        error: error instanceof Error ? error.message : "Unknown error",
       });
     }
 
     // Check for Kubernetes
-    const k8sPatterns = ['k8s', 'kubernetes', 'manifests'];
+    const k8sPatterns = ["k8s", "kubernetes", "manifests"];
     for (const pattern of k8sPatterns) {
       try {
         await fs.access(path.join(this.projectRoot, pattern));
@@ -754,7 +852,7 @@ export class OnboardingWizard {
       } catch (error) {
         // Expected: directory doesn't exist
         logger.debug(`Kubernetes directory not found: ${pattern}`, {
-          error: error instanceof Error ? error.message : 'Unknown error'
+          error: error instanceof Error ? error.message : "Unknown error",
         });
         continue;
       }
@@ -766,32 +864,35 @@ export class OnboardingWizard {
   private async detectEditorConfig(): Promise<EditorConfig | undefined> {
     // Check for VS Code
     try {
-      const vscodeSettings = path.join(this.projectRoot, '.vscode/settings.json');
+      const vscodeSettings = path.join(
+        this.projectRoot,
+        ".vscode/settings.json",
+      );
       await fs.access(vscodeSettings);
-      logger.debug('VS Code settings found');
+      logger.debug("VS Code settings found");
       return {
-        type: 'vscode',
+        type: "vscode",
         path: vscodeSettings,
-        hasSettings: true
+        hasSettings: true,
       };
     } catch (error) {
-      logger.debug('VS Code settings not found', {
-        error: error instanceof Error ? error.message : 'Unknown error'
+      logger.debug("VS Code settings not found", {
+        error: error instanceof Error ? error.message : "Unknown error",
       });
 
       // Check for .editorconfig
       try {
-        const editorconfig = path.join(this.projectRoot, '.editorconfig');
+        const editorconfig = path.join(this.projectRoot, ".editorconfig");
         await fs.access(editorconfig);
-        logger.debug('EditorConfig found');
+        logger.debug("EditorConfig found");
         return {
-          type: 'editorconfig',
+          type: "editorconfig",
           path: editorconfig,
-          hasSettings: true
+          hasSettings: true,
         };
       } catch (error2) {
-        logger.debug('EditorConfig not found', {
-          error: error2 instanceof Error ? error2.message : 'Unknown error'
+        logger.debug("EditorConfig not found", {
+          error: error2 instanceof Error ? error2.message : "Unknown error",
         });
         return undefined;
       }
@@ -800,16 +901,16 @@ export class OnboardingWizard {
 
   private async hasGitHooks(): Promise<boolean> {
     try {
-      const hooksDir = path.join(this.projectRoot, '.git/hooks');
+      const hooksDir = path.join(this.projectRoot, ".git/hooks");
       const files = await fs.readdir(hooksDir);
       // Check if there are any non-sample hooks
-      const hasHooks = files.some(f => !f.endsWith('.sample'));
-      logger.debug(`Git hooks ${hasHooks ? 'found' : 'not found'}`);
+      const hasHooks = files.some((f) => !f.endsWith(".sample"));
+      logger.debug(`Git hooks ${hasHooks ? "found" : "not found"}`);
       return hasHooks;
     } catch (error) {
       // Expected: .git directory might not exist or hooks dir missing
-      logger.debug('Cannot access git hooks directory', {
-        error: error instanceof Error ? error.message : 'Unknown error'
+      logger.debug("Cannot access git hooks directory", {
+        error: error instanceof Error ? error.message : "Unknown error",
       });
       return false;
     }
@@ -820,35 +921,41 @@ export class OnboardingWizard {
 
     switch (profile.projectType) {
       case ProjectType.NodeJS:
-        commands.lint = 'npm run lint';
-        commands.test = 'npm test';
-        commands.build = 'npm run build';
-        commands.clean = profile.buildSystem === BuildSystem.Make ? 'make clean' : 'rm -rf dist';
-        commands.depend = 'npm install';
+        commands.lint = "npm run lint";
+        commands.test = "npm test";
+        commands.build = "npm run build";
+        commands.clean =
+          profile.buildSystem === BuildSystem.Make
+            ? "make clean"
+            : "rm -rf dist";
+        commands.depend = "npm install";
         break;
 
       case ProjectType.Go:
-        commands.lint = 'golangci-lint run';
-        commands.test = 'go test -v -cover ./...';
-        commands.build = 'go build ./...';
-        commands.clean = 'go clean';
-        commands.depend = 'go mod download';
+        commands.lint = "golangci-lint run";
+        commands.test = "go test -v -cover ./...";
+        commands.build = "go build ./...";
+        commands.clean = "go clean";
+        commands.depend = "go mod download";
         break;
 
       case ProjectType.Python:
-        commands.lint = 'flake8';
-        commands.test = 'pytest';
-        commands.build = 'python setup.py build';
-        commands.clean = 'rm -rf build dist *.egg-info';
-        commands.depend = profile.buildSystem === BuildSystem.Poetry ? 'poetry install' : 'pip install -r requirements.txt';
+        commands.lint = "flake8";
+        commands.test = "pytest";
+        commands.build = "python setup.py build";
+        commands.clean = "rm -rf build dist *.egg-info";
+        commands.depend =
+          profile.buildSystem === BuildSystem.Poetry
+            ? "poetry install"
+            : "pip install -r requirements.txt";
         break;
 
       case ProjectType.Rust:
-        commands.lint = 'cargo clippy';
-        commands.test = 'cargo test';
-        commands.build = 'cargo build';
-        commands.clean = 'cargo clean';
-        commands.depend = 'cargo fetch';
+        commands.lint = "cargo clippy";
+        commands.test = "cargo test";
+        commands.build = "cargo build";
+        commands.clean = "cargo clean";
+        commands.depend = "cargo fetch";
         break;
     }
 
@@ -860,16 +967,23 @@ export class OnboardingWizard {
   }
 
   private generateTestRunner(profile: ProjectProfile): string {
-    return profile.testFramework || this.getDefaultTestRunner(profile.projectType);
+    return (
+      profile.testFramework || this.getDefaultTestRunner(profile.projectType)
+    );
   }
 
   private getDefaultTestRunner(projectType: ProjectType): string {
     switch (projectType) {
-      case ProjectType.NodeJS: return 'jest';
-      case ProjectType.Python: return 'pytest';
-      case ProjectType.Go: return 'go';
-      case ProjectType.Rust: return 'cargo';
-      default: return 'make';
+      case ProjectType.NodeJS:
+        return "jest";
+      case ProjectType.Python:
+        return "pytest";
+      case ProjectType.Go:
+        return "go";
+      case ProjectType.Rust:
+        return "cargo";
+      default:
+        return "make";
     }
   }
 
@@ -881,17 +995,17 @@ export class OnboardingWizard {
   }
 
   private generateExcludePaths(profile: ProjectProfile): string[] {
-    const common = ['node_modules/**', 'dist/**', 'build/**', '.git/**'];
+    const common = ["node_modules/**", "dist/**", "build/**", ".git/**"];
 
     switch (profile.projectType) {
       case ProjectType.NodeJS:
-        return [...common, 'coverage/**'];
+        return [...common, "coverage/**"];
       case ProjectType.Python:
-        return [...common, '__pycache__/**', '*.pyc', '.venv/**', 'venv/**'];
+        return [...common, "__pycache__/**", "*.pyc", ".venv/**", "venv/**"];
       case ProjectType.Go:
-        return [...common, 'vendor/**'];
+        return [...common, "vendor/**"];
       case ProjectType.Rust:
-        return [...common, 'target/**'];
+        return [...common, "target/**"];
       default:
         return common;
     }
@@ -901,7 +1015,7 @@ export class OnboardingWizard {
     const env: Record<string, string> = {};
 
     if (profile.projectType === ProjectType.NodeJS) {
-      env.NODE_ENV = 'development';
+      env.NODE_ENV = "development";
     }
 
     return env;
@@ -910,7 +1024,7 @@ export class OnboardingWizard {
   private generateParallelConfig(profile: ProjectProfile): ParallelConfig {
     return {
       makeJobs: 1,
-      enableTestParallel: profile.projectType === ProjectType.NodeJS
+      enableTestParallel: profile.projectType === ProjectType.NodeJS,
     };
   }
 
@@ -919,7 +1033,7 @@ export class OnboardingWizard {
     void profile;
     return {
       allowedCommands: [],
-      restrictedPaths: ['/etc', '/usr', '/bin', '/sbin']
+      restrictedPaths: ["/etc", "/usr", "/bin", "/sbin"],
     };
   }
 
@@ -928,26 +1042,28 @@ export class OnboardingWizard {
     void profile;
     return {
       goModule: true,
-      testFlags: ['-race', '-cover'],
-      lintConfig: '.golangci.yml'
+      testFlags: ["-race", "-cover"],
+      lintConfig: ".golangci.yml",
     };
   }
 
-  private generateFileValidationConfig(profile: ProjectProfile): FileValidationConfig {
-    const fileTypes: string[] = ['*.md', '*.json', '*.yaml', '*.yml'];
+  private generateFileValidationConfig(
+    profile: ProjectProfile,
+  ): FileValidationConfig {
+    const fileTypes: string[] = ["*.md", "*.json", "*.yaml", "*.yml"];
 
     switch (profile.projectType) {
       case ProjectType.NodeJS:
-        fileTypes.push('*.ts', '*.js', '*.tsx', '*.jsx');
+        fileTypes.push("*.ts", "*.js", "*.tsx", "*.jsx");
         break;
       case ProjectType.Go:
-        fileTypes.push('*.go');
+        fileTypes.push("*.go");
         break;
       case ProjectType.Python:
-        fileTypes.push('*.py');
+        fileTypes.push("*.py");
         break;
       case ProjectType.Rust:
-        fileTypes.push('*.rs');
+        fileTypes.push("*.rs");
         break;
     }
 
@@ -955,78 +1071,86 @@ export class OnboardingWizard {
       newline: {
         enabled: true,
         autoFix: false,
-        exclude: ['node_modules/**', 'dist/**', '*.min.js', '*.min.css'],
-        fileTypes
-      }
+        exclude: ["node_modules/**", "dist/**", "*.min.js", "*.min.css"],
+        fileTypes,
+      },
     };
   }
 
   private generateRecommendations(
     profile: ProjectProfile,
-    config: MCPDevToolsConfig
+    config: MCPDevToolsConfig,
   ): Recommendation[] {
     // Unused parameter - stub implementation for future enhancement
     void config;
     const recommendations: Recommendation[] = [];
 
     // Recommend missing tools
-    const missingTools = profile.recommendedTools.filter(t => !t.installed && t.required);
+    const missingTools = profile.recommendedTools.filter(
+      (t) => !t.installed && t.required,
+    );
     if (missingTools.length > 0) {
       recommendations.push({
-        category: 'tool',
-        priority: 'high',
-        title: 'Install missing required tools',
-        description: `The following required tools are not installed: ${missingTools.map(t => t.name).join(', ')}`,
-        actions: missingTools.map(t => `Install ${t.name}: ${t.installCommand || `${t.packageManager} install ${t.name}`}`),
-        automatable: true
+        category: "tool",
+        priority: "high",
+        title: "Install missing required tools",
+        description: `The following required tools are not installed: ${missingTools.map((t) => t.name).join(", ")}`,
+        actions: missingTools.map(
+          (t) =>
+            `Install ${t.name}: ${t.installCommand || `${t.packageManager} install ${t.name}`}`,
+        ),
+        automatable: true,
       });
     }
 
     // Recommend CI/CD if not present
     if (!profile.hasWorkflows) {
       recommendations.push({
-        category: 'workflow',
-        priority: 'medium',
-        title: 'Set up CI/CD',
-        description: 'No CI/CD workflows detected. Consider setting up automated testing and deployment.',
+        category: "workflow",
+        priority: "medium",
+        title: "Set up CI/CD",
+        description:
+          "No CI/CD workflows detected. Consider setting up automated testing and deployment.",
         actions: [
-          'Create .github/workflows/ci.yml for GitHub Actions',
-          'Configure automated testing on pull requests',
-          'Set up deployment workflows'
+          "Create .github/workflows/ci.yml for GitHub Actions",
+          "Configure automated testing on pull requests",
+          "Set up deployment workflows",
         ],
-        automatable: false
+        automatable: false,
       });
     }
 
     // Recommend Docker if not present but beneficial
     if (!profile.hasDocker && profile.projectType !== ProjectType.Unknown) {
       recommendations.push({
-        category: 'integration',
-        priority: 'low',
-        title: 'Consider containerization',
-        description: 'No Dockerfile detected. Docker can help ensure consistent development and deployment environments.',
+        category: "integration",
+        priority: "low",
+        title: "Consider containerization",
+        description:
+          "No Dockerfile detected. Docker can help ensure consistent development and deployment environments.",
         actions: [
-          'Create Dockerfile for your project',
-          'Create docker-compose.yml for local development',
-          'Add .dockerignore file'
+          "Create Dockerfile for your project",
+          "Create docker-compose.yml for local development",
+          "Add .dockerignore file",
         ],
-        automatable: false
+        automatable: false,
       });
     }
 
     // Recommend tests if none found
     if (!profile.hasTests) {
       recommendations.push({
-        category: 'workflow',
-        priority: 'high',
-        title: 'Add tests to your project',
-        description: 'No tests detected. Testing is essential for maintaining code quality.',
+        category: "workflow",
+        priority: "high",
+        title: "Add tests to your project",
+        description:
+          "No tests detected. Testing is essential for maintaining code quality.",
         actions: [
           `Set up ${profile.testFramework || this.getDefaultTestRunner(profile.projectType)}`,
-          'Create test directory structure',
-          'Write initial unit tests'
+          "Create test directory structure",
+          "Write initial unit tests",
         ],
-        automatable: false
+        automatable: false,
       });
     }
 

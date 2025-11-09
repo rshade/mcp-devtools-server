@@ -1,7 +1,7 @@
-import { glob } from 'glob';
-import path from 'path';
-import { getCacheManager } from './cache-manager.js';
-import { createHash } from 'crypto';
+import { glob } from "glob";
+import path from "path";
+import { getCacheManager } from "./cache-manager.js";
+import { createHash } from "crypto";
 
 export interface FileScanOptions {
   patterns: string[];
@@ -27,9 +27,12 @@ export class FileScanner {
       patterns: options.patterns.sort(),
       exclude: (options.exclude || []).sort(),
       fileTypes: (options.fileTypes || []).sort(),
-      cwd
+      cwd,
     });
-    const optionsHash = createHash('sha256').update(optionsJson).digest('hex').substring(0, 16);
+    const optionsHash = createHash("sha256")
+      .update(optionsJson)
+      .digest("hex")
+      .substring(0, 16);
     return `scan:${cwd}:${optionsHash}`;
   }
 
@@ -43,16 +46,16 @@ export class FileScanner {
   async scan(options: FileScanOptions): Promise<string[]> {
     // Try cache first
     const cacheKey = this.buildFileScanCacheKey(options);
-    const cached = this.cacheManager.get<string[]>('fileLists', cacheKey);
+    const cached = this.cacheManager.get<string[]>("fileLists", cacheKey);
     if (cached) {
       return cached;
     }
 
     const {
       patterns,
-      exclude = ['node_modules/**', 'dist/**', '.git/**'],
+      exclude = ["node_modules/**", "dist/**", ".git/**"],
       fileTypes,
-      cwd = process.cwd()
+      cwd = process.cwd(),
     } = options;
 
     const allFiles: Set<string> = new Set();
@@ -62,14 +65,14 @@ export class FileScanner {
         cwd,
         ignore: exclude,
         absolute: true,
-        nodir: true
+        nodir: true,
       });
 
       for (const file of files) {
         // Apply file type filter if specified
         if (fileTypes && fileTypes.length > 0) {
-          const matchesType = fileTypes.some(type => {
-            const globPattern = type.startsWith('*') ? type : `*${type}`;
+          const matchesType = fileTypes.some((type) => {
+            const globPattern = type.startsWith("*") ? type : `*${type}`;
             return this.matchesPattern(file, globPattern);
           });
           if (!matchesType) continue;
@@ -82,7 +85,7 @@ export class FileScanner {
     const result = Array.from(allFiles).sort();
 
     // Cache the result
-    this.cacheManager.set('fileLists', cacheKey, result);
+    this.cacheManager.set("fileLists", cacheKey, result);
 
     return result;
   }
@@ -96,7 +99,7 @@ export class FileScanner {
    */
   private matchesPattern(filePath: string, pattern: string): boolean {
     const ext = path.extname(filePath);
-    if (pattern.startsWith('*.')) {
+    if (pattern.startsWith("*.")) {
       return ext === pattern.substring(1);
     }
     return filePath.endsWith(pattern);

@@ -33,22 +33,33 @@
  * @see src/utils/logger.ts - Shared logger being mocked
  */
 
-import { describe, it, expect, beforeEach, afterEach, jest } from '@jest/globals';
-import { ChecksumTracker, createDevFileTracker, FileChangeCallback } from '../../utils/checksum-tracker.js';
-import { getCacheManager } from '../../utils/cache-manager.js';
-import { writeFile, mkdir, unlink, utimes } from 'fs/promises';
-import { join } from 'path';
-import { tmpdir } from 'os';
+import {
+  describe,
+  it,
+  expect,
+  beforeEach,
+  afterEach,
+  jest,
+} from "@jest/globals";
+import {
+  ChecksumTracker,
+  createDevFileTracker,
+  FileChangeCallback,
+} from "../../utils/checksum-tracker.js";
+import { getCacheManager } from "../../utils/cache-manager.js";
+import { writeFile, mkdir, unlink, utimes } from "fs/promises";
+import { join } from "path";
+import { tmpdir } from "os";
 
 // Mock console.error to suppress logger output during tests
 // This prevents the logger from polluting test output and causing CI failures
-jest.spyOn(console, 'error').mockImplementation(() => {});
+jest.spyOn(console, "error").mockImplementation(() => {});
 
 // Helper to create properly typed callback mocks
 // Using typed mocks prevents TypeScript errors and improves test maintainability
 const createMockCallback = () => jest.fn<FileChangeCallback>();
 
-describe('ChecksumTracker', () => {
+describe("ChecksumTracker", () => {
   let tracker: ChecksumTracker;
   let testDir: string;
   let testFile: string;
@@ -63,8 +74,8 @@ describe('ChecksumTracker', () => {
     // Create test directory and file
     testDir = join(tmpdir(), `checksum-test-${Date.now()}`);
     await mkdir(testDir, { recursive: true });
-    testFile = join(testDir, 'test.txt');
-    await writeFile(testFile, 'initial content');
+    testFile = join(testDir, "test.txt");
+    await writeFile(testFile, "initial content");
   });
 
   afterEach(async () => {
@@ -77,25 +88,24 @@ describe('ChecksumTracker', () => {
     }
   });
 
-  describe('constructor', () => {
-    it('should initialize with default config', () => {
+  describe("constructor", () => {
+    it("should initialize with default config", () => {
       expect(tracker).toBeInstanceOf(ChecksumTracker);
       expect(tracker.getTrackedFiles()).toEqual([]);
     });
 
-    it('should accept custom config', () => {
+    it("should accept custom config", () => {
       const customTracker = new ChecksumTracker({
-        algorithm: 'md5',
+        algorithm: "md5",
         watchIntervalMs: 10000,
       });
       expect(customTracker).toBeInstanceOf(ChecksumTracker);
       customTracker.clear();
     });
-
   });
 
-  describe('track', () => {
-    it('should track a file and register callback', async () => {
+  describe("track", () => {
+    it("should track a file and register callback", async () => {
       const callback = createMockCallback();
       await tracker.track(testFile, callback);
 
@@ -104,7 +114,7 @@ describe('ChecksumTracker', () => {
       expect(trackedFiles).toHaveLength(1);
     });
 
-    it('should calculate initial checksum', async () => {
+    it("should calculate initial checksum", async () => {
       const callback = createMockCallback();
       await tracker.track(testFile, callback);
 
@@ -116,7 +126,7 @@ describe('ChecksumTracker', () => {
       expect(checksum?.size).toBeGreaterThan(0);
     });
 
-    it('should support multiple callbacks for same file', async () => {
+    it("should support multiple callbacks for same file", async () => {
       const callback1 = createMockCallback();
       const callback2 = createMockCallback();
 
@@ -127,9 +137,9 @@ describe('ChecksumTracker', () => {
       expect(trackedFiles).toHaveLength(1);
     });
 
-    it('should handle tracking errors gracefully', async () => {
+    it("should handle tracking errors gracefully", async () => {
       const callback = createMockCallback();
-      const nonExistentFile = join(testDir, 'nonexistent.txt');
+      const nonExistentFile = join(testDir, "nonexistent.txt");
 
       await tracker.track(nonExistentFile, callback);
 
@@ -138,8 +148,8 @@ describe('ChecksumTracker', () => {
     });
   });
 
-  describe('untrack', () => {
-    it('should stop tracking a file', async () => {
+  describe("untrack", () => {
+    it("should stop tracking a file", async () => {
       const callback = createMockCallback();
       await tracker.track(testFile, callback);
 
@@ -150,7 +160,7 @@ describe('ChecksumTracker', () => {
       expect(trackedFiles).toHaveLength(0);
     });
 
-    it('should remove checksum data', async () => {
+    it("should remove checksum data", async () => {
       const callback = createMockCallback();
       await tracker.track(testFile, callback);
 
@@ -159,16 +169,15 @@ describe('ChecksumTracker', () => {
       const checksum = tracker.getChecksum(testFile);
       expect(checksum).toBeUndefined();
     });
-
   });
 
-  describe('hasChanged', () => {
-    it('should return true for untracked file', async () => {
+  describe("hasChanged", () => {
+    it("should return true for untracked file", async () => {
       const changed = await tracker.hasChanged(testFile);
       expect(changed).toBe(true);
     });
 
-    it('should return false when file has not changed', async () => {
+    it("should return false when file has not changed", async () => {
       const callback = createMockCallback();
       await tracker.track(testFile, callback);
 
@@ -176,7 +185,7 @@ describe('ChecksumTracker', () => {
       expect(changed).toBe(false);
     });
 
-    it('should return true when file content changes', async () => {
+    it("should return true when file content changes", async () => {
       const callback = createMockCallback();
       await tracker.track(testFile, callback);
 
@@ -184,26 +193,26 @@ describe('ChecksumTracker', () => {
       await new Promise((resolve) => setTimeout(resolve, 10));
 
       // Modify file content
-      await writeFile(testFile, 'modified content');
+      await writeFile(testFile, "modified content");
 
       const changed = await tracker.hasChanged(testFile);
       expect(changed).toBe(true);
     });
 
-    it('should update checksum after detecting change', async () => {
+    it("should update checksum after detecting change", async () => {
       const callback = createMockCallback();
       await tracker.track(testFile, callback);
 
       const oldChecksum = tracker.getChecksum(testFile);
 
-      await writeFile(testFile, 'modified content');
+      await writeFile(testFile, "modified content");
       await tracker.hasChanged(testFile);
 
       const newChecksum = tracker.getChecksum(testFile);
       expect(newChecksum?.checksum).not.toBe(oldChecksum?.checksum);
     });
 
-    it('should return false when only mtime changes but content is same', async () => {
+    it("should return false when only mtime changes but content is same", async () => {
       const callback = createMockCallback();
       await tracker.track(testFile, callback);
 
@@ -216,7 +225,7 @@ describe('ChecksumTracker', () => {
       expect(changed).toBe(false);
     });
 
-    it('should handle check errors gracefully', async () => {
+    it("should handle check errors gracefully", async () => {
       const callback = createMockCallback();
       await tracker.track(testFile, callback);
 
@@ -228,12 +237,12 @@ describe('ChecksumTracker', () => {
     });
   });
 
-  describe('calculateChecksum - large files', () => {
-    it('uses md5 algorithm when configured', async () => {
+  describe("calculateChecksum - large files", () => {
+    it("uses md5 algorithm when configured", async () => {
       // Test that algorithm configuration works
-      const md5Tracker = new ChecksumTracker({ algorithm: 'md5' });
-      const smallFile = join(testDir, 'small.txt');
-      await writeFile(smallFile, 'test content');
+      const md5Tracker = new ChecksumTracker({ algorithm: "md5" });
+      const smallFile = join(testDir, "small.txt");
+      await writeFile(smallFile, "test content");
 
       const callback = createMockCallback();
       await md5Tracker.track(smallFile, callback);
@@ -249,12 +258,12 @@ describe('ChecksumTracker', () => {
     });
   });
 
-  describe('checkAll', () => {
-    it('should check all tracked files', async () => {
-      const file1 = join(testDir, 'file1.txt');
-      const file2 = join(testDir, 'file2.txt');
-      await writeFile(file1, 'content1');
-      await writeFile(file2, 'content2');
+  describe("checkAll", () => {
+    it("should check all tracked files", async () => {
+      const file1 = join(testDir, "file1.txt");
+      const file2 = join(testDir, "file2.txt");
+      await writeFile(file1, "content1");
+      await writeFile(file2, "content2");
 
       const callback1 = createMockCallback();
       const callback2 = createMockCallback();
@@ -273,18 +282,18 @@ describe('ChecksumTracker', () => {
       await unlink(file2);
     });
 
-    it('should trigger callbacks for changed files', async () => {
+    it("should trigger callbacks for changed files", async () => {
       const callback = createMockCallback();
       await tracker.track(testFile, callback);
 
-      await writeFile(testFile, 'modified content');
+      await writeFile(testFile, "modified content");
 
       await tracker.checkAll();
 
       expect(callback).toHaveBeenCalledWith(testFile);
     });
 
-    it('should prevent concurrent checkAll calls', async () => {
+    it("should prevent concurrent checkAll calls", async () => {
       const callback = createMockCallback();
       await tracker.track(testFile, callback);
 
@@ -300,31 +309,33 @@ describe('ChecksumTracker', () => {
     });
   });
 
-  describe('triggerCallbacks', () => {
-    it('should call all registered callbacks', async () => {
+  describe("triggerCallbacks", () => {
+    it("should call all registered callbacks", async () => {
       const callback1 = createMockCallback();
       const callback2 = createMockCallback();
 
       await tracker.track(testFile, callback1);
       await tracker.track(testFile, callback2);
 
-      await writeFile(testFile, 'modified content');
+      await writeFile(testFile, "modified content");
       await tracker.checkAll();
 
       expect(callback1).toHaveBeenCalledWith(testFile);
       expect(callback2).toHaveBeenCalledWith(testFile);
     });
 
-    it('should handle callback errors', async () => {
-      const errorCallback = createMockCallback().mockImplementation(async () => {
-        throw new Error('Callback error');
-      });
+    it("should handle callback errors", async () => {
+      const errorCallback = createMockCallback().mockImplementation(
+        async () => {
+          throw new Error("Callback error");
+        },
+      );
       const successCallback = createMockCallback();
 
       await tracker.track(testFile, errorCallback);
       await tracker.track(testFile, successCallback);
 
-      await writeFile(testFile, 'modified content');
+      await writeFile(testFile, "modified content");
       await tracker.checkAll();
 
       expect(errorCallback).toHaveBeenCalled();
@@ -333,26 +344,26 @@ describe('ChecksumTracker', () => {
     });
   });
 
-  describe('watching', () => {
-    it('should start watching files', () => {
+  describe("watching", () => {
+    it("should start watching files", () => {
       tracker.startWatching();
       // Successfully starts (tested via stopWatching)
       tracker.stopWatching();
     });
 
-    it('should stop watching files', () => {
+    it("should stop watching files", () => {
       tracker.startWatching();
       tracker.stopWatching();
       // Should not throw
     });
 
-    it('should not start watching twice', () => {
+    it("should not start watching twice", () => {
       tracker.startWatching();
       tracker.startWatching(); // Should not throw, just log warning
       tracker.stopWatching();
     });
 
-    it('should check files on interval', async () => {
+    it("should check files on interval", async () => {
       const callback = createMockCallback();
       await tracker.track(testFile, callback);
 
@@ -372,7 +383,7 @@ describe('ChecksumTracker', () => {
       expect(callback).not.toHaveBeenCalled();
     });
 
-    it('should handle errors during automatic checks', async () => {
+    it("should handle errors during automatic checks", async () => {
       const callback = createMockCallback();
       await tracker.track(testFile, callback);
 
@@ -391,16 +402,16 @@ describe('ChecksumTracker', () => {
     });
   });
 
-  describe('getTrackedFiles', () => {
-    it('should return empty array initially', () => {
+  describe("getTrackedFiles", () => {
+    it("should return empty array initially", () => {
       expect(tracker.getTrackedFiles()).toEqual([]);
     });
 
-    it('should return all tracked file paths', async () => {
-      const file1 = join(testDir, 'file1.txt');
-      const file2 = join(testDir, 'file2.txt');
-      await writeFile(file1, 'content1');
-      await writeFile(file2, 'content2');
+    it("should return all tracked file paths", async () => {
+      const file1 = join(testDir, "file1.txt");
+      const file2 = join(testDir, "file2.txt");
+      await writeFile(file1, "content1");
+      await writeFile(file2, "content2");
 
       const callback = createMockCallback();
       await tracker.track(file1, callback);
@@ -417,12 +428,12 @@ describe('ChecksumTracker', () => {
     });
   });
 
-  describe('getChecksum', () => {
-    it('should return undefined for untracked file', () => {
+  describe("getChecksum", () => {
+    it("should return undefined for untracked file", () => {
       expect(tracker.getChecksum(testFile)).toBeUndefined();
     });
 
-    it('should return checksum info for tracked file', async () => {
+    it("should return checksum info for tracked file", async () => {
       const callback = createMockCallback();
       await tracker.track(testFile, callback);
 
@@ -436,8 +447,8 @@ describe('ChecksumTracker', () => {
     });
   });
 
-  describe('clear', () => {
-    it('should remove all tracked files', async () => {
+  describe("clear", () => {
+    it("should remove all tracked files", async () => {
       const callback = createMockCallback();
       await tracker.track(testFile, callback);
 
@@ -447,7 +458,7 @@ describe('ChecksumTracker', () => {
       expect(tracker.getChecksum(testFile)).toBeUndefined();
     });
 
-    it('should stop watching', () => {
+    it("should stop watching", () => {
       tracker.startWatching();
       tracker.clear();
       // Should not throw
@@ -455,7 +466,7 @@ describe('ChecksumTracker', () => {
   });
 });
 
-describe('createDevFileTracker', () => {
+describe("createDevFileTracker", () => {
   let tracker: ChecksumTracker;
 
   beforeEach(() => {
@@ -468,12 +479,12 @@ describe('createDevFileTracker', () => {
     }
   });
 
-  it('should create a tracker instance', () => {
+  it("should create a tracker instance", () => {
     tracker = createDevFileTracker();
     expect(tracker).toBeInstanceOf(ChecksumTracker);
   });
 
-  it('should attempt to track common dev files', () => {
+  it("should attempt to track common dev files", () => {
     tracker = createDevFileTracker();
 
     // Should attempt to track files (most will fail since files don't exist in test environment)
@@ -481,9 +492,9 @@ describe('createDevFileTracker', () => {
     expect(tracker).toBeInstanceOf(ChecksumTracker);
   });
 
-  it('should invalidate caches when files change', async () => {
+  it("should invalidate caches when files change", async () => {
     const cacheManager = getCacheManager();
-    const invalidateSpy = jest.spyOn(cacheManager, 'invalidate');
+    const invalidateSpy = jest.spyOn(cacheManager, "invalidate");
 
     tracker = createDevFileTracker();
 

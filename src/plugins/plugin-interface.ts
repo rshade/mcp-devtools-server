@@ -38,8 +38,8 @@
  * ```
  */
 
-import { ShellExecutor } from '../utils/shell-executor.js';
-import winston from 'winston';
+import { ShellExecutor } from "../utils/shell-executor.js";
+import winston from "winston";
 
 /**
  * Core plugin interface that all plugins must implement
@@ -247,7 +247,7 @@ export interface ToolExample {
  */
 export interface PluginHealth {
   /** Health status indicator */
-  status: 'healthy' | 'degraded' | 'unhealthy';
+  status: "healthy" | "degraded" | "unhealthy";
 
   /** Optional message describing health status */
   message?: string;
@@ -297,10 +297,10 @@ export class PluginError extends Error {
   constructor(
     message: string,
     public readonly pluginName: string,
-    public readonly code?: string
+    public readonly code?: string,
   ) {
     super(message);
-    this.name = 'PluginError';
+    this.name = "PluginError";
   }
 }
 
@@ -308,9 +308,13 @@ export class PluginError extends Error {
  * Error thrown during plugin initialization
  */
 export class PluginInitializationError extends PluginError {
-  constructor(pluginName: string, message: string, public readonly cause?: Error) {
-    super(message, pluginName, 'INITIALIZATION_FAILED');
-    this.name = 'PluginInitializationError';
+  constructor(
+    pluginName: string,
+    message: string,
+    public readonly cause?: Error,
+  ) {
+    super(message, pluginName, "INITIALIZATION_FAILED");
+    this.name = "PluginInitializationError";
   }
 }
 
@@ -318,9 +322,13 @@ export class PluginInitializationError extends PluginError {
  * Error thrown during plugin registration
  */
 export class PluginRegistrationError extends PluginError {
-  constructor(pluginName: string, message: string, public readonly cause?: Error) {
-    super(message, pluginName, 'REGISTRATION_FAILED');
-    this.name = 'PluginRegistrationError';
+  constructor(
+    pluginName: string,
+    message: string,
+    public readonly cause?: Error,
+  ) {
+    super(message, pluginName, "REGISTRATION_FAILED");
+    this.name = "PluginRegistrationError";
   }
 }
 
@@ -332,10 +340,10 @@ export class PluginExecutionError extends PluginError {
     pluginName: string,
     message: string,
     public readonly toolName?: string,
-    public readonly cause?: Error
+    public readonly cause?: Error,
   ) {
-    super(message, pluginName, 'EXECUTION_FAILED');
-    this.name = 'PluginExecutionError';
+    super(message, pluginName, "EXECUTION_FAILED");
+    this.name = "PluginExecutionError";
   }
 }
 
@@ -343,9 +351,13 @@ export class PluginExecutionError extends PluginError {
  * Error thrown for invalid plugin configuration
  */
 export class PluginConfigurationError extends PluginError {
-  constructor(pluginName: string, message: string, public readonly invalidKeys?: string[]) {
-    super(message, pluginName, 'CONFIGURATION_INVALID');
-    this.name = 'PluginConfigurationError';
+  constructor(
+    pluginName: string,
+    message: string,
+    public readonly invalidKeys?: string[],
+  ) {
+    super(message, pluginName, "CONFIGURATION_INVALID");
+    this.name = "PluginConfigurationError";
   }
 }
 
@@ -356,9 +368,9 @@ export class PluginDependencyError extends PluginError {
   constructor(
     pluginName: string,
     message: string,
-    public readonly missingCommands: string[]
+    public readonly missingCommands: string[],
   ) {
-    super(message, pluginName, 'DEPENDENCIES_MISSING');
-    this.name = 'PluginDependencyError';
+    super(message, pluginName, "DEPENDENCIES_MISSING");
+    this.name = "PluginDependencyError";
   }
 }
