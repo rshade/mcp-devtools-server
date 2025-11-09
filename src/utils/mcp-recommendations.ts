@@ -5,7 +5,7 @@
  * based on project context, detected issues, and common use cases.
  */
 
-import { ProjectType } from './project-detector.js';
+import { ProjectType } from "./project-detector.js";
 
 /**
  * Recommendation for an MCP server with configuration and usage details
@@ -25,7 +25,7 @@ export interface MCPServerRecommendation {
   useCases: string[];
   benefits: string[];
   configExample: Record<string, unknown>;
-  priority: 'high' | 'medium' | 'low';
+  priority: "high" | "medium" | "low";
   categories: MCPCategory[];
 }
 
@@ -34,21 +34,21 @@ export interface MCPServerRecommendation {
  */
 export enum MCPCategory {
   /** General development tools and utilities */
-  Development = 'development',
+  Development = "development",
   /** Testing frameworks and quality assurance tools */
-  Testing = 'testing',
+  Testing = "testing",
   /** Documentation generation and API reference tools */
-  Documentation = 'documentation',
+  Documentation = "documentation",
   /** AI-powered assistants and reasoning tools */
-  AI = 'ai',
+  AI = "ai",
   /** Database access and management tools */
-  Database = 'database',
+  Database = "database",
   /** File system operations and management */
-  FileSystem = 'filesystem',
+  FileSystem = "filesystem",
   /** Web development and HTTP-related tools */
-  Web = 'web',
+  Web = "web",
   /** Productivity enhancement and workflow tools */
-  Productivity = 'productivity'
+  Productivity = "productivity",
 }
 
 /**
@@ -93,230 +93,251 @@ export class MCPRecommendations {
   private initializeRecommendations(): void {
     // Core AI/Productivity MCPs
     this.addRecommendation({
-      name: 'Sequential Thinking',
-      package: '@modelcontextprotocol/server-sequential-thinking',
-      description: 'Advanced reasoning and problem-solving through structured, step-by-step thinking. Improves code quality and decision-making.',
+      name: "Sequential Thinking",
+      package: "@modelcontextprotocol/server-sequential-thinking",
+      description:
+        "Advanced reasoning and problem-solving through structured, step-by-step thinking. Improves code quality and decision-making.",
       useCases: [
-        'Complex problem solving and debugging',
-        'Architecture and design decisions',
-        'Code review and refactoring planning',
-        'Multi-step task decomposition'
+        "Complex problem solving and debugging",
+        "Architecture and design decisions",
+        "Code review and refactoring planning",
+        "Multi-step task decomposition",
       ],
       benefits: [
-        'Better reasoning through structured thinking',
-        'Reduced errors in complex tasks',
-        'Clearer documentation of thought process',
-        'Improved code quality'
+        "Better reasoning through structured thinking",
+        "Reduced errors in complex tasks",
+        "Clearer documentation of thought process",
+        "Improved code quality",
       ],
       configExample: {
-        command: 'npx',
-        args: ['-y', '@modelcontextprotocol/server-sequential-thinking']
+        command: "npx",
+        args: ["-y", "@modelcontextprotocol/server-sequential-thinking"],
       },
-      priority: 'high',
-      categories: [MCPCategory.AI, MCPCategory.Development, MCPCategory.Productivity]
+      priority: "high",
+      categories: [
+        MCPCategory.AI,
+        MCPCategory.Development,
+        MCPCategory.Productivity,
+      ],
     });
 
     this.addRecommendation({
-      name: 'Context7',
-      package: 'context7',
-      description: 'Access to up-to-date documentation for libraries and frameworks. Essential for working with latest APIs and best practices.',
+      name: "Context7",
+      package: "context7",
+      description:
+        "Access to up-to-date documentation for libraries and frameworks. Essential for working with latest APIs and best practices.",
       useCases: [
-        'Learning new libraries and frameworks',
-        'Finding up-to-date API documentation',
-        'Discovering best practices',
-        'Code examples and usage patterns'
+        "Learning new libraries and frameworks",
+        "Finding up-to-date API documentation",
+        "Discovering best practices",
+        "Code examples and usage patterns",
       ],
       benefits: [
-        'Always current documentation',
-        'Reduces time searching for docs',
-        'Better code with framework best practices',
-        'Quick access to examples'
+        "Always current documentation",
+        "Reduces time searching for docs",
+        "Better code with framework best practices",
+        "Quick access to examples",
       ],
       configExample: {
-        command: 'npx',
-        args: ['context7-mcp']
+        command: "npx",
+        args: ["context7-mcp"],
       },
-      priority: 'high',
-      categories: [MCPCategory.Documentation, MCPCategory.Development]
+      priority: "high",
+      categories: [MCPCategory.Documentation, MCPCategory.Development],
     });
 
     // Testing MCPs
     this.addRecommendation({
-      name: 'Playwright',
-      package: '@modelcontextprotocol/server-playwright',
-      description: 'Browser automation and end-to-end testing. Enables automated testing of web applications.',
+      name: "Playwright",
+      package: "@modelcontextprotocol/server-playwright",
+      description:
+        "Browser automation and end-to-end testing. Enables automated testing of web applications.",
       useCases: [
-        'End-to-end testing of web applications',
-        'Browser testing and automation',
-        'UI testing and screenshots',
-        'Cross-browser compatibility testing',
-        'Web development testing'
+        "End-to-end testing of web applications",
+        "Browser testing and automation",
+        "UI testing and screenshots",
+        "Cross-browser compatibility testing",
+        "Web development testing",
       ],
       benefits: [
-        'Automated browser testing',
-        'Visual regression testing',
-        'Cross-browser support',
-        'Fast and reliable tests'
+        "Automated browser testing",
+        "Visual regression testing",
+        "Cross-browser support",
+        "Fast and reliable tests",
       ],
       configExample: {
-        command: 'npx',
-        args: ['-y', '@modelcontextprotocol/server-playwright']
+        command: "npx",
+        args: ["-y", "@modelcontextprotocol/server-playwright"],
       },
-      priority: 'medium',
-      categories: [MCPCategory.Testing, MCPCategory.Web]
+      priority: "medium",
+      categories: [MCPCategory.Testing, MCPCategory.Web],
     });
 
     // Database MCPs
     this.addRecommendation({
-      name: 'PostgreSQL',
-      package: '@modelcontextprotocol/server-postgres',
-      description: 'Direct PostgreSQL database access for queries, schema inspection, and data management.',
+      name: "PostgreSQL",
+      package: "@modelcontextprotocol/server-postgres",
+      description:
+        "Direct PostgreSQL database access for queries, schema inspection, and data management.",
       useCases: [
-        'Database schema exploration',
-        'Query development and testing',
-        'Data analysis and reporting',
-        'Database migration planning'
+        "Database schema exploration",
+        "Query development and testing",
+        "Data analysis and reporting",
+        "Database migration planning",
       ],
       benefits: [
-        'Direct database access',
-        'Schema introspection',
-        'Query optimization',
-        'Data exploration'
+        "Direct database access",
+        "Schema introspection",
+        "Query optimization",
+        "Data exploration",
       ],
       configExample: {
-        command: 'npx',
-        args: ['-y', '@modelcontextprotocol/server-postgres'],
+        command: "npx",
+        args: ["-y", "@modelcontextprotocol/server-postgres"],
         env: {
-          POSTGRES_CONNECTION: 'postgresql://user:pass@localhost/db'
-        }
+          POSTGRES_CONNECTION: "postgresql://user:pass@localhost/db",
+        },
       },
-      priority: 'medium',
-      categories: [MCPCategory.Database, MCPCategory.Development]
+      priority: "medium",
+      categories: [MCPCategory.Database, MCPCategory.Development],
     });
 
     this.addRecommendation({
-      name: 'SQLite',
-      package: '@modelcontextprotocol/server-sqlite',
-      description: 'SQLite database operations for local data storage and analysis.',
+      name: "SQLite",
+      package: "@modelcontextprotocol/server-sqlite",
+      description:
+        "SQLite database operations for local data storage and analysis.",
       useCases: [
-        'Local data storage and analysis',
-        'Embedded database applications',
-        'Data exploration and prototyping',
-        'Testing database logic'
+        "Local data storage and analysis",
+        "Embedded database applications",
+        "Data exploration and prototyping",
+        "Testing database logic",
       ],
       benefits: [
-        'Zero-configuration database',
-        'Fast local queries',
-        'Perfect for prototyping',
-        'No external dependencies'
+        "Zero-configuration database",
+        "Fast local queries",
+        "Perfect for prototyping",
+        "No external dependencies",
       ],
       configExample: {
-        command: 'npx',
-        args: ['-y', '@modelcontextprotocol/server-sqlite', '/path/to/database.db']
+        command: "npx",
+        args: [
+          "-y",
+          "@modelcontextprotocol/server-sqlite",
+          "/path/to/database.db",
+        ],
       },
-      priority: 'low',
-      categories: [MCPCategory.Database, MCPCategory.Development]
+      priority: "low",
+      categories: [MCPCategory.Database, MCPCategory.Development],
     });
 
     // File System MCPs
     this.addRecommendation({
-      name: 'Filesystem',
-      package: '@modelcontextprotocol/server-filesystem',
-      description: 'Enhanced file system operations with pattern matching and bulk operations.',
+      name: "Filesystem",
+      package: "@modelcontextprotocol/server-filesystem",
+      description:
+        "Enhanced file system operations with pattern matching and bulk operations.",
       useCases: [
-        'Bulk file operations',
-        'Pattern-based file searches',
-        'File organization and cleanup',
-        'Large codebase navigation'
+        "Bulk file operations",
+        "Pattern-based file searches",
+        "File organization and cleanup",
+        "Large codebase navigation",
       ],
       benefits: [
-        'Powerful file operations',
-        'Pattern matching support',
-        'Safe file manipulation',
-        'Better than basic file tools'
+        "Powerful file operations",
+        "Pattern matching support",
+        "Safe file manipulation",
+        "Better than basic file tools",
       ],
       configExample: {
-        command: 'npx',
-        args: ['-y', '@modelcontextprotocol/server-filesystem', '/allowed/path']
+        command: "npx",
+        args: [
+          "-y",
+          "@modelcontextprotocol/server-filesystem",
+          "/allowed/path",
+        ],
       },
-      priority: 'medium',
-      categories: [MCPCategory.FileSystem, MCPCategory.Development]
+      priority: "medium",
+      categories: [MCPCategory.FileSystem, MCPCategory.Development],
     });
 
     // Git MCPs
     this.addRecommendation({
-      name: 'Git',
-      package: '@modelcontextprotocol/server-git',
-      description: 'Advanced Git operations including commit management, branch operations, and repository analysis.',
+      name: "Git",
+      package: "@modelcontextprotocol/server-git",
+      description:
+        "Advanced Git operations including commit management, branch operations, and repository analysis.",
       useCases: [
-        'Repository history analysis',
-        'Branch and commit management',
-        'Code review workflows',
-        'Git repository operations'
+        "Repository history analysis",
+        "Branch and commit management",
+        "Code review workflows",
+        "Git repository operations",
       ],
       benefits: [
-        'Comprehensive Git integration',
-        'History analysis',
-        'Automated workflows',
-        'Better version control'
+        "Comprehensive Git integration",
+        "History analysis",
+        "Automated workflows",
+        "Better version control",
       ],
       configExample: {
-        command: 'npx',
-        args: ['-y', '@modelcontextprotocol/server-git']
+        command: "npx",
+        args: ["-y", "@modelcontextprotocol/server-git"],
       },
-      priority: 'high',
-      categories: [MCPCategory.Development, MCPCategory.Productivity]
+      priority: "high",
+      categories: [MCPCategory.Development, MCPCategory.Productivity],
     });
 
     // Memory/Knowledge MCPs
     this.addRecommendation({
-      name: 'Memory',
-      package: '@modelcontextprotocol/server-memory',
-      description: 'Persistent knowledge graph for storing and retrieving information across sessions.',
+      name: "Memory",
+      package: "@modelcontextprotocol/server-memory",
+      description:
+        "Persistent knowledge graph for storing and retrieving information across sessions.",
       useCases: [
-        'Project-specific knowledge retention',
-        'Storing decisions and rationale',
-        'Building project context over time',
-        'Team knowledge sharing'
+        "Project-specific knowledge retention",
+        "Storing decisions and rationale",
+        "Building project context over time",
+        "Team knowledge sharing",
       ],
       benefits: [
-        'Persistent knowledge',
-        'Context retention',
-        'Better continuity',
-        'Reduced re-explanation'
+        "Persistent knowledge",
+        "Context retention",
+        "Better continuity",
+        "Reduced re-explanation",
       ],
       configExample: {
-        command: 'npx',
-        args: ['-y', '@modelcontextprotocol/server-memory']
+        command: "npx",
+        args: ["-y", "@modelcontextprotocol/server-memory"],
       },
-      priority: 'medium',
-      categories: [MCPCategory.Productivity, MCPCategory.AI]
+      priority: "medium",
+      categories: [MCPCategory.Productivity, MCPCategory.AI],
     });
 
     // Web/API MCPs
     this.addRecommendation({
-      name: 'Fetch',
-      package: '@modelcontextprotocol/server-fetch',
-      description: 'HTTP request capabilities for interacting with web APIs and services.',
+      name: "Fetch",
+      package: "@modelcontextprotocol/server-fetch",
+      description:
+        "HTTP request capabilities for interacting with web APIs and services.",
       useCases: [
-        'API testing and integration',
-        'Web development and API integration',
-        'Web scraping and data collection',
-        'External service integration',
-        'API documentation exploration'
+        "API testing and integration",
+        "Web development and API integration",
+        "Web scraping and data collection",
+        "External service integration",
+        "API documentation exploration",
       ],
       benefits: [
-        'HTTP request support',
-        'API testing',
-        'Web data access',
-        'Service integration'
+        "HTTP request support",
+        "API testing",
+        "Web data access",
+        "Service integration",
       ],
       configExample: {
-        command: 'npx',
-        args: ['-y', '@modelcontextprotocol/server-fetch']
+        command: "npx",
+        args: ["-y", "@modelcontextprotocol/server-fetch"],
       },
-      priority: 'medium',
-      categories: [MCPCategory.Web, MCPCategory.Development]
+      priority: "medium",
+      categories: [MCPCategory.Web, MCPCategory.Development],
     });
   }
 
@@ -363,8 +384,10 @@ export class MCPRecommendations {
    * // Returns [Playwright, ...other testing servers]
    * ```
    */
-  getRecommendationsByCategory(category: MCPCategory): MCPServerRecommendation[] {
-    return this.recommendations.filter(r => r.categories.includes(category));
+  getRecommendationsByCategory(
+    category: MCPCategory,
+  ): MCPServerRecommendation[] {
+    return this.recommendations.filter((r) => r.categories.includes(category));
   }
 
   /**
@@ -382,8 +405,10 @@ export class MCPRecommendations {
    * // Returns [Sequential Thinking, Context7, Git]
    * ```
    */
-  getRecommendationsByPriority(priority: 'high' | 'medium' | 'low'): MCPServerRecommendation[] {
-    return this.recommendations.filter(r => r.priority === priority);
+  getRecommendationsByPriority(
+    priority: "high" | "medium" | "low",
+  ): MCPServerRecommendation[] {
+    return this.recommendations.filter((r) => r.priority === priority);
   }
 
   /**
@@ -423,24 +448,28 @@ export class MCPRecommendations {
 
     // Always recommend core AI/productivity tools
     recommended.push(
-      ...this.recommendations.filter(r =>
-        r.name === 'Sequential Thinking' || r.name === 'Context7'
-      )
+      ...this.recommendations.filter(
+        (r) => r.name === "Sequential Thinking" || r.name === "Context7",
+      ),
     );
 
     // Recommend Git for all projects
-    const gitRec = this.recommendations.find(r => r.name === 'Git');
+    const gitRec = this.recommendations.find((r) => r.name === "Git");
     if (gitRec) recommended.push(gitRec);
 
     // Testing recommendations
     if (context.hasTests) {
-      const testingRecs = this.recommendations.filter(r => r.categories.includes(MCPCategory.Testing));
+      const testingRecs = this.recommendations.filter((r) =>
+        r.categories.includes(MCPCategory.Testing),
+      );
       recommended.push(...testingRecs);
     }
 
     // Additional web-specific testing for Node.js projects
     if (context.projectType === ProjectType.NodeJS && context.hasWebInterface) {
-      const playwrightRec = this.recommendations.find(r => r.name === 'Playwright');
+      const playwrightRec = this.recommendations.find(
+        (r) => r.name === "Playwright",
+      );
       if (playwrightRec && !recommended.includes(playwrightRec)) {
         recommended.push(playwrightRec);
       }
@@ -448,32 +477,36 @@ export class MCPRecommendations {
 
     // Database recommendations
     if (context.hasDatabase) {
-      const postgresRec = this.recommendations.find(r => r.name === 'PostgreSQL');
-      const sqliteRec = this.recommendations.find(r => r.name === 'SQLite');
+      const postgresRec = this.recommendations.find(
+        (r) => r.name === "PostgreSQL",
+      );
+      const sqliteRec = this.recommendations.find((r) => r.name === "SQLite");
       if (postgresRec) recommended.push(postgresRec);
       if (sqliteRec) recommended.push(sqliteRec);
     }
 
     // File system for large projects
     if (context.projectType !== ProjectType.Unknown) {
-      const fsRec = this.recommendations.find(r => r.name === 'Filesystem');
+      const fsRec = this.recommendations.find((r) => r.name === "Filesystem");
       if (fsRec) recommended.push(fsRec);
     }
 
     // Web/API projects
     if (context.hasWebInterface) {
-      const fetchRec = this.recommendations.find(r => r.name === 'Fetch');
+      const fetchRec = this.recommendations.find((r) => r.name === "Fetch");
       if (fetchRec) recommended.push(fetchRec);
     }
 
     // Memory for complex projects
     if (context.projectType !== ProjectType.Unknown) {
-      const memoryRec = this.recommendations.find(r => r.name === 'Memory');
+      const memoryRec = this.recommendations.find((r) => r.name === "Memory");
       if (memoryRec) recommended.push(memoryRec);
     }
 
     // Remove duplicates and sort by priority
-    const unique = Array.from(new Map(recommended.map(r => [r.name, r])).values());
+    const unique = Array.from(
+      new Map(recommended.map((r) => [r.name, r])).values(),
+    );
     return this.sortByPriority(unique);
   }
 
@@ -496,8 +529,8 @@ export class MCPRecommendations {
    * ```
    */
   getRecommendationsForUseCase(useCase: string): MCPServerRecommendation[] {
-    return this.recommendations.filter(r =>
-      r.useCases.some(uc => uc.toLowerCase().includes(useCase.toLowerCase()))
+    return this.recommendations.filter((r) =>
+      r.useCases.some((uc) => uc.toLowerCase().includes(useCase.toLowerCase())),
     );
   }
 
@@ -510,9 +543,13 @@ export class MCPRecommendations {
    * @returns {MCPServerRecommendation[]} Sorted array with high priority first
    * @private
    */
-  private sortByPriority(recommendations: MCPServerRecommendation[]): MCPServerRecommendation[] {
+  private sortByPriority(
+    recommendations: MCPServerRecommendation[],
+  ): MCPServerRecommendation[] {
     const priorityOrder = { high: 0, medium: 1, low: 2 };
-    return recommendations.sort((a, b) => priorityOrder[a.priority] - priorityOrder[b.priority]);
+    return recommendations.sort(
+      (a, b) => priorityOrder[a.priority] - priorityOrder[b.priority],
+    );
   }
 
   /**
@@ -531,15 +568,18 @@ export class MCPRecommendations {
    * // Returns: { mcpServers: { "sequential-thinking": {...}, ... } }
    * ```
    */
-  generateMCPConfig(recommendations: MCPServerRecommendation[]): Record<string, unknown> {
+  generateMCPConfig(
+    recommendations: MCPServerRecommendation[],
+  ): Record<string, unknown> {
     const mcpServers: Record<string, unknown> = {};
 
     for (const rec of recommendations) {
-      mcpServers[rec.name.toLowerCase().replace(/\s+/g, '-')] = rec.configExample;
+      mcpServers[rec.name.toLowerCase().replace(/\s+/g, "-")] =
+        rec.configExample;
     }
 
     return {
-      mcpServers
+      mcpServers,
     };
   }
 
@@ -585,7 +625,7 @@ export class MCPRecommendations {
     return {
       total: this.recommendations.length,
       byPriority,
-      byCategory
+      byCategory,
     };
   }
 }

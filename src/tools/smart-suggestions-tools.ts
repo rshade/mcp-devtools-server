@@ -5,64 +5,110 @@
  * Provides intelligent recommendations for workflow optimization and issue resolution.
  */
 
-import { z } from 'zod';
-import { SuggestionEngine, SmartSuggestion, SuggestionContext } from '../utils/suggestion-engine.js';
-import { ShellExecutor, ExecutionResult } from '../utils/shell-executor.js';
-import { AnalysisResult } from '../utils/failure-analyzer.js';
-import { MCPRecommendations, MCPCategory, MCPServerRecommendation } from '../utils/mcp-recommendations.js';
-import { ProjectDetector } from '../utils/project-detector.js';
-import { getCacheManager } from '../utils/cache-manager.js';
+import { z } from "zod";
+import {
+  SuggestionEngine,
+  SmartSuggestion,
+  SuggestionContext,
+} from "../utils/suggestion-engine.js";
+import { ShellExecutor, ExecutionResult } from "../utils/shell-executor.js";
+import { AnalysisResult } from "../utils/failure-analyzer.js";
+import {
+  MCPRecommendations,
+  MCPCategory,
+  MCPServerRecommendation,
+} from "../utils/mcp-recommendations.js";
+import { ProjectDetector } from "../utils/project-detector.js";
+import { getCacheManager } from "../utils/cache-manager.js";
 
 // Schema for analyze_command arguments
 const AnalyzeCommandArgsSchema = z.object({
-  command: z.string().min(1).describe('Command to execute and analyze'),
-  directory: z.string().optional().describe('Working directory for the command'),
-  timeout: z.number().optional().describe('Command timeout in milliseconds'),
-  args: z.array(z.string()).optional().describe('Additional command arguments'),
-  context: z.object({
-    tool: z.string().optional(),
-    language: z.string().optional(),
-    projectType: z.string().optional()
-  }).optional().describe('Additional context for better suggestions')
+  command: z.string().min(1).describe("Command to execute and analyze"),
+  directory: z
+    .string()
+    .optional()
+    .describe("Working directory for the command"),
+  timeout: z.number().optional().describe("Command timeout in milliseconds"),
+  args: z.array(z.string()).optional().describe("Additional command arguments"),
+  context: z
+    .object({
+      tool: z.string().optional(),
+      language: z.string().optional(),
+      projectType: z.string().optional(),
+    })
+    .optional()
+    .describe("Additional context for better suggestions"),
 });
 
 // Schema for analyze_result arguments
 const AnalyzeResultArgsSchema = z.object({
-  command: z.string().describe('Command that was executed'),
-  exitCode: z.number().describe('Exit code from command execution'),
-  stdout: z.string().optional().describe('Standard output from command'),
-  stderr: z.string().optional().describe('Standard error from command'),
-  duration: z.number().optional().describe('Execution duration in milliseconds'),
-  context: z.object({
-    tool: z.string().optional(),
-    language: z.string().optional(),
-    projectType: z.string().optional()
-  }).optional().describe('Additional context for better suggestions')
+  command: z.string().describe("Command that was executed"),
+  exitCode: z.number().describe("Exit code from command execution"),
+  stdout: z.string().optional().describe("Standard output from command"),
+  stderr: z.string().optional().describe("Standard error from command"),
+  duration: z
+    .number()
+    .optional()
+    .describe("Execution duration in milliseconds"),
+  context: z
+    .object({
+      tool: z.string().optional(),
+      language: z.string().optional(),
+      projectType: z.string().optional(),
+    })
+    .optional()
+    .describe("Additional context for better suggestions"),
 });
 
 // Schema for get_knowledge_base_stats arguments
 const GetKnowledgeBaseStatsArgsSchema = z.object({
-  category: z.string().optional().describe('Filter by category (security, performance, etc.)')
+  category: z
+    .string()
+    .optional()
+    .describe("Filter by category (security, performance, etc.)"),
 });
 
 // Schema for recommend_mcp_servers arguments
 const RecommendMCPServersArgsSchema = z.object({
-  category: z.string().optional().describe('Filter by category (development, testing, documentation, etc.)'),
-  priority: z.enum(['high', 'medium', 'low']).optional().describe('Filter by priority level'),
-  useCase: z.string().optional().describe('Specific use case (e.g., "testing", "database")'),
-  includeConfig: z.boolean().optional().describe('Include .mcp.json configuration example')
+  category: z
+    .string()
+    .optional()
+    .describe("Filter by category (development, testing, documentation, etc.)"),
+  priority: z
+    .enum(["high", "medium", "low"])
+    .optional()
+    .describe("Filter by priority level"),
+  useCase: z
+    .string()
+    .optional()
+    .describe('Specific use case (e.g., "testing", "database")'),
+  includeConfig: z
+    .boolean()
+    .optional()
+    .describe("Include .mcp.json configuration example"),
 });
 
 // Schema for get_performance_metrics arguments
 const GetPerformanceMetricsArgsSchema = z.object({
-  namespace: z.string().optional().describe('Specific cache namespace to get metrics for (smartSuggestions, projectDetection, etc.)')
+  namespace: z
+    .string()
+    .optional()
+    .describe(
+      "Specific cache namespace to get metrics for (smartSuggestions, projectDetection, etc.)",
+    ),
 });
 
 export type AnalyzeCommandArgs = z.infer<typeof AnalyzeCommandArgsSchema>;
 export type AnalyzeResultArgs = z.infer<typeof AnalyzeResultArgsSchema>;
-export type GetKnowledgeBaseStatsArgs = z.infer<typeof GetKnowledgeBaseStatsArgsSchema>;
-export type RecommendMCPServersArgs = z.infer<typeof RecommendMCPServersArgsSchema>;
-export type GetPerformanceMetricsArgs = z.infer<typeof GetPerformanceMetricsArgsSchema>;
+export type GetKnowledgeBaseStatsArgs = z.infer<
+  typeof GetKnowledgeBaseStatsArgsSchema
+>;
+export type RecommendMCPServersArgs = z.infer<
+  typeof RecommendMCPServersArgsSchema
+>;
+export type GetPerformanceMetricsArgs = z.infer<
+  typeof GetPerformanceMetricsArgsSchema
+>;
 
 /**
  * Result from analyzing and executing a command with smart suggestions
@@ -223,7 +269,9 @@ export class SmartSuggestionsTools {
    * @returns {GetKnowledgeBaseStatsArgs} Validated and typed arguments
    * @throws {z.ZodError} If validation fails
    */
-  static validateGetKnowledgeBaseStatsArgs(args: unknown): GetKnowledgeBaseStatsArgs {
+  static validateGetKnowledgeBaseStatsArgs(
+    args: unknown,
+  ): GetKnowledgeBaseStatsArgs {
     return GetKnowledgeBaseStatsArgsSchema.parse(args);
   }
 
@@ -234,7 +282,9 @@ export class SmartSuggestionsTools {
    * @returns {RecommendMCPServersArgs} Validated and typed arguments
    * @throws {z.ZodError} If validation fails
    */
-  static validateRecommendMCPServersArgs(args: unknown): RecommendMCPServersArgs {
+  static validateRecommendMCPServersArgs(
+    args: unknown,
+  ): RecommendMCPServersArgs {
     return RecommendMCPServersArgsSchema.parse(args);
   }
 
@@ -245,7 +295,9 @@ export class SmartSuggestionsTools {
    * @returns {GetPerformanceMetricsArgs} Validated and typed arguments
    * @throws {z.ZodError} If validation fails
    */
-  static validateGetPerformanceMetricsArgs(args: unknown): GetPerformanceMetricsArgs {
+  static validateGetPerformanceMetricsArgs(
+    args: unknown,
+  ): GetPerformanceMetricsArgs {
     return GetPerformanceMetricsArgsSchema.parse(args);
   }
 
@@ -275,9 +327,12 @@ export class SmartSuggestionsTools {
    * }
    * ```
    */
-  async analyzeCommand(args: AnalyzeCommandArgs): Promise<AnalyzeCommandResult> {
+  async analyzeCommand(
+    args: AnalyzeCommandArgs,
+  ): Promise<AnalyzeCommandResult> {
     // Validate arguments
-    const validatedArgs = SmartSuggestionsTools.validateAnalyzeCommandArgs(args);
+    const validatedArgs =
+      SmartSuggestionsTools.validateAnalyzeCommandArgs(args);
 
     const startTime = Date.now();
 
@@ -288,8 +343,8 @@ export class SmartSuggestionsTools {
         {
           cwd: validatedArgs.directory,
           timeout: validatedArgs.timeout,
-          args: validatedArgs.args
-        }
+          args: validatedArgs.args,
+        },
       );
 
       // Generate suggestions
@@ -297,12 +352,12 @@ export class SmartSuggestionsTools {
         tool: args.context?.tool,
         language: args.context?.language,
         command: args.command,
-        workingDirectory: args.directory
+        workingDirectory: args.directory,
       };
 
       const suggestionResult = await this.suggestionEngine.generateSuggestions(
         executionResult,
-        context
+        context,
       );
 
       const totalDuration = Date.now() - startTime;
@@ -314,22 +369,22 @@ export class SmartSuggestionsTools {
         analysis: suggestionResult.analysis,
         suggestions: suggestionResult.suggestions,
         summary: suggestionResult.summary,
-        duration: totalDuration
+        duration: totalDuration,
       };
-
     } catch (error) {
       const duration = Date.now() - startTime;
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      const errorMessage =
+        error instanceof Error ? error.message : "Unknown error";
 
       // Create a failed execution result
       const executionResult: ExecutionResult = {
         success: false,
-        stdout: '',
+        stdout: "",
         stderr: errorMessage,
         exitCode: -1,
         duration: duration,
         command: args.command,
-        error: errorMessage
+        error: errorMessage,
       };
 
       const suggestionResult = await this.suggestionEngine.generateSuggestions(
@@ -337,8 +392,8 @@ export class SmartSuggestionsTools {
         {
           tool: args.context?.tool,
           language: args.context?.language,
-          command: args.command
-        }
+          command: args.command,
+        },
       );
 
       return {
@@ -348,7 +403,7 @@ export class SmartSuggestionsTools {
         analysis: suggestionResult.analysis,
         suggestions: suggestionResult.suggestions,
         summary: suggestionResult.summary,
-        duration
+        duration,
       };
     }
   }
@@ -385,24 +440,27 @@ export class SmartSuggestionsTools {
     // Create ExecutionResult from provided data
     const executionResult: ExecutionResult = {
       success: args.exitCode === 0,
-      stdout: args.stdout || '',
-      stderr: args.stderr || '',
+      stdout: args.stdout || "",
+      stderr: args.stderr || "",
       exitCode: args.exitCode,
       duration: args.duration || 0,
       command: args.command,
-      error: args.exitCode !== 0 ? `Command exited with code ${args.exitCode}` : undefined
+      error:
+        args.exitCode !== 0
+          ? `Command exited with code ${args.exitCode}`
+          : undefined,
     };
 
     // Generate suggestions
     const context: SuggestionContext = {
       tool: args.context?.tool,
       language: args.context?.language,
-      command: args.command
+      command: args.command,
     };
 
     const suggestionResult = await this.suggestionEngine.generateSuggestions(
       executionResult,
-      context
+      context,
     );
 
     const duration = Date.now() - startTime;
@@ -412,7 +470,7 @@ export class SmartSuggestionsTools {
       analysis: suggestionResult.analysis,
       suggestions: suggestionResult.suggestions,
       summary: suggestionResult.summary,
-      duration
+      duration,
     };
   }
 
@@ -438,7 +496,7 @@ export class SmartSuggestionsTools {
    * ```
    */
   async getKnowledgeBaseStats(
-    args: GetKnowledgeBaseStatsArgs
+    args: GetKnowledgeBaseStatsArgs,
   ): Promise<KnowledgeBaseStatsResult> {
     const stats = this.suggestionEngine.getKnowledgeBaseStats();
 
@@ -447,7 +505,7 @@ export class SmartSuggestionsTools {
       const categoryStats = stats.byCategory[args.category];
       return {
         totalPatterns: categoryStats || 0,
-        byCategory: { [args.category]: categoryStats || 0 }
+        byCategory: { [args.category]: categoryStats || 0 },
       };
     }
 
@@ -481,18 +539,23 @@ export class SmartSuggestionsTools {
    * ```
    */
   async recommendMCPServers(
-    args: RecommendMCPServersArgs
+    args: RecommendMCPServersArgs,
   ): Promise<RecommendMCPServersResult> {
     let recommendations: MCPServerRecommendation[] = [];
 
     // Get recommendations based on filters
     if (args.category) {
       const category = args.category as MCPCategory;
-      recommendations = this.mcpRecommendations.getRecommendationsByCategory(category);
+      recommendations =
+        this.mcpRecommendations.getRecommendationsByCategory(category);
     } else if (args.priority) {
-      recommendations = this.mcpRecommendations.getRecommendationsByPriority(args.priority);
+      recommendations = this.mcpRecommendations.getRecommendationsByPriority(
+        args.priority,
+      );
     } else if (args.useCase) {
-      recommendations = this.mcpRecommendations.getRecommendationsForUseCase(args.useCase);
+      recommendations = this.mcpRecommendations.getRecommendationsForUseCase(
+        args.useCase,
+      );
     } else {
       // Get contextual recommendations based on project
       const projectInfo = await this.projectDetector.detectProject();
@@ -500,21 +563,23 @@ export class SmartSuggestionsTools {
         projectType: projectInfo.type,
         hasTests: projectInfo.hasTests,
         hasDatabase: false, // Could be enhanced with database detection
-        hasWebInterface: projectInfo.framework?.includes('React') ||
-                        projectInfo.framework?.includes('Vue') ||
-                        projectInfo.framework?.includes('Angular'),
-        detectedIssues: []
+        hasWebInterface:
+          projectInfo.framework?.includes("React") ||
+          projectInfo.framework?.includes("Vue") ||
+          projectInfo.framework?.includes("Angular"),
+        detectedIssues: [],
       });
     }
 
     const result: RecommendMCPServersResult = {
       recommendations,
-      totalRecommendations: recommendations.length
+      totalRecommendations: recommendations.length,
     };
 
     // Include config if requested
     if (args.includeConfig) {
-      result.mcpConfig = this.mcpRecommendations.generateMCPConfig(recommendations);
+      result.mcpConfig =
+        this.mcpRecommendations.generateMCPConfig(recommendations);
     }
 
     return result;
@@ -546,7 +611,7 @@ export class SmartSuggestionsTools {
    * ```
    */
   async getPerformanceMetrics(
-    args: GetPerformanceMetricsArgs
+    args: GetPerformanceMetricsArgs,
   ): Promise<PerformanceMetricsResult> {
     const cacheManager = getCacheManager();
     const patternStats = this.suggestionEngine.getKnowledgeBaseStats();
@@ -563,56 +628,77 @@ export class SmartSuggestionsTools {
     const totalMemoryMB = cacheManager.getTotalMemoryUsage();
 
     // Calculate overall effectiveness
-    const avgHitRate = namespaceStats.length > 0
-      ? namespaceStats.reduce((sum, ns) => sum + ns.hitRate, 0) / namespaceStats.length
-      : 0;
+    const avgHitRate =
+      namespaceStats.length > 0
+        ? namespaceStats.reduce((sum, ns) => sum + ns.hitRate, 0) /
+          namespaceStats.length
+        : 0;
 
     const cacheEffectiveness =
-      avgHitRate > 0.8 ? 'Excellent' :
-      avgHitRate > 0.6 ? 'Good' :
-      avgHitRate > 0.4 ? 'Fair' :
-      avgHitRate > 0 ? 'Poor' :
-      'No data yet';
+      avgHitRate > 0.8
+        ? "Excellent"
+        : avgHitRate > 0.6
+          ? "Good"
+          : avgHitRate > 0.4
+            ? "Fair"
+            : avgHitRate > 0
+              ? "Poor"
+              : "No data yet";
 
     // Generate recommendations
     const recommendations: string[] = [];
 
-    if (avgHitRate < 0.5 && namespaceStats.some(ns => ns.hits + ns.misses > 10)) {
-      recommendations.push('Low cache hit rate detected. Consider increasing TTL or reviewing cache key design.');
+    if (
+      avgHitRate < 0.5 &&
+      namespaceStats.some((ns) => ns.hits + ns.misses > 10)
+    ) {
+      recommendations.push(
+        "Low cache hit rate detected. Consider increasing TTL or reviewing cache key design.",
+      );
     }
 
     if (totalMemoryMB > 80) {
-      recommendations.push('Cache memory usage is high. Consider reducing max items per namespace.');
+      recommendations.push(
+        "Cache memory usage is high. Consider reducing max items per namespace.",
+      );
     }
 
-    const smartSuggestionsStats = namespaceStats.find(ns => ns.namespace === 'smartSuggestions');
-    if (smartSuggestionsStats && smartSuggestionsStats.hitRate < 0.3 && smartSuggestionsStats.hits + smartSuggestionsStats.misses > 5) {
-      recommendations.push('Smart suggestions cache hit rate is low. This is normal if commands produce varied output.');
+    const smartSuggestionsStats = namespaceStats.find(
+      (ns) => ns.namespace === "smartSuggestions",
+    );
+    if (
+      smartSuggestionsStats &&
+      smartSuggestionsStats.hitRate < 0.3 &&
+      smartSuggestionsStats.hits + smartSuggestionsStats.misses > 5
+    ) {
+      recommendations.push(
+        "Smart suggestions cache hit rate is low. This is normal if commands produce varied output.",
+      );
     }
 
     if (recommendations.length === 0) {
-      recommendations.push('Cache performance is optimal. No action needed.');
+      recommendations.push("Cache performance is optimal. No action needed.");
     }
 
     return {
       cache: {
         enabled: cacheManager.isEnabled(),
-        namespaces: namespaceStats.map(ns => ({
+        namespaces: namespaceStats.map((ns) => ({
           namespace: ns.namespace,
           hits: ns.hits,
           misses: ns.misses,
           hitRate: ns.hitRate,
           size: ns.size,
           maxSize: ns.maxSize,
-          memoryMB: ns.memoryEstimateMB
+          memoryMB: ns.memoryEstimateMB,
         })),
-        totalMemoryMB
+        totalMemoryMB,
       },
       patterns: patternStats,
       overall: {
         cacheEffectiveness,
-        recommendations
-      }
+        recommendations,
+      },
     };
   }
 }

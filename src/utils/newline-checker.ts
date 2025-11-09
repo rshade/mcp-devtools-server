@@ -1,8 +1,8 @@
-import { promises as fs } from 'fs';
+import { promises as fs } from "fs";
 
 export interface NewlineCheckResult {
   hasTrailingNewline: boolean;
-  lineEnding: '\n' | '\r\n' | null;
+  lineEnding: "\n" | "\r\n" | null;
   isBinary: boolean;
   fileSize: number;
 }
@@ -31,12 +31,12 @@ export class NewlineChecker {
         hasTrailingNewline: true,
         lineEnding: null,
         isBinary: false,
-        fileSize: 0
+        fileSize: 0,
       };
     }
 
     // Read first chunk for binary detection
-    const handle = await fs.open(filePath, 'r');
+    const handle = await fs.open(filePath, "r");
     try {
       const sampleSize = Math.min(this.maxBinarySampleSize, stats.size);
       const buffer = Buffer.allocUnsafe(sampleSize);
@@ -47,23 +47,29 @@ export class NewlineChecker {
           hasTrailingNewline: true, // Skip binary files
           lineEnding: null,
           isBinary: true,
-          fileSize: stats.size
+          fileSize: stats.size,
         };
       }
 
       // Read last few bytes to check for newline
       const endBufferSize = Math.min(2, stats.size);
       const endBuffer = Buffer.allocUnsafe(endBufferSize);
-      await handle.read(endBuffer, 0, endBufferSize, stats.size - endBufferSize);
+      await handle.read(
+        endBuffer,
+        0,
+        endBufferSize,
+        stats.size - endBufferSize,
+      );
 
       const lastByte = endBuffer[endBuffer.length - 1];
       const hasNewline = lastByte === 0x0a; // LF
 
       // Detect line ending style
-      let lineEnding: '\n' | '\r\n' | null = null;
+      let lineEnding: "\n" | "\r\n" | null = null;
       if (hasNewline) {
-        const secondLastByte = endBuffer.length > 1 ? endBuffer[endBuffer.length - 2] : 0;
-        lineEnding = (secondLastByte === 0x0d) ? '\r\n' : '\n';
+        const secondLastByte =
+          endBuffer.length > 1 ? endBuffer[endBuffer.length - 2] : 0;
+        lineEnding = secondLastByte === 0x0d ? "\r\n" : "\n";
       } else {
         // Detect from file content
         lineEnding = await this.detectLineEnding(filePath);
@@ -73,7 +79,7 @@ export class NewlineChecker {
         hasTrailingNewline: hasNewline,
         lineEnding,
         isBinary: false,
-        fileSize: stats.size
+        fileSize: stats.size,
       };
     } finally {
       await handle.close();
@@ -89,7 +95,10 @@ export class NewlineChecker {
    * @returns True if newline was added, false if no fix needed
    * @throws Error if file cannot be modified
    */
-  async fix(filePath: string, lineEnding: '\n' | '\r\n' = '\n'): Promise<boolean> {
+  async fix(
+    filePath: string,
+    lineEnding: "\n" | "\r\n" = "\n",
+  ): Promise<boolean> {
     const checkResult = await this.check(filePath);
 
     if (checkResult.isBinary || checkResult.hasTrailingNewline) {
@@ -100,7 +109,7 @@ export class NewlineChecker {
     const eol = checkResult.lineEnding || lineEnding;
 
     // Append newline using file descriptor for efficiency
-    const handle = await fs.open(filePath, 'a');
+    const handle = await fs.open(filePath, "a");
     try {
       await handle.write(eol);
       return true;
@@ -116,19 +125,19 @@ export class NewlineChecker {
    * @param filePath - Absolute path to file
    * @returns Detected line ending ('\n' or '\r\n')
    */
-  private async detectLineEnding(filePath: string): Promise<'\n' | '\r\n'> {
-    const handle = await fs.open(filePath, 'r');
+  private async detectLineEnding(filePath: string): Promise<"\n" | "\r\n"> {
+    const handle = await fs.open(filePath, "r");
     try {
       const stats = await fs.stat(filePath);
       const sampleSize = Math.min(8192, stats.size);
       const buffer = Buffer.allocUnsafe(sampleSize);
       await handle.read(buffer, 0, sampleSize, 0);
 
-      const content = buffer.toString('utf8');
+      const content = buffer.toString("utf8");
       const crlfCount = (content.match(/\r\n/g) || []).length;
       const lfCount = (content.match(/(?<!\r)\n/g) || []).length;
 
-      return crlfCount > lfCount ? '\r\n' : '\n';
+      return crlfCount > lfCount ? "\r\n" : "\n";
     } finally {
       await handle.close();
     }
@@ -152,12 +161,17 @@ export class NewlineChecker {
     for (let i = 0; i < buffer.length; i++) {
       const byte = buffer[i];
       // Non-printable: not tab, not newline, not carriage return, not printable ASCII
-      if (byte !== 0x09 && byte !== 0x0a && byte !== 0x0d && (byte < 0x20 || byte > 0x7e)) {
+      if (
+        byte !== 0x09 &&
+        byte !== 0x0a &&
+        byte !== 0x0d &&
+        (byte < 0x20 || byte > 0x7e)
+      ) {
         nonPrintable++;
       }
     }
 
     // If >30% non-printable, consider binary
-    return (nonPrintable / buffer.length) > 0.3;
+    return nonPrintable / buffer.length > 0.3;
   }
 }

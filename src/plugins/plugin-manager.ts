@@ -32,12 +32,12 @@
  * ```
  */
 
-import * as path from 'path';
-import * as fs from 'fs/promises';
-import * as os from 'os';
-import { glob } from 'glob';
-import winston from 'winston';
-import { ShellExecutor } from '../utils/shell-executor.js';
+import * as path from "path";
+import * as fs from "fs/promises";
+import * as os from "os";
+import { glob } from "glob";
+import winston from "winston";
+import { ShellExecutor } from "../utils/shell-executor.js";
 import {
   Plugin,
   PluginMetadata,
@@ -52,7 +52,7 @@ import {
   PluginRegistrationError,
   PluginExecutionError,
   PluginDependencyError,
-} from './plugin-interface.js';
+} from "./plugin-interface.js";
 
 /**
  * MCP Tool definition for server registration
@@ -79,13 +79,14 @@ interface PluginEntry {
  */
 export class PluginManager {
   private plugins: Map<string, PluginEntry> = new Map();
-  private toolRegistry: Map<string, { pluginName: string; toolName: string }> = new Map();
+  private toolRegistry: Map<string, { pluginName: string; toolName: string }> =
+    new Map();
 
   constructor(
     private projectRoot: string,
     private config: PluginConfiguration,
     private shellExecutor: ShellExecutor,
-    private logger: winston.Logger
+    private logger: winston.Logger,
   ) {}
 
   /**
@@ -97,7 +98,7 @@ export class PluginManager {
    * @throws {PluginError} If critical plugin loading fails (does not throw for individual plugin failures)
    */
   async loadPlugins(): Promise<void> {
-    this.logger.info('Starting plugin discovery and loading...');
+    this.logger.info("Starting plugin discovery and loading...");
 
     try {
       const pluginFiles = await this.discoverPlugins();
@@ -114,7 +115,7 @@ export class PluginManager {
 
       this.logger.info(`Successfully loaded ${this.plugins.size} plugin(s)`);
     } catch (error) {
-      this.logger.error('Plugin discovery failed:', error);
+      this.logger.error("Plugin discovery failed:", error);
       throw error;
     }
   }
@@ -139,7 +140,7 @@ export class PluginManager {
         this.logger.debug(`Searching for plugins in: ${searchPath}`);
 
         // Find all *-plugin.ts and *-plugin.js files
-        const pattern = path.join(searchPath, '*-plugin.{ts,js}');
+        const pattern = path.join(searchPath, "*-plugin.{ts,js}");
         const files = await glob(pattern, { absolute: true });
 
         if (files.length > 0) {
@@ -167,14 +168,14 @@ export class PluginManager {
     const paths: string[] = [];
 
     // 1. Core plugins (highest priority)
-    paths.push(path.join(this.projectRoot, 'src', 'plugins'));
+    paths.push(path.join(this.projectRoot, "src", "plugins"));
 
     // 2. Global user plugins
     const homeDir = os.homedir();
-    paths.push(path.join(homeDir, '.mcp-devtools', 'plugins'));
+    paths.push(path.join(homeDir, ".mcp-devtools", "plugins"));
 
     // 3. Project-specific plugins (lowest priority)
-    paths.push(path.join(this.projectRoot, '.mcp-devtools-plugins'));
+    paths.push(path.join(this.projectRoot, ".mcp-devtools-plugins"));
 
     return paths;
   }
@@ -194,15 +195,15 @@ export class PluginManager {
     for (const file of files) {
       // Extract plugin name from filename
       const filename = path.basename(file);
-      const pluginName = filename.replace(/-plugin\.(ts|js)$/, '');
+      const pluginName = filename.replace(/-plugin\.(ts|js)$/, "");
 
       // Determine priority based on location
       let priority = 0;
-      if (file.includes(path.join('src', 'plugins'))) {
+      if (file.includes(path.join("src", "plugins"))) {
         priority = 3; // Highest - core plugins
-      } else if (file.includes(path.join('.mcp-devtools', 'plugins'))) {
+      } else if (file.includes(path.join(".mcp-devtools", "plugins"))) {
         priority = 2; // Medium - global user plugins
-      } else if (file.includes('.mcp-devtools-plugins')) {
+      } else if (file.includes(".mcp-devtools-plugins")) {
         priority = 1; // Lowest - project-specific plugins
       }
 
@@ -211,14 +212,14 @@ export class PluginManager {
       if (!existing || priority > existing.priority) {
         if (existing) {
           this.logger.info(
-            `Plugin '${pluginName}' found in multiple locations, using: ${file}`
+            `Plugin '${pluginName}' found in multiple locations, using: ${file}`,
           );
         }
         pluginMap.set(pluginName, { path: file, priority });
       }
     }
 
-    return Array.from(pluginMap.values()).map(entry => entry.path);
+    return Array.from(pluginMap.values()).map((entry) => entry.path);
   }
 
   /**
@@ -236,7 +237,7 @@ export class PluginManager {
       // Find plugin class (convention: export class that implements Plugin)
       const PluginClass = this.findPluginClass(pluginModule);
       if (!PluginClass) {
-        throw new Error('No plugin class found in module');
+        throw new Error("No plugin class found in module");
       }
 
       // Instantiate plugin
@@ -244,18 +245,21 @@ export class PluginManager {
 
       // Check if plugin is enabled
       if (!this.isPluginEnabled(plugin.metadata.name)) {
-        this.logger.info(`Plugin ${plugin.metadata.name} is disabled, skipping`);
+        this.logger.info(
+          `Plugin ${plugin.metadata.name} is disabled, skipping`,
+        );
         return;
       }
 
       // Register plugin
       await this.registerPlugin(plugin);
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      const errorMessage =
+        error instanceof Error ? error.message : "Unknown error";
       throw new PluginInitializationError(
         path.basename(pluginFile),
         `Failed to load plugin: ${errorMessage}`,
-        error instanceof Error ? error : undefined
+        error instanceof Error ? error : undefined,
       );
     }
   }
@@ -267,14 +271,14 @@ export class PluginManager {
    * @returns Plugin class constructor or null
    */
   private findPluginClass(module: unknown): (new () => Plugin) | null {
-    if (!module || typeof module !== 'object') {
+    if (!module || typeof module !== "object") {
       return null;
     }
 
     // Look for exported class that looks like a plugin
     for (const key of Object.keys(module)) {
       const exported = (module as Record<string, unknown>)[key];
-      if (typeof exported === 'function' && exported.prototype) {
+      if (typeof exported === "function" && exported.prototype) {
         return exported as new () => Plugin;
       }
     }
@@ -322,7 +326,7 @@ export class PluginManager {
       if (this.plugins.has(name)) {
         throw new PluginRegistrationError(
           name,
-          `Plugin ${name} is already registered`
+          `Plugin ${name} is already registered`,
         );
       }
 
@@ -331,8 +335,8 @@ export class PluginManager {
       if (!depCheck.allAvailable) {
         throw new PluginDependencyError(
           name,
-          `Missing required commands: ${depCheck.missing.join(', ')}`,
-          depCheck.missing
+          `Missing required commands: ${depCheck.missing.join(", ")}`,
+          depCheck.missing,
         );
       }
 
@@ -345,7 +349,7 @@ export class PluginManager {
         if (!isValid) {
           throw new PluginRegistrationError(
             name,
-            'Plugin configuration validation failed'
+            "Plugin configuration validation failed",
           );
         }
       }
@@ -364,7 +368,7 @@ export class PluginManager {
         if (this.toolRegistry.has(namespacedName)) {
           throw new PluginRegistrationError(
             name,
-            `Tool name conflict: ${namespacedName} already registered`
+            `Tool name conflict: ${namespacedName} already registered`,
           );
         }
 
@@ -380,7 +384,7 @@ export class PluginManager {
       // Initial health check
       const health: PluginHealth = plugin.healthCheck
         ? await plugin.healthCheck()
-        : { status: 'healthy' as const, timestamp: new Date() };
+        : { status: "healthy" as const, timestamp: new Date() };
 
       // Store plugin entry
       this.plugins.set(name, {
@@ -392,7 +396,7 @@ export class PluginManager {
       });
 
       this.logger.info(
-        `Successfully registered plugin ${name} with ${tools.length} tool(s)`
+        `Successfully registered plugin ${name} with ${tools.length} tool(s)`,
       );
     } catch (error) {
       // Rethrow plugin-specific errors
@@ -401,11 +405,12 @@ export class PluginManager {
       }
 
       // Wrap other errors
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      const errorMessage =
+        error instanceof Error ? error.message : "Unknown error";
       throw new PluginRegistrationError(
         name,
         `Plugin registration failed: ${errorMessage}`,
-        error instanceof Error ? error : undefined
+        error instanceof Error ? error : undefined,
       );
     }
   }
@@ -417,7 +422,8 @@ export class PluginManager {
    * @returns Plugin context with configuration and utilities
    */
   private createPluginContext(pluginName: string): PluginContext {
-    const pluginConfig = (this.config[pluginName] as Record<string, unknown>) || {};
+    const pluginConfig =
+      (this.config[pluginName] as Record<string, unknown>) || {};
 
     return {
       config: pluginConfig,
@@ -463,7 +469,7 @@ export class PluginManager {
       },
 
       readFile: async (filePath: string) => {
-        return fs.readFile(filePath, 'utf-8');
+        return fs.readFile(filePath, "utf-8");
       },
     };
   }
@@ -477,7 +483,7 @@ export class PluginManager {
    */
   private namespaceToolName(pluginName: string, toolName: string): string {
     // Convert plugin name to snake_case and append tool name
-    const prefix = pluginName.replace(/-/g, '_');
+    const prefix = pluginName.replace(/-/g, "_");
     return `${prefix}_${toolName}`;
   }
 
@@ -521,9 +527,9 @@ export class PluginManager {
     const toolInfo = this.toolRegistry.get(toolName);
     if (!toolInfo) {
       throw new PluginExecutionError(
-        'unknown',
+        "unknown",
         `Tool not found: ${toolName}`,
-        toolName
+        toolName,
       );
     }
 
@@ -535,7 +541,7 @@ export class PluginManager {
       throw new PluginExecutionError(
         pluginName,
         `Plugin not loaded: ${pluginName}`,
-        toolName
+        toolName,
       );
     }
 
@@ -545,14 +551,15 @@ export class PluginManager {
       this.logger.debug(`Tool ${toolName} executed successfully`);
       return result;
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      const errorMessage =
+        error instanceof Error ? error.message : "Unknown error";
       this.logger.error(`Tool execution failed: ${toolName}`, error);
 
       throw new PluginExecutionError(
         pluginName,
         `Tool execution failed: ${errorMessage}`,
         toolName,
-        error instanceof Error ? error : undefined
+        error instanceof Error ? error : undefined,
       );
     }
   }
@@ -601,17 +608,21 @@ export class PluginManager {
 
     for (const command of commands) {
       switch (command) {
-        case 'gs':
-          instructions[command] = 'Install git-spice: https://abhinav.github.io/git-spice/install/';
+        case "gs":
+          instructions[command] =
+            "Install git-spice: https://abhinav.github.io/git-spice/install/";
           break;
-        case 'docker':
-          instructions[command] = 'Install Docker: https://docs.docker.com/get-docker/';
+        case "docker":
+          instructions[command] =
+            "Install Docker: https://docs.docker.com/get-docker/";
           break;
-        case 'kubectl':
-          instructions[command] = 'Install kubectl: https://kubernetes.io/docs/tasks/tools/';
+        case "kubectl":
+          instructions[command] =
+            "Install kubectl: https://kubernetes.io/docs/tasks/tools/";
           break;
         default:
-          instructions[command] = `Install ${command} and ensure it's in your PATH`;
+          instructions[command] =
+            `Install ${command} and ensure it's in your PATH`;
       }
     }
 
@@ -638,9 +649,10 @@ export class PluginManager {
         entry.lastHealthCheck = new Date();
         return health;
       } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        const errorMessage =
+          error instanceof Error ? error.message : "Unknown error";
         return {
-          status: 'unhealthy',
+          status: "unhealthy",
           message: `Health check failed: ${errorMessage}`,
           timestamp: new Date(),
         };
@@ -674,7 +686,7 @@ export class PluginManager {
    * Calls shutdown() on plugins that implement it, in reverse registration order.
    */
   async shutdownAll(): Promise<void> {
-    this.logger.info('Shutting down all plugins...');
+    this.logger.info("Shutting down all plugins...");
 
     const pluginNames = Array.from(this.plugins.keys()).reverse();
 
@@ -696,7 +708,7 @@ export class PluginManager {
     this.plugins.clear();
     this.toolRegistry.clear();
 
-    this.logger.info('All plugins shut down');
+    this.logger.info("All plugins shut down");
   }
 
   /**

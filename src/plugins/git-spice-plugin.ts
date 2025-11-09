@@ -25,15 +25,15 @@
  * @module plugins/git-spice-plugin
  */
 
-import { z } from 'zod';
+import { z } from "zod";
 import {
   Plugin,
   PluginMetadata,
   PluginContext,
   PluginTool,
   PluginHealth,
-} from './plugin-interface.js';
-import { ExecutionResult } from '../utils/shell-executor.js';
+} from "./plugin-interface.js";
+import { ExecutionResult } from "../utils/shell-executor.js";
 
 /**
  * Zod schemas for input validation
@@ -62,25 +62,25 @@ const BranchCreateArgsSchema = z.object({
     .max(255)
     .regex(
       SAFE_BRANCH_NAME_REGEX,
-      'Branch name contains invalid characters. Only alphanumeric, /, -, _, and . are allowed.'
+      "Branch name contains invalid characters. Only alphanumeric, /, -, _, and . are allowed.",
     )
-    .describe('Branch name'),
+    .describe("Branch name"),
   message: z
     .string()
     .optional()
     .refine(
       (val) => !val || SAFE_MESSAGE_REGEX.test(val),
-      'Commit message contains potentially dangerous characters.'
+      "Commit message contains potentially dangerous characters.",
     )
-    .describe('Initial commit message'),
+    .describe("Initial commit message"),
   base: z
     .string()
     .regex(
       SAFE_BRANCH_NAME_REGEX,
-      'Base branch name contains invalid characters. Only alphanumeric, /, -, _, and . are allowed.'
+      "Base branch name contains invalid characters. Only alphanumeric, /, -, _, and . are allowed.",
     )
     .optional()
-    .describe('Base branch to stack on'),
+    .describe("Base branch to stack on"),
 });
 
 const BranchCheckoutArgsSchema = z.object({
@@ -90,14 +90,14 @@ const BranchCheckoutArgsSchema = z.object({
     .max(255)
     .regex(
       SAFE_BRANCH_NAME_REGEX,
-      'Branch name contains invalid characters. Only alphanumeric, /, -, _, and . are allowed.'
+      "Branch name contains invalid characters. Only alphanumeric, /, -, _, and . are allowed.",
     )
-    .describe('Branch name to checkout'),
+    .describe("Branch name to checkout"),
 });
 
 const StackSubmitArgsSchema = z.object({
-  draft: z.boolean().optional().describe('Create draft PRs'),
-  fill: z.boolean().optional().describe('Auto-fill PR templates'),
+  draft: z.boolean().optional().describe("Create draft PRs"),
+  fill: z.boolean().optional().describe("Auto-fill PR templates"),
 });
 
 const StackRestackArgsSchema = z.object({
@@ -192,14 +192,14 @@ interface RepoSyncResult {
  */
 export class GitSpicePlugin implements Plugin {
   metadata: PluginMetadata = {
-    name: 'git-spice',
-    version: '1.0.0',
-    description: 'Stacked Git branch management with git-spice',
-    author: 'MCP DevTools Team',
-    homepage: 'https://github.com/rshade/mcp-devtools-server',
-    requiredServerVersion: '>=1.0.0',
-    requiredCommands: ['gs'],
-    tags: ['git', 'workflow', 'stacked-prs'],
+    name: "git-spice",
+    version: "1.0.0",
+    description: "Stacked Git branch management with git-spice",
+    author: "MCP DevTools Team",
+    homepage: "https://github.com/rshade/mcp-devtools-server",
+    requiredServerVersion: ">=1.0.0",
+    requiredCommands: ["gs"],
+    tags: ["git", "workflow", "stacked-prs"],
     defaultEnabled: true,
   };
 
@@ -212,13 +212,13 @@ export class GitSpicePlugin implements Plugin {
    */
   async initialize(context: PluginContext): Promise<void> {
     this.context = context;
-    this.context.logger.info('git-spice plugin initialized');
+    this.context.logger.info("git-spice plugin initialized");
 
     // Validate git-spice is available
-    const isAvailable = await context.utils.isCommandAvailable('gs');
+    const isAvailable = await context.utils.isCommandAvailable("gs");
     if (!isAvailable) {
       throw new Error(
-        'git-spice (gs) command not found. Install from: https://abhinav.github.io/git-spice/install/'
+        "git-spice (gs) command not found. Install from: https://abhinav.github.io/git-spice/install/",
       );
     }
   }
@@ -231,131 +231,131 @@ export class GitSpicePlugin implements Plugin {
   async registerTools(): Promise<PluginTool[]> {
     return [
       {
-        name: 'branch_create',
-        description: 'Create a new stacked branch',
+        name: "branch_create",
+        description: "Create a new stacked branch",
         inputSchema: {
-          type: 'object',
+          type: "object",
           properties: {
             name: {
-              type: 'string',
-              description: 'Branch name',
+              type: "string",
+              description: "Branch name",
             },
             message: {
-              type: 'string',
-              description: 'Initial commit message (optional)',
+              type: "string",
+              description: "Initial commit message (optional)",
             },
             base: {
-              type: 'string',
-              description: 'Base branch to stack on (optional)',
+              type: "string",
+              description: "Base branch to stack on (optional)",
             },
           },
-          required: ['name'],
+          required: ["name"],
         },
         examples: [
           {
-            description: 'Create a new feature branch',
-            input: { name: 'feature/new-feature' },
+            description: "Create a new feature branch",
+            input: { name: "feature/new-feature" },
           },
           {
-            description: 'Create a branch with custom base',
-            input: { name: 'feature/another', base: 'develop' },
+            description: "Create a branch with custom base",
+            input: { name: "feature/another", base: "develop" },
           },
         ],
-        tags: ['branch', 'create'],
+        tags: ["branch", "create"],
       },
       {
-        name: 'branch_checkout',
-        description: 'Checkout an existing branch',
+        name: "branch_checkout",
+        description: "Checkout an existing branch",
         inputSchema: {
-          type: 'object',
+          type: "object",
           properties: {
             name: {
-              type: 'string',
-              description: 'Branch name to checkout',
+              type: "string",
+              description: "Branch name to checkout",
             },
           },
-          required: ['name'],
+          required: ["name"],
         },
         examples: [
           {
-            description: 'Checkout a branch',
-            input: { name: 'feature/existing' },
+            description: "Checkout a branch",
+            input: { name: "feature/existing" },
           },
         ],
-        tags: ['branch', 'checkout'],
+        tags: ["branch", "checkout"],
       },
       {
-        name: 'stack_submit',
-        description: 'Submit entire stack as pull requests',
+        name: "stack_submit",
+        description: "Submit entire stack as pull requests",
         inputSchema: {
-          type: 'object',
+          type: "object",
           properties: {
             draft: {
-              type: 'boolean',
-              description: 'Create draft PRs',
+              type: "boolean",
+              description: "Create draft PRs",
             },
             fill: {
-              type: 'boolean',
-              description: 'Auto-fill PR templates',
+              type: "boolean",
+              description: "Auto-fill PR templates",
             },
           },
         },
         examples: [
           {
-            description: 'Submit stack as draft PRs',
+            description: "Submit stack as draft PRs",
             input: { draft: true },
           },
           {
-            description: 'Submit stack with auto-fill',
+            description: "Submit stack with auto-fill",
             input: { fill: true },
           },
         ],
-        tags: ['stack', 'pr', 'submit'],
+        tags: ["stack", "pr", "submit"],
       },
       {
-        name: 'stack_restack',
-        description: 'Rebase stack on latest changes',
+        name: "stack_restack",
+        description: "Rebase stack on latest changes",
         inputSchema: {
-          type: 'object',
+          type: "object",
           properties: {},
         },
         examples: [
           {
-            description: 'Restack current branch',
+            description: "Restack current branch",
             input: {},
           },
         ],
-        tags: ['stack', 'rebase'],
+        tags: ["stack", "rebase"],
       },
       {
-        name: 'log_short',
-        description: 'View current stack visualization',
+        name: "log_short",
+        description: "View current stack visualization",
         inputSchema: {
-          type: 'object',
+          type: "object",
           properties: {},
         },
         examples: [
           {
-            description: 'View stack',
+            description: "View stack",
             input: {},
           },
         ],
-        tags: ['stack', 'log', 'view'],
+        tags: ["stack", "log", "view"],
       },
       {
-        name: 'repo_sync',
-        description: 'Sync with remote and cleanup merged branches',
+        name: "repo_sync",
+        description: "Sync with remote and cleanup merged branches",
         inputSchema: {
-          type: 'object',
+          type: "object",
           properties: {},
         },
         examples: [
           {
-            description: 'Sync repository',
+            description: "Sync repository",
             input: {},
           },
         ],
-        tags: ['sync', 'cleanup'],
+        tags: ["sync", "cleanup"],
       },
     ];
   }
@@ -374,17 +374,17 @@ export class GitSpicePlugin implements Plugin {
 
     try {
       switch (toolName) {
-        case 'branch_create':
+        case "branch_create":
           return await this.branchCreate(args);
-        case 'branch_checkout':
+        case "branch_checkout":
           return await this.branchCheckout(args);
-        case 'stack_submit':
+        case "stack_submit":
           return await this.stackSubmit(args);
-        case 'stack_restack':
+        case "stack_restack":
           return await this.stackRestack(args);
-        case 'log_short':
+        case "log_short":
           return await this.logShort(args);
-        case 'repo_sync':
+        case "repo_sync":
           return await this.repoSync(args);
         default:
           throw new Error(`Unknown tool: ${toolName}`);
@@ -404,25 +404,28 @@ export class GitSpicePlugin implements Plugin {
     const checks: Record<string, boolean> = {};
 
     // Check if gs command is available
-    checks['gs-available'] = await this.context.utils.isCommandAvailable('gs');
+    checks["gs-available"] = await this.context.utils.isCommandAvailable("gs");
 
     // Check if we're in a git repository
     try {
-      const result = await this.context.shellExecutor.execute('git rev-parse --git-dir', {
-        cwd: this.context.projectRoot,
-      });
-      checks['git-repository'] = result.success;
+      const result = await this.context.shellExecutor.execute(
+        "git rev-parse --git-dir",
+        {
+          cwd: this.context.projectRoot,
+        },
+      );
+      checks["git-repository"] = result.success;
     } catch {
-      checks['git-repository'] = false;
+      checks["git-repository"] = false;
     }
 
     const allHealthy = Object.values(checks).every((v) => v);
 
     return {
-      status: allHealthy ? 'healthy' : 'degraded',
+      status: allHealthy ? "healthy" : "degraded",
       message: allHealthy
-        ? 'All checks passed'
-        : 'Some checks failed - see details',
+        ? "All checks passed"
+        : "Some checks failed - see details",
       checks,
       timestamp: new Date(),
     };
@@ -442,19 +445,19 @@ export class GitSpicePlugin implements Plugin {
     const validated = BranchCreateArgsSchema.parse(args);
 
     // Build command with escaped arguments (defense-in-depth)
-    const cmdParts = ['gs', 'branch', 'create'];
+    const cmdParts = ["gs", "branch", "create"];
 
     if (validated.base) {
-      cmdParts.push('--base', escapeShellArg(validated.base));
+      cmdParts.push("--base", escapeShellArg(validated.base));
     }
 
     if (validated.message) {
-      cmdParts.push('--message', escapeShellArg(validated.message));
+      cmdParts.push("--message", escapeShellArg(validated.message));
     }
 
     cmdParts.push(escapeShellArg(validated.name));
 
-    const command = cmdParts.join(' ');
+    const command = cmdParts.join(" ");
 
     const result = await this.context.shellExecutor.execute(command, {
       cwd: this.context.projectRoot,
@@ -465,7 +468,7 @@ export class GitSpicePlugin implements Plugin {
         success: true,
         branch: validated.name,
         base: validated.base,
-        message: 'Branch created successfully',
+        message: "Branch created successfully",
       };
     } else {
       return {
@@ -517,17 +520,17 @@ export class GitSpicePlugin implements Plugin {
   private async stackSubmit(args: unknown): Promise<StackSubmitResult> {
     const validated = StackSubmitArgsSchema.parse(args);
 
-    const cmdParts = ['gs', 'stack', 'submit'];
+    const cmdParts = ["gs", "stack", "submit"];
 
     if (validated.draft) {
-      cmdParts.push('--draft');
+      cmdParts.push("--draft");
     }
 
     if (validated.fill) {
-      cmdParts.push('--fill');
+      cmdParts.push("--fill");
     }
 
-    const command = cmdParts.join(' ');
+    const command = cmdParts.join(" ");
 
     const result = await this.context.shellExecutor.execute(command, {
       cwd: this.context.projectRoot,
@@ -560,7 +563,7 @@ export class GitSpicePlugin implements Plugin {
   private async stackRestack(args: unknown): Promise<StackRestackResult> {
     StackRestackArgsSchema.parse(args); // Validate even if empty
 
-    const command = 'gs stack restack';
+    const command = "gs stack restack";
 
     const result = await this.context.shellExecutor.execute(command, {
       cwd: this.context.projectRoot,
@@ -570,7 +573,7 @@ export class GitSpicePlugin implements Plugin {
       return {
         success: true,
         restacked: 1, // TODO: Parse actual count from output
-        message: 'Stack restacked successfully',
+        message: "Stack restacked successfully",
       };
     } else {
       return {
@@ -591,7 +594,7 @@ export class GitSpicePlugin implements Plugin {
   private async logShort(args: unknown): Promise<LogShortResult> {
     LogShortArgsSchema.parse(args); // Validate even if empty
 
-    const command = 'gs log short';
+    const command = "gs log short";
 
     const result = await this.context.shellExecutor.execute(command, {
       cwd: this.context.projectRoot,
@@ -606,7 +609,7 @@ export class GitSpicePlugin implements Plugin {
     } else {
       return {
         success: false,
-        output: '',
+        output: "",
         error: result.stderr || result.error,
         suggestions: this.generateLogShortSuggestions(result),
       };
@@ -622,7 +625,7 @@ export class GitSpicePlugin implements Plugin {
   private async repoSync(args: unknown): Promise<RepoSyncResult> {
     RepoSyncArgsSchema.parse(args); // Validate even if empty
 
-    const command = 'gs repo sync';
+    const command = "gs repo sync";
 
     const result = await this.context.shellExecutor.execute(command, {
       cwd: this.context.projectRoot,
@@ -635,9 +638,10 @@ export class GitSpicePlugin implements Plugin {
         success: true,
         synced: true,
         deleted,
-        message: deleted.length > 0
-          ? `Deleted ${deleted.length} merged branch(es)`
-          : 'Repository synced',
+        message:
+          deleted.length > 0
+            ? `Deleted ${deleted.length} merged branch(es)`
+            : "Repository synced",
       };
     } else {
       return {
@@ -661,14 +665,14 @@ export class GitSpicePlugin implements Plugin {
    */
   private parsePRUrls(output: string): Array<{ branch: string; url: string }> {
     const prs: Array<{ branch: string; url: string }> = [];
-    const lines = output.split('\n');
+    const lines = output.split("\n");
 
     for (const line of lines) {
       // Look for PR URLs in output
       const urlMatch = line.match(/https:\/\/github\.com\/[^\s]+\/pull\/\d+/);
       if (urlMatch) {
         prs.push({
-          branch: '', // TODO: Parse branch name from output
+          branch: "", // TODO: Parse branch name from output
           url: urlMatch[0],
         });
       }
@@ -685,7 +689,7 @@ export class GitSpicePlugin implements Plugin {
    */
   private parseBranchesFromLog(output: string): string[] {
     const branches: string[] = [];
-    const lines = output.split('\n');
+    const lines = output.split("\n");
 
     for (const line of lines) {
       // Simple parsing - could be improved with actual log format
@@ -706,10 +710,10 @@ export class GitSpicePlugin implements Plugin {
    */
   private parseDeletedBranches(output: string): string[] {
     const deleted: string[] = [];
-    const lines = output.split('\n');
+    const lines = output.split("\n");
 
     for (const line of lines) {
-      if (line.includes('Deleted') || line.includes('deleted')) {
+      if (line.includes("Deleted") || line.includes("deleted")) {
         const match = line.match(/['\"]([^'"]+)['\"]|(\S+)$/);
         if (match) {
           deleted.push(match[1] || match[2]);
@@ -731,23 +735,27 @@ export class GitSpicePlugin implements Plugin {
     const suggestions: string[] = [];
     const error = result.stderr.toLowerCase();
 
-    if (error.includes('not a git repository')) {
-      suggestions.push('This directory is not a Git repository');
-      suggestions.push('Initialize with: git init');
+    if (error.includes("not a git repository")) {
+      suggestions.push("This directory is not a Git repository");
+      suggestions.push("Initialize with: git init");
     }
 
-    if (error.includes('already exists')) {
-      suggestions.push('Branch name already exists');
-      suggestions.push('Choose a different name or use git_spice_branch_checkout');
+    if (error.includes("already exists")) {
+      suggestions.push("Branch name already exists");
+      suggestions.push(
+        "Choose a different name or use git_spice_branch_checkout",
+      );
     }
 
-    if (error.includes('not initialized')) {
-      suggestions.push('git-spice not initialized for this repository');
-      suggestions.push('Run: gs repo init');
+    if (error.includes("not initialized")) {
+      suggestions.push("git-spice not initialized for this repository");
+      suggestions.push("Run: gs repo init");
     }
 
     if (suggestions.length === 0) {
-      suggestions.push('Check git-spice documentation: https://abhinav.github.io/git-spice/');
+      suggestions.push(
+        "Check git-spice documentation: https://abhinav.github.io/git-spice/",
+      );
     }
 
     return suggestions;
@@ -760,19 +768,19 @@ export class GitSpicePlugin implements Plugin {
     const suggestions: string[] = [];
     const error = result.stderr.toLowerCase();
 
-    if (error.includes('does not exist') || error.includes('not found')) {
-      suggestions.push('Branch does not exist');
-      suggestions.push('Use git_spice_log_short to see available branches');
-      suggestions.push('Create new branch with git_spice_branch_create');
+    if (error.includes("does not exist") || error.includes("not found")) {
+      suggestions.push("Branch does not exist");
+      suggestions.push("Use git_spice_log_short to see available branches");
+      suggestions.push("Create new branch with git_spice_branch_create");
     }
 
-    if (error.includes('uncommitted changes')) {
-      suggestions.push('You have uncommitted changes');
-      suggestions.push('Commit or stash changes before switching branches');
+    if (error.includes("uncommitted changes")) {
+      suggestions.push("You have uncommitted changes");
+      suggestions.push("Commit or stash changes before switching branches");
     }
 
     if (suggestions.length === 0) {
-      suggestions.push('Verify branch name and try again');
+      suggestions.push("Verify branch name and try again");
     }
 
     return suggestions;
@@ -785,24 +793,24 @@ export class GitSpicePlugin implements Plugin {
     const suggestions: string[] = [];
     const error = result.stderr.toLowerCase();
 
-    if (error.includes('no remote')) {
-      suggestions.push('No remote repository configured');
-      suggestions.push('Add remote with: git remote add origin <url>');
+    if (error.includes("no remote")) {
+      suggestions.push("No remote repository configured");
+      suggestions.push("Add remote with: git remote add origin <url>");
     }
 
-    if (error.includes('authentication') || error.includes('permission')) {
-      suggestions.push('GitHub authentication failed');
-      suggestions.push('Ensure GitHub CLI (gh) is authenticated');
-      suggestions.push('Run: gh auth login');
+    if (error.includes("authentication") || error.includes("permission")) {
+      suggestions.push("GitHub authentication failed");
+      suggestions.push("Ensure GitHub CLI (gh) is authenticated");
+      suggestions.push("Run: gh auth login");
     }
 
-    if (error.includes('no commits')) {
-      suggestions.push('No commits to submit in current stack');
-      suggestions.push('Make changes and commit before submitting');
+    if (error.includes("no commits")) {
+      suggestions.push("No commits to submit in current stack");
+      suggestions.push("Make changes and commit before submitting");
     }
 
     if (suggestions.length === 0) {
-      suggestions.push('Ensure remote repository is configured and accessible');
+      suggestions.push("Ensure remote repository is configured and accessible");
     }
 
     return suggestions;
@@ -815,19 +823,21 @@ export class GitSpicePlugin implements Plugin {
     const suggestions: string[] = [];
     const error = result.stderr.toLowerCase();
 
-    if (error.includes('conflict')) {
-      suggestions.push('Merge conflicts detected during restack');
-      suggestions.push('Resolve conflicts and continue with: gs stack restack --continue');
-      suggestions.push('Or abort with: gs stack restack --abort');
+    if (error.includes("conflict")) {
+      suggestions.push("Merge conflicts detected during restack");
+      suggestions.push(
+        "Resolve conflicts and continue with: gs stack restack --continue",
+      );
+      suggestions.push("Or abort with: gs stack restack --abort");
     }
 
-    if (error.includes('no commits')) {
-      suggestions.push('No commits to restack');
-      suggestions.push('Ensure you have commits in your stack');
+    if (error.includes("no commits")) {
+      suggestions.push("No commits to restack");
+      suggestions.push("Ensure you have commits in your stack");
     }
 
     if (suggestions.length === 0) {
-      suggestions.push('Check stack status with git_spice_log_short');
+      suggestions.push("Check stack status with git_spice_log_short");
     }
 
     return suggestions;
@@ -840,17 +850,17 @@ export class GitSpicePlugin implements Plugin {
     const suggestions: string[] = [];
     const error = result.stderr.toLowerCase();
 
-    if (error.includes('not initialized')) {
-      suggestions.push('git-spice not initialized for this repository');
-      suggestions.push('Run: gs repo init');
+    if (error.includes("not initialized")) {
+      suggestions.push("git-spice not initialized for this repository");
+      suggestions.push("Run: gs repo init");
     }
 
-    if (error.includes('not a git repository')) {
-      suggestions.push('This directory is not a Git repository');
+    if (error.includes("not a git repository")) {
+      suggestions.push("This directory is not a Git repository");
     }
 
     if (suggestions.length === 0) {
-      suggestions.push('Ensure git-spice is properly initialized');
+      suggestions.push("Ensure git-spice is properly initialized");
     }
 
     return suggestions;
@@ -863,23 +873,23 @@ export class GitSpicePlugin implements Plugin {
     const suggestions: string[] = [];
     const error = result.stderr.toLowerCase();
 
-    if (error.includes('no remote')) {
-      suggestions.push('No remote repository configured');
-      suggestions.push('Add remote with: git remote add origin <url>');
+    if (error.includes("no remote")) {
+      suggestions.push("No remote repository configured");
+      suggestions.push("Add remote with: git remote add origin <url>");
     }
 
-    if (error.includes('network') || error.includes('connection')) {
-      suggestions.push('Network error - check your internet connection');
-      suggestions.push('Verify remote repository URL is accessible');
+    if (error.includes("network") || error.includes("connection")) {
+      suggestions.push("Network error - check your internet connection");
+      suggestions.push("Verify remote repository URL is accessible");
     }
 
-    if (error.includes('uncommitted changes')) {
-      suggestions.push('You have uncommitted changes');
-      suggestions.push('Commit or stash changes before syncing');
+    if (error.includes("uncommitted changes")) {
+      suggestions.push("You have uncommitted changes");
+      suggestions.push("Commit or stash changes before syncing");
     }
 
     if (suggestions.length === 0) {
-      suggestions.push('Ensure remote repository is accessible');
+      suggestions.push("Ensure remote repository is accessible");
     }
 
     return suggestions;

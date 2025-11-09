@@ -31,7 +31,7 @@ through [GitHub Milestones](https://github.com/rshade/mcp-devtools-server/milest
 
 ## 2025-Q2 - Plugin Architecture & Performance 🚀 **CURRENT FOCUS**
 
-**Status:** 2/10 issues open
+**Status:** 8/16 issues open (6 Node.js Phase 1 tools completed)
 **Due Date:** June 30, 2025
 
 ### In Progress
@@ -64,7 +64,7 @@ through [GitHub Milestones](https://github.com/rshade/mcp-devtools-server/milest
 
 ## Node.js Language Support Epic 🟢 **CRITICAL PRIORITY**
 
-**Status:** Epic #155 + 14 sub-issues (0/15 complete)
+**Status:** Epic #155 + 14 sub-issues (6/15 complete - 40%)
 **Milestone:** 2025-Q2 - Plugin Architecture & Performance
 **Priority:** P0 (Critical - foundational ecosystem support)
 
@@ -78,18 +78,27 @@ Node.js support enables:
 3. **Foundation First** - Node.js support is more fundamental than Python
 4. **Performance Focus** - Smart caching aligns with Q2 performance goals
 
-### Planned Tools (Following Go Tools Pattern)
+### Implemented Tools (Following Go Tools Pattern)
 
-#### Phase 1 - Core Tools (6 tools)
+#### Phase 1 - Core Tools ✅ **COMPLETED** (6/6 tools - PR #171)
 
-- **nodejs_project_info** - Project detection and analysis (Issue #156)
-  - ✅ **CACHED** (5min TTL, nodeModules namespace)
-  - Invalidation: package.json, package-lock.json, tsconfig.json, .nvmrc
-- **nodejs_test** - Testing with Jest/Vitest/Mocha (Issue #157)
-- **nodejs_lint** - Linting with ESLint (Issue #158)
-- **nodejs_format** - Formatting with Prettier (Issue #159)
-- **nodejs_check_types** - Type checking with TypeScript (Issue #160)
-- **nodejs_install_deps** - Dependency management (npm/yarn/pnpm/bun) (Issue #161)
+- ✅ **nodejs_project_info** - Project detection and analysis (Issue #156)
+  - **CACHED** (5min TTL, nodeModules namespace)
+  - Auto-detects: package manager (npm/yarn/pnpm/bun), frameworks (React/Vue/Angular/Next.js/etc)
+  - Auto-detects: test frameworks (Jest/Vitest/Mocha), build tools (Vite/Webpack/etc)
+- ✅ **nodejs_test** - Testing with Jest/Vitest/Mocha (Issue #157)
+  - Returns error (not default) when no framework detected
+  - Coverage extraction (Jest format)
+- ✅ **nodejs_lint** - Linting with ESLint (Issue #158)
+- ✅ **nodejs_format** - Formatting with Prettier (Issue #159)
+- ✅ **nodejs_check_types** - Type checking with TypeScript (Issue #160)
+- ✅ **nodejs_install_deps** - Dependency management (npm/yarn/pnpm/bun) (Issue #161)
+  - Auto-detects package manager from lockfiles
+
+**Phase 1 Status:**
+- Implementation: ✅ Complete (639 lines in nodejs-tools.ts)
+- Test Coverage: 48% (8 test cases) - target: 85-90%
+- Known Limitations: Test file discovery stubbed, coverage regex Jest-only, cache invalidation gaps
 
 #### Phase 2 - Advanced Tools (5 tools)
 

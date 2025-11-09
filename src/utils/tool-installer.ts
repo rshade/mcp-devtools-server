@@ -1,14 +1,14 @@
-import { exec } from 'child_process';
-import { promisify } from 'util';
-import winston from 'winston';
-import { ToolInfo } from './onboarding-wizard.js';
+import { exec } from "child_process";
+import { promisify } from "util";
+import winston from "winston";
+import { ToolInfo } from "./onboarding-wizard.js";
 
 const execAsync = promisify(exec);
 
 const logger = winston.createLogger({
-  level: process.env.LOG_LEVEL || 'info',
+  level: process.env.LOG_LEVEL || "info",
   format: winston.format.simple(),
-  transports: [new winston.transports.Console()]
+  transports: [new winston.transports.Console()],
 });
 
 export interface ToolStatus {
@@ -48,7 +48,9 @@ export class ToolInstaller {
    */
   private validateTimeout(timeout: number): void {
     if (timeout < this.MIN_TIMEOUT || timeout > this.MAX_TIMEOUT) {
-      throw new Error(`Timeout must be between ${this.MIN_TIMEOUT}ms and ${this.MAX_TIMEOUT}ms`);
+      throw new Error(
+        `Timeout must be between ${this.MIN_TIMEOUT}ms and ${this.MAX_TIMEOUT}ms`,
+      );
     }
   }
 
@@ -57,27 +59,35 @@ export class ToolInstaller {
    * Allows: letters, numbers, underscore, hyphen, @, dot, forward slash (for scoped packages)
    */
   private sanitizeToolName(tool: string): string {
-    if (!tool || typeof tool !== 'string') {
-      throw new Error('Tool name must be a non-empty string');
+    if (!tool || typeof tool !== "string") {
+      throw new Error("Tool name must be a non-empty string");
     }
 
     const trimmed = tool.trim();
 
     if (trimmed.length === 0) {
-      throw new Error('Tool name cannot be empty');
+      throw new Error("Tool name cannot be empty");
     }
 
     if (trimmed.length > 200) {
-      throw new Error('Tool name too long (max 200 characters)');
+      throw new Error("Tool name too long (max 200 characters)");
     }
 
     if (!this.ALLOWED_TOOL_PATTERN.test(trimmed)) {
-      throw new Error(`Invalid tool name: ${trimmed}. Only alphanumeric characters, hyphens, underscores, @, dots, and forward slashes are allowed.`);
+      throw new Error(
+        `Invalid tool name: ${trimmed}. Only alphanumeric characters, hyphens, underscores, @, dots, and forward slashes are allowed.`,
+      );
     }
 
     // Prevent path traversal attempts
-    if (trimmed.includes('..') || trimmed.startsWith('/') || trimmed.startsWith('\\')) {
-      throw new Error(`Invalid tool name: ${trimmed}. Path traversal attempts are not allowed.`);
+    if (
+      trimmed.includes("..") ||
+      trimmed.startsWith("/") ||
+      trimmed.startsWith("\\")
+    ) {
+      throw new Error(
+        `Invalid tool name: ${trimmed}. Path traversal attempts are not allowed.`,
+      );
     }
 
     return trimmed;
@@ -95,14 +105,14 @@ export class ToolInstaller {
       const versionCommands = [
         `${safeTool} --version`,
         `${safeTool} -version`,
-        `${safeTool} version`
+        `${safeTool} version`,
       ];
 
       for (const cmd of versionCommands) {
         try {
           const { stdout, stderr } = await execAsync(cmd, {
             timeout: 5000,
-            windowsHide: true
+            windowsHide: true,
           });
 
           const output = stdout || stderr;
@@ -115,7 +125,7 @@ export class ToolInstaller {
             name: tool,
             installed: true,
             version,
-            path
+            path,
           };
         } catch {
           // Try next command
@@ -129,20 +139,19 @@ export class ToolInstaller {
         return {
           name: safeTool,
           installed: true,
-          path
+          path,
         };
       }
 
       return {
         name: safeTool,
-        installed: false
+        installed: false,
       };
-
     } catch (error) {
       return {
         name: tool,
         installed: false,
-        error: error instanceof Error ? error.message : 'Unknown error'
+        error: error instanceof Error ? error.message : "Unknown error",
       };
     }
   }
@@ -166,19 +175,19 @@ export class ToolInstaller {
         command = toolInfo.installCommand;
         const result = await execAsync(command, {
           timeout: this.timeout,
-          windowsHide: true
+          windowsHide: true,
         });
         output = result.stdout || result.stderr;
       } else if (toolInfo.packageManager) {
         // Use package manager
         const result = await this.installViaPackageManager(
           safeTool,
-          toolInfo.packageManager
+          toolInfo.packageManager,
         );
         command = result.command;
         output = result.output;
       } else {
-        throw new Error('No install command or package manager specified');
+        throw new Error("No install command or package manager specified");
       }
 
       // Verify installation
@@ -194,7 +203,7 @@ export class ToolInstaller {
           version: status.version,
           command,
           output,
-          duration
+          duration,
         };
       } else {
         return {
@@ -202,11 +211,10 @@ export class ToolInstaller {
           success: false,
           command,
           output,
-          error: 'Tool not found after installation',
-          duration
+          error: "Tool not found after installation",
+          duration,
         };
       }
-
     } catch (error) {
       const duration = Date.now() - startTime;
       logger.error(`Failed to install ${toolInfo.name}:`, error);
@@ -214,8 +222,8 @@ export class ToolInstaller {
       return {
         tool: toolInfo.name,
         success: false,
-        error: error instanceof Error ? error.message : 'Unknown error',
-        duration
+        error: error instanceof Error ? error.message : "Unknown error",
+        duration,
       };
     }
   }
@@ -229,23 +237,26 @@ export class ToolInstaller {
     const results: ToolStatus[] = [];
 
     // Verify tools in parallel for speed
-    const promises = tools.map(tool => this.verifyTool(tool.name));
+    const promises = tools.map((tool) => this.verifyTool(tool.name));
     const statuses = await Promise.allSettled(promises);
 
     for (let i = 0; i < tools.length; i++) {
       const result = statuses[i];
-      if (result.status === 'fulfilled') {
+      if (result.status === "fulfilled") {
         results.push(result.value);
       } else {
         results.push({
           name: tools[i].name,
           installed: false,
-          error: result.reason instanceof Error ? result.reason.message : 'Unknown error'
+          error:
+            result.reason instanceof Error
+              ? result.reason.message
+              : "Unknown error",
         });
       }
     }
 
-    const installedCount = results.filter(r => r.installed).length;
+    const installedCount = results.filter((r) => r.installed).length;
     logger.info(`${installedCount}/${tools.length} tools installed`);
 
     return results;
@@ -260,7 +271,7 @@ export class ToolInstaller {
     const missingTools = tools.filter((_, i) => !statuses[i].installed);
 
     if (missingTools.length === 0) {
-      logger.info('All tools already installed');
+      logger.info("All tools already installed");
       return [];
     }
 
@@ -280,8 +291,10 @@ export class ToolInstaller {
       }
     }
 
-    const successCount = results.filter(r => r.success).length;
-    logger.info(`Successfully installed ${successCount}/${missingTools.length} tools`);
+    const successCount = results.filter((r) => r.success).length;
+    logger.info(
+      `Successfully installed ${successCount}/${missingTools.length} tools`,
+    );
 
     return results;
   }
@@ -293,11 +306,11 @@ export class ToolInstaller {
    */
   private async installViaPackageManager(
     tool: string,
-    packageManager: string
+    packageManager: string,
   ): Promise<{ command: string; output: string }> {
     // Note: tool should already be sanitized by caller
     // but we validate packageManager
-    const validPackageManagers = ['npm', 'go', 'pip', 'cargo'];
+    const validPackageManagers = ["npm", "go", "pip", "cargo"];
     const pmLower = packageManager.toLowerCase();
 
     if (!validPackageManagers.includes(pmLower)) {
@@ -307,16 +320,16 @@ export class ToolInstaller {
     let command: string;
 
     switch (pmLower) {
-      case 'npm':
+      case "npm":
         command = await this.installViaNpm(tool);
         break;
-      case 'go':
+      case "go":
         command = await this.installViaGo(tool);
         break;
-      case 'pip':
+      case "pip":
         command = await this.installViaPip(tool);
         break;
-      case 'cargo':
+      case "cargo":
         command = await this.installViaCargo(tool);
         break;
       default:
@@ -325,12 +338,12 @@ export class ToolInstaller {
 
     const { stdout, stderr } = await execAsync(command, {
       timeout: this.timeout,
-      windowsHide: true
+      windowsHide: true,
     });
 
     return {
       command,
-      output: stdout || stderr
+      output: stdout || stderr,
     };
   }
 
@@ -339,7 +352,7 @@ export class ToolInstaller {
    */
   private async installViaNpm(tool: string): Promise<string> {
     // Check if npm is available
-    await this.verifyTool('npm');
+    await this.verifyTool("npm");
 
     // Install globally
     return `npm install -g ${tool}`;
@@ -350,15 +363,16 @@ export class ToolInstaller {
    */
   private async installViaGo(tool: string): Promise<string> {
     // Check if go is available
-    await this.verifyTool('go');
+    await this.verifyTool("go");
 
     // Map common tool names to their Go package paths
     const goPackages: Record<string, string> = {
-      'golangci-lint': 'github.com/golangci/golangci-lint/cmd/golangci-lint@latest',
-      'staticcheck': 'honnef.co/go/tools/cmd/staticcheck@latest',
-      'govulncheck': 'golang.org/x/vuln/cmd/govulncheck@latest',
-      'gofumpt': 'mvdan.cc/gofumpt@latest',
-      'goimports': 'golang.org/x/tools/cmd/goimports@latest'
+      "golangci-lint":
+        "github.com/golangci/golangci-lint/cmd/golangci-lint@latest",
+      staticcheck: "honnef.co/go/tools/cmd/staticcheck@latest",
+      govulncheck: "golang.org/x/vuln/cmd/govulncheck@latest",
+      gofumpt: "mvdan.cc/gofumpt@latest",
+      goimports: "golang.org/x/tools/cmd/goimports@latest",
     };
 
     const packagePath = goPackages[tool] || `${tool}@latest`;
@@ -371,11 +385,11 @@ export class ToolInstaller {
   private async installViaPip(tool: string): Promise<string> {
     // Check if pip is available
     try {
-      await this.verifyTool('pip');
+      await this.verifyTool("pip");
       return `pip install ${tool}`;
     } catch {
       // Try pip3
-      await this.verifyTool('pip3');
+      await this.verifyTool("pip3");
       return `pip3 install ${tool}`;
     }
   }
@@ -385,7 +399,7 @@ export class ToolInstaller {
    */
   private async installViaCargo(tool: string): Promise<string> {
     // Check if cargo is available
-    await this.verifyTool('cargo');
+    await this.verifyTool("cargo");
 
     return `cargo install ${tool}`;
   }
@@ -396,13 +410,13 @@ export class ToolInstaller {
   private async getToolPath(tool: string): Promise<string | undefined> {
     try {
       // Use 'which' on Unix-like systems, 'where' on Windows
-      const command = process.platform === 'win32' ? 'where' : 'which';
+      const command = process.platform === "win32" ? "where" : "which";
       const { stdout } = await execAsync(`${command} ${tool}`, {
         timeout: 5000,
-        windowsHide: true
+        windowsHide: true,
       });
 
-      return stdout.trim().split('\n')[0]; // Return first match
+      return stdout.trim().split("\n")[0]; // Return first match
     } catch {
       return undefined;
     }
@@ -416,7 +430,7 @@ export class ToolInstaller {
     const patterns = [
       /version\s+v?(\d+\.\d+\.\d+[\w.-]*)/i,
       /v?(\d+\.\d+\.\d+[\w.-]*)/,
-      /(\d+\.\d+\.\d+)/
+      /(\d+\.\d+\.\d+)/,
     ];
 
     for (const pattern of patterns) {

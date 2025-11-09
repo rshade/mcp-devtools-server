@@ -1,59 +1,63 @@
-import { NewlineChecker } from '../../utils/newline-checker';
-import { promises as fs } from 'fs';
-import os from 'os';
-import path from 'path';
-import { fileURLToPath } from 'url';
+import { NewlineChecker } from "../../utils/newline-checker";
+import { promises as fs } from "fs";
+import os from "os";
+import path from "path";
+import { fileURLToPath } from "url";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const fixturesDir = path.join(__dirname, '..', 'fixtures');
+const fixturesDir = path.join(__dirname, "..", "fixtures");
 
-describe('NewlineChecker', () => {
+describe("NewlineChecker", () => {
   let checker: NewlineChecker;
 
   beforeEach(() => {
     checker = new NewlineChecker();
   });
 
-  describe('check', () => {
-    it('should detect missing newlines in LF files', async () => {
-      const filePath = path.join(fixturesDir, 'text', 'lf-without-newline.txt');
+  describe("check", () => {
+    it("should detect missing newlines in LF files", async () => {
+      const filePath = path.join(fixturesDir, "text", "lf-without-newline.txt");
       const result = await checker.check(filePath);
 
       expect(result.hasTrailingNewline).toBe(false);
       expect(result.isBinary).toBe(false);
-      expect(result.lineEnding).toBe('\n');
+      expect(result.lineEnding).toBe("\n");
     });
 
-    it('should detect existing newlines in LF files', async () => {
-      const filePath = path.join(fixturesDir, 'text', 'lf-with-newline.txt');
+    it("should detect existing newlines in LF files", async () => {
+      const filePath = path.join(fixturesDir, "text", "lf-with-newline.txt");
       const result = await checker.check(filePath);
 
       expect(result.hasTrailingNewline).toBe(true);
       expect(result.isBinary).toBe(false);
-      expect(result.lineEnding).toBe('\n');
+      expect(result.lineEnding).toBe("\n");
     });
 
-    it('should detect missing newlines in CRLF files', async () => {
-      const filePath = path.join(fixturesDir, 'text', 'crlf-without-newline.txt');
+    it("should detect missing newlines in CRLF files", async () => {
+      const filePath = path.join(
+        fixturesDir,
+        "text",
+        "crlf-without-newline.txt",
+      );
       const result = await checker.check(filePath);
 
       expect(result.hasTrailingNewline).toBe(false);
       expect(result.isBinary).toBe(false);
-      expect(result.lineEnding).toBe('\r\n');
+      expect(result.lineEnding).toBe("\r\n");
     });
 
-    it('should detect existing newlines in CRLF files', async () => {
-      const filePath = path.join(fixturesDir, 'text', 'crlf-with-newline.txt');
+    it("should detect existing newlines in CRLF files", async () => {
+      const filePath = path.join(fixturesDir, "text", "crlf-with-newline.txt");
       const result = await checker.check(filePath);
 
       expect(result.hasTrailingNewline).toBe(true);
       expect(result.isBinary).toBe(false);
-      expect(result.lineEnding).toBe('\r\n');
+      expect(result.lineEnding).toBe("\r\n");
     });
 
-    it('should handle empty files', async () => {
-      const filePath = path.join(fixturesDir, 'text', 'empty.txt');
+    it("should handle empty files", async () => {
+      const filePath = path.join(fixturesDir, "text", "empty.txt");
       const result = await checker.check(filePath);
 
       expect(result.hasTrailingNewline).toBe(true);
@@ -61,24 +65,24 @@ describe('NewlineChecker', () => {
       expect(result.fileSize).toBe(0);
     });
 
-    it('should detect binary files', async () => {
-      const filePath = path.join(fixturesDir, 'binary', 'test.bin');
+    it("should detect binary files", async () => {
+      const filePath = path.join(fixturesDir, "binary", "test.bin");
       const result = await checker.check(filePath);
 
       expect(result.isBinary).toBe(true);
       expect(result.hasTrailingNewline).toBe(true); // Skips binary files
     });
 
-    it('should handle files with only newline', async () => {
-      const filePath = path.join(fixturesDir, 'edge-cases', 'only-newline.txt');
+    it("should handle files with only newline", async () => {
+      const filePath = path.join(fixturesDir, "edge-cases", "only-newline.txt");
       const result = await checker.check(filePath);
 
       expect(result.hasTrailingNewline).toBe(true);
       expect(result.isBinary).toBe(false);
     });
 
-    it('should detect line endings in mixed files', async () => {
-      const filePath = path.join(fixturesDir, 'text', 'mixed-line-endings.txt');
+    it("should detect line endings in mixed files", async () => {
+      const filePath = path.join(fixturesDir, "text", "mixed-line-endings.txt");
       const result = await checker.check(filePath);
 
       expect(result.hasTrailingNewline).toBe(true);
@@ -88,12 +92,14 @@ describe('NewlineChecker', () => {
     });
   });
 
-  describe('fix', () => {
+  describe("fix", () => {
     let tempDir: string;
 
     beforeEach(async () => {
       // Use OS temp directory for better CI compatibility
-      tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'newline-checker-test-'));
+      tempDir = await fs.mkdtemp(
+        path.join(os.tmpdir(), "newline-checker-test-"),
+      );
     });
 
     afterEach(async () => {
@@ -102,16 +108,20 @@ describe('NewlineChecker', () => {
         await fs.rm(tempDir, { recursive: true, force: true });
       } catch (error) {
         // Ignore cleanup errors
-        console.warn('Failed to clean up temp directory:', error);
+        console.warn("Failed to clean up temp directory:", error);
       }
     });
 
-    it('should add LF newline to Unix-style files', async () => {
-      const sourcePath = path.join(fixturesDir, 'text', 'lf-without-newline.txt');
-      const testPath = path.join(tempDir, 'test.txt');
+    it("should add LF newline to Unix-style files", async () => {
+      const sourcePath = path.join(
+        fixturesDir,
+        "text",
+        "lf-without-newline.txt",
+      );
+      const testPath = path.join(tempDir, "test.txt");
       await fs.copyFile(sourcePath, testPath);
 
-      const fixed = await checker.fix(testPath, '\n');
+      const fixed = await checker.fix(testPath, "\n");
 
       expect(fixed).toBe(true);
 
@@ -119,12 +129,16 @@ describe('NewlineChecker', () => {
       expect(checkResult.hasTrailingNewline).toBe(true);
     });
 
-    it('should add CRLF newline to Windows-style files', async () => {
-      const sourcePath = path.join(fixturesDir, 'text', 'crlf-without-newline.txt');
-      const testPath = path.join(tempDir, 'test.txt');
+    it("should add CRLF newline to Windows-style files", async () => {
+      const sourcePath = path.join(
+        fixturesDir,
+        "text",
+        "crlf-without-newline.txt",
+      );
+      const testPath = path.join(tempDir, "test.txt");
       await fs.copyFile(sourcePath, testPath);
 
-      const fixed = await checker.fix(testPath, '\r\n');
+      const fixed = await checker.fix(testPath, "\r\n");
 
       expect(fixed).toBe(true);
 
@@ -132,22 +146,22 @@ describe('NewlineChecker', () => {
       expect(checkResult.hasTrailingNewline).toBe(true);
     });
 
-    it('should not modify files that already have newlines', async () => {
-      const sourcePath = path.join(fixturesDir, 'text', 'lf-with-newline.txt');
-      const testPath = path.join(tempDir, 'test.txt');
+    it("should not modify files that already have newlines", async () => {
+      const sourcePath = path.join(fixturesDir, "text", "lf-with-newline.txt");
+      const testPath = path.join(tempDir, "test.txt");
       await fs.copyFile(sourcePath, testPath);
 
-      const contentBefore = await fs.readFile(testPath, 'utf8');
-      const fixed = await checker.fix(testPath, '\n');
-      const contentAfter = await fs.readFile(testPath, 'utf8');
+      const contentBefore = await fs.readFile(testPath, "utf8");
+      const fixed = await checker.fix(testPath, "\n");
+      const contentAfter = await fs.readFile(testPath, "utf8");
 
       expect(fixed).toBe(false);
       expect(contentBefore).toBe(contentAfter);
     });
 
-    it('should skip binary files', async () => {
-      const sourcePath = path.join(fixturesDir, 'binary', 'test.bin');
-      const testPath = path.join(tempDir, 'test.bin');
+    it("should skip binary files", async () => {
+      const sourcePath = path.join(fixturesDir, "binary", "test.bin");
+      const testPath = path.join(tempDir, "test.bin");
 
       // Ensure source file exists before copying
       await fs.access(sourcePath);
@@ -164,9 +178,13 @@ describe('NewlineChecker', () => {
       expect(Buffer.compare(contentBefore, contentAfter)).toBe(0);
     });
 
-    it('should use detected line ending style', async () => {
-      const sourcePath = path.join(fixturesDir, 'text', 'crlf-without-newline.txt');
-      const testPath = path.join(tempDir, 'test.txt');
+    it("should use detected line ending style", async () => {
+      const sourcePath = path.join(
+        fixturesDir,
+        "text",
+        "crlf-without-newline.txt",
+      );
+      const testPath = path.join(tempDir, "test.txt");
       await fs.copyFile(sourcePath, testPath);
 
       // Fix without specifying line ending - should detect CRLF

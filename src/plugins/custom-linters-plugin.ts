@@ -24,35 +24,38 @@
  * @module plugins/custom-linters-plugin
  */
 
-import { z } from 'zod';
+import { z } from "zod";
 import {
   Plugin,
   PluginMetadata,
   PluginContext,
   PluginTool,
   PluginHealth,
-} from './plugin-interface.js';
-import * as path from 'path';
-import * as fs from 'fs/promises';
-import { glob } from 'glob';
+} from "./plugin-interface.js";
+import * as path from "path";
+import * as fs from "fs/promises";
+import { glob } from "glob";
 
 /**
  * Zod schemas for input validation
  */
 
 const LintFilesArgsSchema = z.object({
-  patterns: z.array(z.string()).optional().describe('Glob patterns to match files'),
-  rules: z
-    .array(z.enum(['naming', 'imports', 'todos', 'console', 'all']))
+  patterns: z
+    .array(z.string())
     .optional()
-    .describe('Rules to check'),
-  fix: z.boolean().optional().describe('Auto-fix issues where possible'),
+    .describe("Glob patterns to match files"),
+  rules: z
+    .array(z.enum(["naming", "imports", "todos", "console", "all"]))
+    .optional()
+    .describe("Rules to check"),
+  fix: z.boolean().optional().describe("Auto-fix issues where possible"),
 });
 
 const CheckConventionsArgsSchema = z.object({
   type: z
-    .enum(['file-naming', 'directory-structure', 'api-docs', 'exports'])
-    .describe('Convention type to check'),
+    .enum(["file-naming", "directory-structure", "api-docs", "exports"])
+    .describe("Convention type to check"),
 });
 
 /**
@@ -69,7 +72,7 @@ interface LintRule {
  */
 interface LintViolation {
   rule: string;
-  severity: 'error' | 'warning' | 'info';
+  severity: "error" | "warning" | "info";
   message: string;
   file: string;
   line?: number;
@@ -99,13 +102,13 @@ interface LintResult {
  */
 export class CustomLintersPlugin implements Plugin {
   metadata: PluginMetadata = {
-    name: 'custom-linters',
-    version: '1.0.0',
-    description: 'Project-specific linting and convention enforcement',
-    author: 'MCP DevTools Team',
-    homepage: 'https://github.com/rshade/mcp-devtools-server',
+    name: "custom-linters",
+    version: "1.0.0",
+    description: "Project-specific linting and convention enforcement",
+    author: "MCP DevTools Team",
+    homepage: "https://github.com/rshade/mcp-devtools-server",
     requiredCommands: [], // No external commands needed
-    tags: ['linting', 'quality', 'conventions'],
+    tags: ["linting", "quality", "conventions"],
     defaultEnabled: false, // Opt-in for projects that need it
   };
 
@@ -123,7 +126,7 @@ export class CustomLintersPlugin implements Plugin {
     // Setup linting rules
     this.setupRules();
 
-    this.context.logger.info('custom-linters plugin initialized');
+    this.context.logger.info("custom-linters plugin initialized");
   }
 
   /**
@@ -131,18 +134,21 @@ export class CustomLintersPlugin implements Plugin {
    */
   private setupRules(): void {
     // Rule 1: File naming conventions
-    this.rules.set('naming', {
-      name: 'naming',
+    this.rules.set("naming", {
+      name: "naming",
       check: (_content: string, filePath: string): LintViolation[] => {
         const violations: LintViolation[] = [];
         const filename = path.basename(filePath);
 
         // Check for kebab-case in TypeScript files
-        if (filePath.endsWith('.ts') || filePath.endsWith('.tsx')) {
-          if (!/^[a-z0-9-]+\.(ts|tsx)$/.test(filename) && !filename.endsWith('.test.ts')) {
+        if (filePath.endsWith(".ts") || filePath.endsWith(".tsx")) {
+          if (
+            !/^[a-z0-9-]+\.(ts|tsx)$/.test(filename) &&
+            !filename.endsWith(".test.ts")
+          ) {
             violations.push({
-              rule: 'naming',
-              severity: 'warning',
+              rule: "naming",
+              severity: "warning",
               message: `File name should use kebab-case: ${filename}`,
               file: filePath,
               fixable: false,
@@ -155,12 +161,12 @@ export class CustomLintersPlugin implements Plugin {
     });
 
     // Rule 2: Import organization
-    this.rules.set('imports', {
-      name: 'imports',
+    this.rules.set("imports", {
+      name: "imports",
       pattern: /^import\s+/gm,
       check: (content: string, filePath: string): LintViolation[] => {
         const violations: LintViolation[] = [];
-        const lines = content.split('\n');
+        const lines = content.split("\n");
 
         let lastImportLine = -1;
         let foundNonImport = false;
@@ -169,16 +175,20 @@ export class CustomLintersPlugin implements Plugin {
           const trimmed = line.trim();
 
           // Skip comments and empty lines
-          if (trimmed.startsWith('//') || trimmed.startsWith('/*') || trimmed === '') {
+          if (
+            trimmed.startsWith("//") ||
+            trimmed.startsWith("/*") ||
+            trimmed === ""
+          ) {
             return;
           }
 
-          if (trimmed.startsWith('import ')) {
+          if (trimmed.startsWith("import ")) {
             if (foundNonImport) {
               violations.push({
-                rule: 'imports',
-                severity: 'warning',
-                message: 'Imports should be at the top of the file',
+                rule: "imports",
+                severity: "warning",
+                message: "Imports should be at the top of the file",
                 file: filePath,
                 line: index + 1,
                 fixable: true,
@@ -195,19 +205,19 @@ export class CustomLintersPlugin implements Plugin {
     });
 
     // Rule 3: TODO/FIXME tracking
-    this.rules.set('todos', {
-      name: 'todos',
+    this.rules.set("todos", {
+      name: "todos",
       pattern: /(TODO|FIXME|HACK|XXX):/gi,
       check: (content: string, filePath: string): LintViolation[] => {
         const violations: LintViolation[] = [];
-        const lines = content.split('\n');
+        const lines = content.split("\n");
 
         lines.forEach((line, index) => {
           const match = /(TODO|FIXME|HACK|XXX):/gi.exec(line);
           if (match) {
             violations.push({
-              rule: 'todos',
-              severity: 'info',
+              rule: "todos",
+              severity: "info",
               message: `Found ${match[1]}: ${line.trim()}`,
               file: filePath,
               line: index + 1,
@@ -221,27 +231,27 @@ export class CustomLintersPlugin implements Plugin {
     });
 
     // Rule 4: Console statements (should use logger)
-    this.rules.set('console', {
-      name: 'console',
+    this.rules.set("console", {
+      name: "console",
       pattern: /console\.(log|warn|error|debug|info)/g,
       check: (content: string, filePath: string): LintViolation[] => {
         const violations: LintViolation[] = [];
-        const lines = content.split('\n');
+        const lines = content.split("\n");
 
         // Skip test files
-        if (filePath.includes('__tests__') || filePath.endsWith('.test.ts')) {
+        if (filePath.includes("__tests__") || filePath.endsWith(".test.ts")) {
           return violations;
         }
 
         lines.forEach((line, index) => {
           if (/console\.(log|warn|error|debug|info)/.test(line)) {
             // Allow in comments
-            if (line.trim().startsWith('//')) return;
+            if (line.trim().startsWith("//")) return;
 
             violations.push({
-              rule: 'console',
-              severity: 'warning',
-              message: 'Use logger instead of console statements',
+              rule: "console",
+              severity: "warning",
+              message: "Use logger instead of console statements",
               file: filePath,
               line: index + 1,
               fixable: false,
@@ -262,67 +272,73 @@ export class CustomLintersPlugin implements Plugin {
   async registerTools(): Promise<PluginTool[]> {
     return [
       {
-        name: 'lint_files',
-        description: 'Run custom linting rules on project files',
+        name: "lint_files",
+        description: "Run custom linting rules on project files",
         inputSchema: {
-          type: 'object',
+          type: "object",
           properties: {
             patterns: {
-              type: 'array',
-              items: { type: 'string' },
-              description: 'Glob patterns to match files (default: src/**/*.ts)',
+              type: "array",
+              items: { type: "string" },
+              description:
+                "Glob patterns to match files (default: src/**/*.ts)",
             },
             rules: {
-              type: 'array',
+              type: "array",
               items: {
-                type: 'string',
-                enum: ['naming', 'imports', 'todos', 'console', 'all'],
+                type: "string",
+                enum: ["naming", "imports", "todos", "console", "all"],
               },
-              description: 'Rules to check (default: all)',
+              description: "Rules to check (default: all)",
             },
             fix: {
-              type: 'boolean',
-              description: 'Auto-fix issues where possible',
+              type: "boolean",
+              description: "Auto-fix issues where possible",
             },
           },
         },
         examples: [
           {
-            description: 'Lint all TypeScript files',
-            input: { patterns: ['src/**/*.ts'] },
+            description: "Lint all TypeScript files",
+            input: { patterns: ["src/**/*.ts"] },
           },
           {
-            description: 'Check specific rules',
-            input: { patterns: ['src/**/*.ts'], rules: ['imports', 'console'] },
+            description: "Check specific rules",
+            input: { patterns: ["src/**/*.ts"], rules: ["imports", "console"] },
           },
         ],
-        tags: ['lint', 'quality'],
+        tags: ["lint", "quality"],
       },
       {
-        name: 'check_conventions',
-        description: 'Check project conventions and architecture rules',
+        name: "check_conventions",
+        description: "Check project conventions and architecture rules",
         inputSchema: {
-          type: 'object',
+          type: "object",
           properties: {
             type: {
-              type: 'string',
-              enum: ['file-naming', 'directory-structure', 'api-docs', 'exports'],
-              description: 'Convention type to check',
+              type: "string",
+              enum: [
+                "file-naming",
+                "directory-structure",
+                "api-docs",
+                "exports",
+              ],
+              description: "Convention type to check",
             },
           },
-          required: ['type'],
+          required: ["type"],
         },
         examples: [
           {
-            description: 'Check file naming conventions',
-            input: { type: 'file-naming' },
+            description: "Check file naming conventions",
+            input: { type: "file-naming" },
           },
           {
-            description: 'Check directory structure',
-            input: { type: 'directory-structure' },
+            description: "Check directory structure",
+            input: { type: "directory-structure" },
           },
         ],
-        tags: ['conventions', 'architecture'],
+        tags: ["conventions", "architecture"],
       },
     ];
   }
@@ -339,9 +355,9 @@ export class CustomLintersPlugin implements Plugin {
 
     try {
       switch (toolName) {
-        case 'lint_files':
+        case "lint_files":
           return await this.lintFiles(args);
-        case 'check_conventions':
+        case "check_conventions":
           return await this.checkConventions(args);
         default:
           throw new Error(`Unknown tool: ${toolName}`);
@@ -363,19 +379,19 @@ export class CustomLintersPlugin implements Plugin {
     // Check if project directory is accessible
     try {
       await fs.access(this.context.projectRoot);
-      checks['project-accessible'] = true;
+      checks["project-accessible"] = true;
     } catch {
-      checks['project-accessible'] = false;
+      checks["project-accessible"] = false;
     }
 
     // Check if rules are loaded
-    checks['rules-loaded'] = this.rules.size > 0;
+    checks["rules-loaded"] = this.rules.size > 0;
 
-    const allHealthy = Object.values(checks).every(v => v);
+    const allHealthy = Object.values(checks).every((v) => v);
 
     return {
-      status: allHealthy ? 'healthy' : 'degraded',
-      message: allHealthy ? 'All checks passed' : 'Some checks failed',
+      status: allHealthy ? "healthy" : "degraded",
+      message: allHealthy ? "All checks passed" : "Some checks failed",
       checks,
       timestamp: new Date(),
     };
@@ -394,8 +410,8 @@ export class CustomLintersPlugin implements Plugin {
   private async lintFiles(args: unknown): Promise<LintResult> {
     const validated = LintFilesArgsSchema.parse(args);
 
-    const patterns = validated.patterns || ['src/**/*.ts'];
-    const ruleNames = validated.rules || ['all'];
+    const patterns = validated.patterns || ["src/**/*.ts"];
+    const ruleNames = validated.rules || ["all"];
     const shouldFix = validated.fix || false;
 
     // Resolve patterns
@@ -404,7 +420,7 @@ export class CustomLintersPlugin implements Plugin {
       const matches = await glob(pattern, {
         cwd: this.context.projectRoot,
         absolute: true,
-        ignore: ['**/node_modules/**', '**/dist/**', '**/*.d.ts'],
+        ignore: ["**/node_modules/**", "**/dist/**", "**/*.d.ts"],
       });
       files.push(...matches);
     }
@@ -425,11 +441,14 @@ export class CustomLintersPlugin implements Plugin {
     let fixedCount = 0;
 
     for (const file of files) {
-      const content = await fs.readFile(file, 'utf-8');
+      const content = await fs.readFile(file, "utf-8");
 
       // Get applicable rules
-      const rulesToRun =
-        ruleNames.includes('all') ? Array.from(this.rules.values()) : ruleNames.map(name => this.rules.get(name)).filter(Boolean) as LintRule[];
+      const rulesToRun = ruleNames.includes("all")
+        ? Array.from(this.rules.values())
+        : (ruleNames
+            .map((name) => this.rules.get(name))
+            .filter(Boolean) as LintRule[]);
 
       // Run each rule
       for (const rule of rulesToRun) {
@@ -450,9 +469,9 @@ export class CustomLintersPlugin implements Plugin {
 
     // Calculate summary
     const summary = {
-      errors: allViolations.filter(v => v.severity === 'error').length,
-      warnings: allViolations.filter(v => v.severity === 'warning').length,
-      info: allViolations.filter(v => v.severity === 'info').length,
+      errors: allViolations.filter((v) => v.severity === "error").length,
+      warnings: allViolations.filter((v) => v.severity === "warning").length,
+      info: allViolations.filter((v) => v.severity === "info").length,
     };
 
     return {
@@ -479,13 +498,13 @@ export class CustomLintersPlugin implements Plugin {
     const validated = CheckConventionsArgsSchema.parse(args);
 
     switch (validated.type) {
-      case 'file-naming':
+      case "file-naming":
         return await this.checkFileNaming();
-      case 'directory-structure':
+      case "directory-structure":
         return await this.checkDirectoryStructure();
-      case 'api-docs':
+      case "api-docs":
         return await this.checkApiDocs();
-      case 'exports':
+      case "exports":
         return await this.checkExports();
       default:
         throw new Error(`Unknown convention type: ${validated.type}`);
@@ -504,10 +523,10 @@ export class CustomLintersPlugin implements Plugin {
     const violations: string[] = [];
     const suggestions: string[] = [];
 
-    const files = await glob('src/**/*.{ts,tsx}', {
+    const files = await glob("src/**/*.{ts,tsx}", {
       cwd: this.context.projectRoot,
       absolute: true,
-      ignore: ['**/node_modules/**', '**/dist/**'],
+      ignore: ["**/node_modules/**", "**/dist/**"],
     });
 
     for (const file of files) {
@@ -515,14 +534,17 @@ export class CustomLintersPlugin implements Plugin {
       const relativePath = path.relative(this.context.projectRoot, file);
 
       // Check kebab-case
-      if (!/^[a-z0-9-]+\.(ts|tsx)$/.test(filename) && !filename.endsWith('.test.ts')) {
+      if (
+        !/^[a-z0-9-]+\.(ts|tsx)$/.test(filename) &&
+        !filename.endsWith(".test.ts")
+      ) {
         violations.push(`${relativePath}: Should use kebab-case`);
       }
 
       // Check for index files organization
-      if (filename === 'index.ts') {
-        const content = await fs.readFile(file, 'utf-8');
-        if (!content.includes('export')) {
+      if (filename === "index.ts") {
+        const content = await fs.readFile(file, "utf-8");
+        if (!content.includes("export")) {
           suggestions.push(`${relativePath}: index.ts should contain exports`);
         }
       }
@@ -530,7 +552,7 @@ export class CustomLintersPlugin implements Plugin {
 
     return {
       success: violations.length === 0,
-      type: 'file-naming',
+      type: "file-naming",
       violations,
       suggestions,
     };
@@ -549,7 +571,13 @@ export class CustomLintersPlugin implements Plugin {
     const suggestions: string[] = [];
 
     // Expected directories for this project
-    const expectedDirs = ['src', 'src/tools', 'src/utils', 'src/plugins', 'src/__tests__'];
+    const expectedDirs = [
+      "src",
+      "src/tools",
+      "src/utils",
+      "src/plugins",
+      "src/__tests__",
+    ];
 
     for (const dir of expectedDirs) {
       const fullPath = path.join(this.context.projectRoot, dir);
@@ -561,18 +589,18 @@ export class CustomLintersPlugin implements Plugin {
     }
 
     // Check for common anti-patterns
-    const srcFiles = await glob('src/*.ts', {
+    const srcFiles = await glob("src/*.ts", {
       cwd: this.context.projectRoot,
       absolute: true,
     });
 
     if (srcFiles.length > 5) {
-      suggestions.push('Consider organizing src/ files into subdirectories');
+      suggestions.push("Consider organizing src/ files into subdirectories");
     }
 
     return {
       success: violations.length === 0,
-      type: 'directory-structure',
+      type: "directory-structure",
       violations,
       suggestions,
     };
@@ -591,14 +619,14 @@ export class CustomLintersPlugin implements Plugin {
     const suggestions: string[] = [];
 
     // Check for JSDoc on public exports
-    const toolFiles = await glob('src/tools/*.ts', {
+    const toolFiles = await glob("src/tools/*.ts", {
       cwd: this.context.projectRoot,
       absolute: true,
-      ignore: ['**/*.test.ts'],
+      ignore: ["**/*.test.ts"],
     });
 
     for (const file of toolFiles) {
-      const content = await fs.readFile(file, 'utf-8');
+      const content = await fs.readFile(file, "utf-8");
       const relativePath = path.relative(this.context.projectRoot, file);
 
       // Check for export class/function without JSDoc
@@ -615,7 +643,7 @@ export class CustomLintersPlugin implements Plugin {
 
     return {
       success: violations.length === 0,
-      type: 'api-docs',
+      type: "api-docs",
       violations,
       suggestions,
     };
@@ -634,32 +662,36 @@ export class CustomLintersPlugin implements Plugin {
     const suggestions: string[] = [];
 
     // Check that index.ts files exist for directories
-    const dirs = await glob('src/*/', {
+    const dirs = await glob("src/*/", {
       cwd: this.context.projectRoot,
       absolute: true,
-      ignore: ['**/node_modules/**', '**/dist/**', '**/__tests__/**'],
+      ignore: ["**/node_modules/**", "**/dist/**", "**/__tests__/**"],
     });
 
     for (const dir of dirs) {
-      const indexPath = path.join(dir, 'index.ts');
+      const indexPath = path.join(dir, "index.ts");
       const relativePath = path.relative(this.context.projectRoot, dir);
 
       try {
         await fs.access(indexPath);
 
         // Check that index.ts exports things
-        const content = await fs.readFile(indexPath, 'utf-8');
-        if (!content.includes('export')) {
-          suggestions.push(`${relativePath}/index.ts should export module contents`);
+        const content = await fs.readFile(indexPath, "utf-8");
+        if (!content.includes("export")) {
+          suggestions.push(
+            `${relativePath}/index.ts should export module contents`,
+          );
         }
       } catch {
-        suggestions.push(`Consider adding ${relativePath}/index.ts for cleaner imports`);
+        suggestions.push(
+          `Consider adding ${relativePath}/index.ts for cleaner imports`,
+        );
       }
     }
 
     return {
       success: violations.length === 0,
-      type: 'exports',
+      type: "exports",
       violations,
       suggestions,
     };

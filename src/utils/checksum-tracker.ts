@@ -1,7 +1,7 @@
-import { createHash } from 'crypto';
-import { readFile, stat } from 'fs/promises';
-import { logger } from './logger.js';
-import { getCacheManager } from './cache-manager.js';
+import { createHash } from "crypto";
+import { readFile, stat } from "fs/promises";
+import { logger } from "./logger.js";
+import { getCacheManager } from "./cache-manager.js";
 
 /**
  * File checksum information
@@ -22,7 +22,7 @@ export type FileChangeCallback = (filePath: string) => void | Promise<void>;
  * Checksum tracker configuration
  */
 export interface ChecksumTrackerConfig {
-  algorithm: 'sha256' | 'md5';
+  algorithm: "sha256" | "md5";
   watchIntervalMs?: number;
 }
 
@@ -30,7 +30,7 @@ export interface ChecksumTrackerConfig {
  * Default configuration
  */
 const DEFAULT_CONFIG: ChecksumTrackerConfig = {
-  algorithm: 'sha256',
+  algorithm: "sha256",
   watchIntervalMs: 5000, // Check files every 5 seconds
 };
 
@@ -58,7 +58,7 @@ export class ChecksumTracker {
     this.checksums = new Map();
     this.callbacks = new Map();
 
-    logger.debug('ChecksumTracker: Initialized', this.config);
+    logger.debug("ChecksumTracker: Initialized", this.config);
   }
 
   /**
@@ -68,7 +68,7 @@ export class ChecksumTracker {
    */
   public async track(
     filePath: string,
-    callback: FileChangeCallback
+    callback: FileChangeCallback,
   ): Promise<void> {
     try {
       // Calculate initial checksum
@@ -150,10 +150,13 @@ export class ChecksumTracker {
 
     // For large files, skip checksum and use mtime + size only
     if (stats.size > MAX_FILE_SIZE) {
-      logger.debug(`ChecksumTracker: Skipping checksum for large file ${filePath}`, {
-        size: stats.size,
-        maxSize: MAX_FILE_SIZE,
-      });
+      logger.debug(
+        `ChecksumTracker: Skipping checksum for large file ${filePath}`,
+        {
+          size: stats.size,
+          maxSize: MAX_FILE_SIZE,
+        },
+      );
       return {
         path: filePath,
         checksum: `mtime-${stats.mtimeMs}-size-${stats.size}`, // Deterministic fallback
@@ -166,7 +169,7 @@ export class ChecksumTracker {
 
     const hash = createHash(this.config.algorithm);
     hash.update(content);
-    const checksum = hash.digest('hex');
+    const checksum = hash.digest("hex");
 
     return {
       path: filePath,
@@ -182,7 +185,7 @@ export class ChecksumTracker {
   public async checkAll(): Promise<void> {
     // Prevent concurrent checkAll() calls (race condition protection)
     if (this.isCheckingAll) {
-      logger.debug('ChecksumTracker: checkAll() already in progress, skipping');
+      logger.debug("ChecksumTracker: checkAll() already in progress, skipping");
       return;
     }
 
@@ -197,7 +200,7 @@ export class ChecksumTracker {
           if (changed) {
             await this.triggerCallbacks(filePath);
           }
-        })
+        }),
       );
     } finally {
       this.isCheckingAll = false;
@@ -213,16 +216,20 @@ export class ChecksumTracker {
       return;
     }
 
-    logger.info(`ChecksumTracker: Triggering ${callbacks.length} callbacks for ${filePath}`);
+    logger.info(
+      `ChecksumTracker: Triggering ${callbacks.length} callbacks for ${filePath}`,
+    );
 
     await Promise.all(
       callbacks.map(async (callback) => {
         try {
           await callback(filePath);
         } catch (error) {
-          logger.error(`ChecksumTracker: Callback failed for ${filePath}`, { error });
+          logger.error(`ChecksumTracker: Callback failed for ${filePath}`, {
+            error,
+          });
         }
-      })
+      }),
     );
   }
 
@@ -231,17 +238,21 @@ export class ChecksumTracker {
    */
   public startWatching(): void {
     if (this.watchTimer) {
-      logger.warn('ChecksumTracker: Already watching files');
+      logger.warn("ChecksumTracker: Already watching files");
       return;
     }
 
     this.watchTimer = setInterval(() => {
       this.checkAll().catch((error) => {
-        logger.error('ChecksumTracker: Error during automatic check', { error });
+        logger.error("ChecksumTracker: Error during automatic check", {
+          error,
+        });
       });
     }, this.config.watchIntervalMs);
 
-    logger.info(`ChecksumTracker: Started watching (interval: ${this.config.watchIntervalMs}ms)`);
+    logger.info(
+      `ChecksumTracker: Started watching (interval: ${this.config.watchIntervalMs}ms)`,
+    );
   }
 
   /**
@@ -251,7 +262,7 @@ export class ChecksumTracker {
     if (this.watchTimer) {
       clearInterval(this.watchTimer);
       this.watchTimer = null;
-      logger.info('ChecksumTracker: Stopped watching');
+      logger.info("ChecksumTracker: Stopped watching");
     }
   }
 
@@ -276,7 +287,7 @@ export class ChecksumTracker {
     this.stopWatching();
     this.checksums.clear();
     this.callbacks.clear();
-    logger.debug('ChecksumTracker: Cleared all tracked files');
+    logger.debug("ChecksumTracker: Cleared all tracked files");
   }
 }
 
@@ -289,23 +300,25 @@ export function createDevFileTracker(): ChecksumTracker {
 
   // Common files that should trigger cache invalidation
   const fileToNamespaceMap: Record<string, string[]> = {
-    'package.json': ['projectDetection'],
-    'package-lock.json': ['projectDetection'],
-    'go.mod': ['projectDetection', 'goModules'],
-    'go.sum': ['goModules'],
-    'Makefile': ['projectDetection'],
-    '.git/HEAD': ['gitOperations'],
+    "package.json": ["projectDetection"],
+    "package-lock.json": ["projectDetection"],
+    "go.mod": ["projectDetection", "goModules"],
+    "go.sum": ["goModules"],
+    Makefile: ["projectDetection"],
+    ".git/HEAD": ["gitOperations"],
   };
 
   Object.entries(fileToNamespaceMap).forEach(([file, namespaces]) => {
-    tracker.track(file, () => {
-      namespaces.forEach((namespace) => {
-        cacheManager.invalidate(namespace);
-        logger.info(`Cache invalidated: ${namespace} (${file} changed)`);
+    tracker
+      .track(file, () => {
+        namespaces.forEach((namespace) => {
+          cacheManager.invalidate(namespace);
+          logger.info(`Cache invalidated: ${namespace} (${file} changed)`);
+        });
+      })
+      .catch((error) => {
+        logger.debug(`ChecksumTracker: Could not track ${file}`, { error });
       });
-    }).catch((error) => {
-      logger.debug(`ChecksumTracker: Could not track ${file}`, { error });
-    });
   });
 
   return tracker;

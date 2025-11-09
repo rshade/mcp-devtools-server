@@ -1,13 +1,20 @@
-import winston from 'winston';
-import { OnboardingWizard, OnboardingOptions, OnboardingResult, ProjectProfile, ValidationResult, MCPDevToolsConfig } from '../utils/onboarding-wizard.js';
-import { SetupValidator } from '../utils/setup-validator.js';
-import { ProjectDetector } from '../utils/project-detector.js';
-import { ConfigGenerator } from '../utils/config-generator.js';
+import winston from "winston";
+import {
+  OnboardingWizard,
+  OnboardingOptions,
+  OnboardingResult,
+  ProjectProfile,
+  ValidationResult,
+  MCPDevToolsConfig,
+} from "../utils/onboarding-wizard.js";
+import { SetupValidator } from "../utils/setup-validator.js";
+import { ProjectDetector } from "../utils/project-detector.js";
+import { ConfigGenerator } from "../utils/config-generator.js";
 
 const logger = winston.createLogger({
-  level: process.env.LOG_LEVEL || 'info',
+  level: process.env.LOG_LEVEL || "info",
   format: winston.format.simple(),
-  transports: [new winston.transports.Console()]
+  transports: [new winston.transports.Console()],
 });
 
 /**
@@ -23,8 +30,10 @@ export class OnboardingTools {
   /**
    * Run the complete onboarding wizard
    */
-  async runOnboardingWizard(args: OnboardingWizardArgs): Promise<OnboardingResult> {
-    logger.info('Running onboarding wizard...');
+  async runOnboardingWizard(
+    args: OnboardingWizardArgs,
+  ): Promise<OnboardingResult> {
+    logger.info("Running onboarding wizard...");
 
     const wizard = new OnboardingWizard(args.directory || this.projectRoot);
 
@@ -32,10 +41,10 @@ export class OnboardingTools {
       interactive: args.interactive || false,
       autoInstall: args.autoInstall || false,
       generateConfig: args.generateConfig !== false, // Default true
-      validateSetup: args.validateSetup !== false,   // Default true
+      validateSetup: args.validateSetup !== false, // Default true
       backupExisting: args.backupExisting !== false, // Default true
       dryRun: args.dryRun || false,
-      skipToolVerification: args.skipToolVerification || false
+      skipToolVerification: args.skipToolVerification || false,
     };
 
     return await wizard.run(options);
@@ -45,7 +54,7 @@ export class OnboardingTools {
    * Detect project characteristics and generate profile
    */
   async detectProject(args: DetectProjectArgs): Promise<ProjectProfileResult> {
-    logger.info('Detecting project characteristics...');
+    logger.info("Detecting project characteristics...");
 
     // Use ProjectDetector directly
     const detector = new ProjectDetector(args.directory || this.projectRoot);
@@ -62,17 +71,19 @@ export class OnboardingTools {
       hasTests: projectInfo.hasTests,
       testFramework: projectInfo.testFramework,
       lintingTools: projectInfo.lintingTools,
-      configFiles: projectInfo.configFiles.map(f => f.path),
+      configFiles: projectInfo.configFiles.map((f) => f.path),
       makeTargets: projectInfo.makeTargets,
-      packageManager: projectInfo.packageManager
+      packageManager: projectInfo.packageManager,
     };
   }
 
   /**
    * Generate configuration without writing to file
    */
-  async generateConfigPreview(args: GenerateConfigArgs): Promise<GenerateConfigResult> {
-    logger.info('Generating configuration preview...');
+  async generateConfigPreview(
+    args: GenerateConfigArgs,
+  ): Promise<GenerateConfigResult> {
+    logger.info("Generating configuration preview...");
 
     const detector = new ProjectDetector(args.directory || this.projectRoot);
     const projectInfo = await detector.detectProject();
@@ -100,8 +111,8 @@ export class OnboardingTools {
       detectionConfidence: {
         projectType: 0.8,
         framework: 0.7,
-        buildSystem: 0.9
-      }
+        buildSystem: 0.9,
+      },
     };
 
     const config = generator.generateConfig(profile);
@@ -110,7 +121,7 @@ export class OnboardingTools {
     return {
       success: true,
       config,
-      validation
+      validation,
     };
   }
 
@@ -118,33 +129,38 @@ export class OnboardingTools {
    * Validate existing setup
    */
   async validateSetup(args: ValidateSetupArgs): Promise<ValidationResult> {
-    logger.info('Validating setup...');
+    logger.info("Validating setup...");
 
     const detector = new ProjectDetector(args.directory || this.projectRoot);
     const projectInfo = await detector.detectProject();
 
     // Load existing config
-    const configPath = args.configPath || '.mcp-devtools.json';
+    const configPath = args.configPath || ".mcp-devtools.json";
     let config: MCPDevToolsConfig;
 
     try {
-      const fs = await import('fs/promises');
-      const path = await import('path');
-      const fullPath = path.join(args.directory || this.projectRoot, configPath);
-      const content = await fs.readFile(fullPath, 'utf8');
+      const fs = await import("fs/promises");
+      const path = await import("path");
+      const fullPath = path.join(
+        args.directory || this.projectRoot,
+        configPath,
+      );
+      const content = await fs.readFile(fullPath, "utf8");
       config = JSON.parse(content);
     } catch (error) {
       return {
         success: false,
         validations: [],
-        errors: [{
-          category: 'configuration',
-          message: `Failed to load config: ${error instanceof Error ? error.message : 'Unknown error'}`,
-          severity: 'critical'
-        }],
+        errors: [
+          {
+            category: "configuration",
+            message: `Failed to load config: ${error instanceof Error ? error.message : "Unknown error"}`,
+            severity: "critical",
+          },
+        ],
         warnings: [],
         recommendations: [],
-        score: 0
+        score: 0,
       };
     }
 
@@ -169,8 +185,8 @@ export class OnboardingTools {
       detectionConfidence: {
         projectType: 0.8,
         framework: 0.7,
-        buildSystem: 0.9
-      }
+        buildSystem: 0.9,
+      },
     };
 
     const validator = new SetupValidator(args.directory || this.projectRoot);
@@ -190,13 +206,13 @@ export class OnboardingTools {
 
       return {
         success: true,
-        message: `Successfully rolled back to ${args.backupPath}`
+        message: `Successfully rolled back to ${args.backupPath}`,
       };
     } catch (error) {
       return {
         success: false,
-        message: `Rollback failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
-        error: error instanceof Error ? error.message : 'Unknown error'
+        message: `Rollback failed: ${error instanceof Error ? error.message : "Unknown error"}`,
+        error: error instanceof Error ? error.message : "Unknown error",
       };
     }
   }
@@ -206,75 +222,81 @@ export class OnboardingTools {
   // ============================================================================
 
   static validateOnboardingArgs(args: unknown): OnboardingWizardArgs {
-    if (typeof args !== 'object' || args === null) {
-      throw new Error('Invalid arguments: expected object');
+    if (typeof args !== "object" || args === null) {
+      throw new Error("Invalid arguments: expected object");
     }
 
     const a = args as Record<string, unknown>;
 
     return {
-      directory: typeof a.directory === 'string' ? a.directory : undefined,
-      interactive: typeof a.interactive === 'boolean' ? a.interactive : false,
-      autoInstall: typeof a.autoInstall === 'boolean' ? a.autoInstall : false,
-      generateConfig: typeof a.generateConfig === 'boolean' ? a.generateConfig : true,
-      validateSetup: typeof a.validateSetup === 'boolean' ? a.validateSetup : true,
-      backupExisting: typeof a.backupExisting === 'boolean' ? a.backupExisting : true,
-      dryRun: typeof a.dryRun === 'boolean' ? a.dryRun : false,
-      skipToolVerification: typeof a.skipToolVerification === 'boolean' ? a.skipToolVerification : false
+      directory: typeof a.directory === "string" ? a.directory : undefined,
+      interactive: typeof a.interactive === "boolean" ? a.interactive : false,
+      autoInstall: typeof a.autoInstall === "boolean" ? a.autoInstall : false,
+      generateConfig:
+        typeof a.generateConfig === "boolean" ? a.generateConfig : true,
+      validateSetup:
+        typeof a.validateSetup === "boolean" ? a.validateSetup : true,
+      backupExisting:
+        typeof a.backupExisting === "boolean" ? a.backupExisting : true,
+      dryRun: typeof a.dryRun === "boolean" ? a.dryRun : false,
+      skipToolVerification:
+        typeof a.skipToolVerification === "boolean"
+          ? a.skipToolVerification
+          : false,
     };
   }
 
   static validateDetectArgs(args: unknown): DetectProjectArgs {
-    if (typeof args !== 'object' || args === null) {
-      throw new Error('Invalid arguments: expected object');
+    if (typeof args !== "object" || args === null) {
+      throw new Error("Invalid arguments: expected object");
     }
 
     const a = args as Record<string, unknown>;
 
     return {
-      directory: typeof a.directory === 'string' ? a.directory : undefined
+      directory: typeof a.directory === "string" ? a.directory : undefined,
     };
   }
 
   static validateGenerateConfigArgs(args: unknown): GenerateConfigArgs {
-    if (typeof args !== 'object' || args === null) {
-      throw new Error('Invalid arguments: expected object');
+    if (typeof args !== "object" || args === null) {
+      throw new Error("Invalid arguments: expected object");
     }
 
     const a = args as Record<string, unknown>;
 
     return {
-      directory: typeof a.directory === 'string' ? a.directory : undefined
+      directory: typeof a.directory === "string" ? a.directory : undefined,
     };
   }
 
   static validateValidateSetupArgs(args: unknown): ValidateSetupArgs {
-    if (typeof args !== 'object' || args === null) {
-      throw new Error('Invalid arguments: expected object');
+    if (typeof args !== "object" || args === null) {
+      throw new Error("Invalid arguments: expected object");
     }
 
     const a = args as Record<string, unknown>;
 
     return {
-      directory: typeof a.directory === 'string' ? a.directory : undefined,
-      configPath: typeof a.configPath === 'string' ? a.configPath : undefined
+      directory: typeof a.directory === "string" ? a.directory : undefined,
+      configPath: typeof a.configPath === "string" ? a.configPath : undefined,
     };
   }
 
   static validateRollbackArgs(args: unknown): RollbackArgs {
-    if (typeof args !== 'object' || args === null) {
-      throw new Error('Invalid arguments: expected object');
+    if (typeof args !== "object" || args === null) {
+      throw new Error("Invalid arguments: expected object");
     }
 
     const a = args as Record<string, unknown>;
 
-    if (typeof a.backupPath !== 'string') {
-      throw new Error('backupPath is required and must be a string');
+    if (typeof a.backupPath !== "string") {
+      throw new Error("backupPath is required and must be a string");
     }
 
     return {
       backupPath: a.backupPath,
-      directory: typeof a.directory === 'string' ? a.directory : undefined
+      directory: typeof a.directory === "string" ? a.directory : undefined,
     };
   }
 }

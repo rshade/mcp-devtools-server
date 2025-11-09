@@ -420,10 +420,11 @@ This project has comprehensive community documentation:
 - `src/tools/lint-tools.ts` - Multi-linter support (ESLint, markdownlint, yamllint, commitlint)
 - `src/tools/test-tools.ts` - Test framework integration with coverage reporting
 - `src/tools/go-tools.ts` - Comprehensive Go language support (13 tools)
-- `src/tools/git-tools.ts` - **NEW** Git workflow tools (code review, PR generation)
-- `src/tools/actionlint-tools.ts` - **NEW** GitHub Actions workflow validation
+- `src/tools/nodejs-tools.ts` - **NEW** Node.js/TypeScript language support (6 Phase 1 tools)
+- `src/tools/git-tools.ts` - Git workflow tools (code review, PR generation)
+- `src/tools/actionlint-tools.ts` - GitHub Actions workflow validation
 - `src/tools/file-validation-tools.ts` - File validation (POSIX newline compliance)
-- `src/tools/smart-suggestions-tools.ts` - **NEW** AI-powered command analysis and suggestions
+- `src/tools/smart-suggestions-tools.ts` - AI-powered command analysis and suggestions
 
 ### Utility Classes
 
@@ -467,6 +468,51 @@ When working with Go tools:
 2. Go-specific configuration goes in `.mcp-devtools.schema.json`
 3. Support both Go modules and legacy GOPATH projects
 4. Provide user-friendly error messages with actionable suggestions
+
+### Node.js Language Support
+
+When working with Node.js tools (`src/tools/nodejs-tools.ts`):
+
+1. **Phase 1 Complete** (6 core tools) - Available in production:
+   - `nodejs_project_info` - Project analysis with framework/package manager detection
+   - `nodejs_test` - Test execution (Jest, Vitest, Mocha)
+   - `nodejs_lint` - ESLint integration
+   - `nodejs_format` - Prettier formatting
+   - `nodejs_check_types` - TypeScript type checking
+   - `nodejs_install_deps` - Dependency installation (npm/yarn/pnpm/bun)
+
+2. **Architecture Patterns**:
+   - Follows Go tools pattern exactly (same structure, caching, error handling)
+   - All commands must be in `ALLOWED_COMMANDS` in `shell-executor.ts`
+   - Uses `nodeModules` cache namespace (5min TTL)
+   - Auto-detects package manager from lockfiles (priority: bun → pnpm → yarn → npm)
+   - Auto-detects test framework from devDependencies
+
+3. **Framework Detection Priority**:
+   - Meta-frameworks first: Next.js, Nuxt.js
+   - UI frameworks: Angular, React, Vue, Svelte
+   - Backend frameworks: NestJS, Express, Fastify
+
+4. **Test Framework Behavior**:
+   - Returns error (not default) when no framework detected
+   - Provides installation suggestions
+   - Coverage extraction regex works for Jest (Vitest/Mocha may vary)
+
+5. **Error Handling Requirements**:
+   - Malformed package.json must be caught and logged
+   - Missing test framework must return helpful suggestions
+   - All errors should provide actionable next steps
+
+6. **Known Limitations** (to fix in future PRs):
+   - Test file discovery is stubbed (testFiles array empty)
+   - Coverage regex pattern only reliable for Jest
+   - Cache doesn't invalidate on package.json changes
+   - Glob patterns in Prettier may need shell quoting
+
+7. **Future Phases**:
+   - Phase 2 (5 tools): version, security, build, scripts, benchmark
+   - Phase 3 (3 tools): update_deps, compatibility, profile
+   - Target: 85-90% test coverage for all tools
 
 ## File Validation Tools
 
@@ -721,6 +767,71 @@ progress.
 - `.claude/README.md` - Complete agent documentation
 - Cache optimization requirements in all issue comments
 - Integration with GitHub CLI (gh issue/pr commands)
+
+### 2025-11-09: Node.js Language Support - Phase 1
+
+**PR #171** - Implemented Phase 1 of Node.js language support with 6 core tools
+
+**New Tools:**
+
+- `nodejs_project_info` - Comprehensive project analysis (639 lines total in nodejs-tools.ts)
+- `nodejs_test` - Test execution (Jest, Vitest, Mocha)
+- `nodejs_lint` - ESLint integration
+- `nodejs_format` - Prettier formatting
+- `nodejs_check_types` - TypeScript type checking
+- `nodejs_install_deps` - Dependency installation (npm/yarn/pnpm/bun)
+
+**Key Features:**
+
+1. **Smart Detection**
+   - Auto-detects package manager from lockfiles (bun → pnpm → yarn → npm)
+   - Framework detection (React, Vue, Angular, Next.js, NestJS, Express, etc.)
+   - Test framework detection (Jest, Vitest, Mocha)
+   - Build tool detection (Vite, Webpack, Rollup, esbuild, tsup)
+
+2. **Architecture**
+   - Follows Go tools pattern exactly (same structure, caching, error handling)
+   - Uses `nodeModules` cache namespace (5min TTL)
+   - All 6 tools integrated with intelligent caching
+   - Zod schemas for input validation
+
+3. **Testing**
+   - 48% line coverage (8 test cases)
+   - Tests cover: package manager detection, framework detection, error handling
+   - Known gaps: lint/format/checkTypes tools, cache behavior, edge cases
+
+**Key Learnings:**
+
+1. **Test Framework Fallback**
+   - Don't default to 'jest' silently - return error with suggestions
+   - Provide actionable installation instructions
+   - Check for framework in devDependencies before defaulting
+
+2. **Package.json Parsing**
+   - Always wrap JSON.parse() in try-catch
+   - Log errors but continue gracefully
+   - Set hasPackageJson: false on parse failure
+
+3. **Known Limitations** (to address in future PRs):
+   - Test file discovery stubbed (testFiles array empty)
+   - Coverage regex only reliable for Jest (not Vitest/Mocha)
+   - Cache doesn't invalidate on package.json changes
+   - Glob patterns may need shell quoting
+
+**Files Changed:**
+
+- Added: `src/tools/nodejs-tools.ts` (639 lines)
+- Added: `src/__tests__/tools/nodejs-tools.test.ts` (87 lines)
+- Updated: `src/utils/cache-manager.ts` - Added nodeModules namespace
+- Updated: `src/utils/shell-executor.ts` - Added Node.js commands to allowlist
+- Updated: `src/index.ts` - Registered 6 new tools with schemas and handlers
+
+**Epic Progress:**
+
+- Part of Epic #155 (14 tools total)
+- Phase 1 complete: 6/14 tools (43%)
+- Closes: #156, #157, #158, #159, #160, #161
+- Remaining: Phase 2 (5 tools), Phase 3 (3 tools)
 
 ### 2025-11-04: Intelligent Caching System (Phases 1-2)
 

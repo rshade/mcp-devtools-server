@@ -5,13 +5,17 @@
  * project context, and historical patterns.
  */
 
-import { createHash } from 'crypto';
-import { ExecutionResult } from './shell-executor.js';
-import { FailureAnalyzer, AnalysisResult, ErrorType } from './failure-analyzer.js';
-import { KnowledgeBase } from './knowledge-base.js';
-import { ProjectDetector, ProjectType } from './project-detector.js';
-import { getCacheManager } from './cache-manager.js';
-import { logger } from './logger.js';
+import { createHash } from "crypto";
+import { ExecutionResult } from "./shell-executor.js";
+import {
+  FailureAnalyzer,
+  AnalysisResult,
+  ErrorType,
+} from "./failure-analyzer.js";
+import { KnowledgeBase } from "./knowledge-base.js";
+import { ProjectDetector, ProjectType } from "./project-detector.js";
+import { getCacheManager } from "./cache-manager.js";
+import { logger } from "./logger.js";
 
 /**
  * Context information for generating more accurate suggestions
@@ -43,7 +47,7 @@ export interface SmartSuggestion {
   title: string;
   description: string;
   actions: string[];
-  priority: 'high' | 'medium' | 'low';
+  priority: "high" | "medium" | "low";
   category: string;
   confidence: number;
   relatedFiles?: string[];
@@ -125,25 +129,28 @@ export class SuggestionEngine {
    */
   async generateSuggestions(
     result: ExecutionResult,
-    context?: SuggestionContext
+    context?: SuggestionContext,
   ): Promise<SuggestionEngineResult> {
     const startTime = Date.now();
 
     // Try cache first
     const cacheKey = this.buildCacheKey(result, context);
-    const cached = this.cacheManager.get<SuggestionEngineResult>('smartSuggestions', cacheKey);
+    const cached = this.cacheManager.get<SuggestionEngineResult>(
+      "smartSuggestions",
+      cacheKey,
+    );
 
     if (cached) {
-      logger.debug('Smart suggestions cache HIT', {
+      logger.debug("Smart suggestions cache HIT", {
         command: result.command,
-        exitCode: result.exitCode
+        exitCode: result.exitCode,
       });
       return cached;
     }
 
-    logger.debug('Smart suggestions cache MISS', {
+    logger.debug("Smart suggestions cache MISS", {
       command: result.command,
-      exitCode: result.exitCode
+      exitCode: result.exitCode,
     });
 
     // Analyze the failure
@@ -162,11 +169,11 @@ export class SuggestionEngine {
       analysis,
       suggestions,
       summary,
-      executionTime
+      executionTime,
     };
 
     // Store in cache
-    this.cacheManager.set('smartSuggestions', cacheKey, engineResult);
+    this.cacheManager.set("smartSuggestions", cacheKey, engineResult);
 
     return engineResult;
   }
@@ -187,34 +194,34 @@ export class SuggestionEngine {
    */
   private async createSmartSuggestions(
     analysis: AnalysisResult,
-    context?: SuggestionContext
+    context?: SuggestionContext,
   ): Promise<SmartSuggestion[]> {
     const suggestions: SmartSuggestion[] = [];
 
     // If no failure detected, return success suggestions with workflow recommendations
     if (!analysis.failureDetected) {
       suggestions.push({
-        title: 'All checks passed',
-        description: 'No issues detected in the execution',
-        actions: ['Continue with development workflow'],
-        priority: 'low',
-        category: 'general',
-        confidence: 1.0
+        title: "All checks passed",
+        description: "No issues detected in the execution",
+        actions: ["Continue with development workflow"],
+        priority: "low",
+        category: "general",
+        confidence: 1.0,
       });
 
       // Add workflow optimization suggestions for successful builds
       suggestions.push({
-        title: 'Workflow Optimization',
-        description: 'Consider next steps in your development workflow',
+        title: "Workflow Optimization",
+        description: "Consider next steps in your development workflow",
         actions: [
-          'Run tests if not already done',
-          'Check code coverage',
-          'Review and commit changes',
-          'Create a pull request when ready'
+          "Run tests if not already done",
+          "Check code coverage",
+          "Review and commit changes",
+          "Create a pull request when ready",
         ],
-        priority: 'low',
-        category: 'workflow',
-        confidence: 0.8
+        priority: "low",
+        category: "workflow",
+        confidence: 0.8,
       });
 
       return suggestions;
@@ -226,18 +233,22 @@ export class SuggestionEngine {
         title: pattern.name,
         description: this.formatPatternDescription(pattern, analysis),
         actions: pattern.suggestions,
-        priority: pattern.severity === 'high' ? 'high' :
-                 pattern.severity === 'medium' ? 'medium' : 'low',
+        priority:
+          pattern.severity === "high"
+            ? "high"
+            : pattern.severity === "medium"
+              ? "medium"
+              : "low",
         category: pattern.category,
         confidence: analysis.confidence,
-        relatedFiles: analysis.affectedFiles
+        relatedFiles: analysis.affectedFiles,
       });
     }
 
     // Add context-aware suggestions
     const contextSuggestions = await this.generateContextAwareSuggestions(
       analysis,
-      context
+      context,
     );
     suggestions.push(...contextSuggestions);
 
@@ -262,12 +273,12 @@ export class SuggestionEngine {
    */
   private formatPatternDescription(
     pattern: { name: string; context?: string },
-    analysis: AnalysisResult
+    analysis: AnalysisResult,
   ): string {
     let description = pattern.context || `Issue detected: ${pattern.name}`;
 
     if (analysis.affectedFiles.length > 0) {
-      const fileList = analysis.affectedFiles.slice(0, 3).join(', ');
+      const fileList = analysis.affectedFiles.slice(0, 3).join(", ");
       description += `. Affected files: ${fileList}`;
       if (analysis.affectedFiles.length > 3) {
         description += ` and ${analysis.affectedFiles.length - 3} more`;
@@ -297,7 +308,7 @@ export class SuggestionEngine {
    */
   private async generateContextAwareSuggestions(
     analysis: AnalysisResult,
-    context?: SuggestionContext
+    context?: SuggestionContext,
   ): Promise<SmartSuggestion[]> {
     const suggestions: SmartSuggestion[] = [];
 
@@ -307,54 +318,59 @@ export class SuggestionEngine {
       const projectType = context?.projectType || projectInfo.type;
 
       // Language-specific suggestions
-      if (projectType === ProjectType.Go && analysis.errorType === ErrorType.TestFailure) {
+      if (
+        projectType === ProjectType.Go &&
+        analysis.errorType === ErrorType.TestFailure
+      ) {
         suggestions.push({
-          title: 'Go Test Debugging Tips',
-          description: 'Additional debugging options for Go tests',
+          title: "Go Test Debugging Tips",
+          description: "Additional debugging options for Go tests",
           actions: [
-            'Run with `-v` for verbose output',
-            'Use `-run <TestName>` to run specific test',
-            'Add `-race` flag to detect race conditions',
-            'Try `-count=1` to disable test caching'
+            "Run with `-v` for verbose output",
+            "Use `-run <TestName>` to run specific test",
+            "Add `-race` flag to detect race conditions",
+            "Try `-count=1` to disable test caching",
           ],
-          priority: 'medium',
-          category: 'test',
-          confidence: 0.8
+          priority: "medium",
+          category: "test",
+          confidence: 0.8,
         });
       }
 
-      if (projectType === ProjectType.NodeJS && analysis.errorType === ErrorType.DependencyIssue) {
+      if (
+        projectType === ProjectType.NodeJS &&
+        analysis.errorType === ErrorType.DependencyIssue
+      ) {
         suggestions.push({
-          title: 'Node.js Dependency Resolution',
-          description: 'Steps to resolve Node.js dependency issues',
+          title: "Node.js Dependency Resolution",
+          description: "Steps to resolve Node.js dependency issues",
           actions: [
-            'Clear npm cache: `npm cache clean --force`',
-            'Remove node_modules and package-lock.json',
-            'Run `npm install` with `--legacy-peer-deps` if peer dependency conflicts',
-            'Check for conflicting versions in package.json'
+            "Clear npm cache: `npm cache clean --force`",
+            "Remove node_modules and package-lock.json",
+            "Run `npm install` with `--legacy-peer-deps` if peer dependency conflicts",
+            "Check for conflicting versions in package.json",
           ],
-          priority: 'high',
-          category: 'dependencies',
-          confidence: 0.9
+          priority: "high",
+          category: "dependencies",
+          confidence: 0.9,
         });
       }
 
       if (analysis.errorType === ErrorType.SecurityIssue) {
         suggestions.push({
-          title: 'Security Best Practices',
-          description: 'Recommended actions for security issues',
+          title: "Security Best Practices",
+          description: "Recommended actions for security issues",
           actions: [
-            'Never commit secrets to version control',
-            'Use environment variables for sensitive data',
-            'Consider using a secrets management service',
-            'Run security audit tools regularly'
+            "Never commit secrets to version control",
+            "Use environment variables for sensitive data",
+            "Consider using a secrets management service",
+            "Run security audit tools regularly",
           ],
-          priority: 'high',
-          category: 'security',
-          confidence: 1.0
+          priority: "high",
+          category: "security",
+          confidence: 1.0,
         });
       }
-
     } catch {
       // If project detection fails, continue with basic suggestions
     }
@@ -375,40 +391,43 @@ export class SuggestionEngine {
    * @private
    */
   private generateWorkflowSuggestions(
-    analysis: AnalysisResult
+    analysis: AnalysisResult,
   ): SmartSuggestion[] {
     const suggestions: SmartSuggestion[] = [];
 
     // Suggest workflow improvements based on error type
     if (analysis.errorType === ErrorType.LintIssue) {
       suggestions.push({
-        title: 'Workflow Optimization: Pre-commit Hooks',
-        description: 'Catch linting issues before committing',
+        title: "Workflow Optimization: Pre-commit Hooks",
+        description: "Catch linting issues before committing",
         actions: [
-          'Set up pre-commit hooks with Husky',
-          'Configure lint-staged to run linters on changed files',
-          'Add linting to CI/CD pipeline',
-          'Use editor extensions for real-time linting'
+          "Set up pre-commit hooks with Husky",
+          "Configure lint-staged to run linters on changed files",
+          "Add linting to CI/CD pipeline",
+          "Use editor extensions for real-time linting",
         ],
-        priority: 'low',
-        category: 'workflow',
-        confidence: 0.7
+        priority: "low",
+        category: "workflow",
+        confidence: 0.7,
       });
     }
 
-    if (analysis.errorType === ErrorType.TestFailure && analysis.affectedFiles.length > 5) {
+    if (
+      analysis.errorType === ErrorType.TestFailure &&
+      analysis.affectedFiles.length > 5
+    ) {
       suggestions.push({
-        title: 'Test Organization Recommendation',
-        description: 'Multiple test files failing suggests structural issues',
+        title: "Test Organization Recommendation",
+        description: "Multiple test files failing suggests structural issues",
         actions: [
-          'Review shared test setup/teardown logic',
-          'Check for environmental dependencies',
-          'Consider test isolation improvements',
-          'Run tests individually to identify root cause'
+          "Review shared test setup/teardown logic",
+          "Check for environmental dependencies",
+          "Consider test isolation improvements",
+          "Run tests individually to identify root cause",
         ],
-        priority: 'medium',
-        category: 'test',
-        confidence: 0.75
+        priority: "medium",
+        category: "test",
+        confidence: 0.75,
       });
     }
 
@@ -428,17 +447,22 @@ export class SuggestionEngine {
    * @returns {SmartSuggestion[]} Sorted and limited array (max 10 suggestions)
    * @private
    */
-  private prioritizeSuggestions(suggestions: SmartSuggestion[]): SmartSuggestion[] {
+  private prioritizeSuggestions(
+    suggestions: SmartSuggestion[],
+  ): SmartSuggestion[] {
     const priorityOrder = { high: 0, medium: 1, low: 2 };
 
-    return suggestions.sort((a, b) => {
-      // First sort by priority
-      const priorityDiff = priorityOrder[a.priority] - priorityOrder[b.priority];
-      if (priorityDiff !== 0) return priorityDiff;
+    return suggestions
+      .sort((a, b) => {
+        // First sort by priority
+        const priorityDiff =
+          priorityOrder[a.priority] - priorityOrder[b.priority];
+        if (priorityDiff !== 0) return priorityDiff;
 
-      // Then by confidence
-      return b.confidence - a.confidence;
-    }).slice(0, 10); // Limit to top 10 suggestions
+        // Then by confidence
+        return b.confidence - a.confidence;
+      })
+      .slice(0, 10); // Limit to top 10 suggestions
   }
 
   /**
@@ -465,10 +489,10 @@ export class SuggestionEngine {
    */
   private generateSummary(
     analysis: AnalysisResult,
-    suggestions: SmartSuggestion[]
+    suggestions: SmartSuggestion[],
   ): string {
     if (!analysis.failureDetected) {
-      return 'Execution completed successfully with no issues detected.';
+      return "Execution completed successfully with no issues detected.";
     }
 
     const parts: string[] = [];
@@ -483,14 +507,16 @@ export class SuggestionEngine {
       parts.push(`${analysis.affectedFiles.length} file(s) affected`);
     }
 
-    const highPrioritySuggestions = suggestions.filter(s => s.priority === 'high').length;
+    const highPrioritySuggestions = suggestions.filter(
+      (s) => s.priority === "high",
+    ).length;
     if (highPrioritySuggestions > 0) {
       parts.push(`${highPrioritySuggestions} high-priority suggestion(s)`);
     }
 
     parts.push(`Confidence: ${(analysis.confidence * 100).toFixed(0)}%`);
 
-    return parts.join(' | ');
+    return parts.join(" | ");
   }
 
   /**
@@ -523,32 +549,32 @@ export class SuggestionEngine {
 
     if (trends.successRate < 0.5) {
       suggestions.push({
-        title: 'Low Success Rate Detected',
+        title: "Low Success Rate Detected",
         description: `Only ${(trends.successRate * 100).toFixed(0)}% of recent commands succeeded`,
         actions: [
-          'Review recent code changes for breaking issues',
-          'Check environment configuration',
-          'Consider reverting to last known good state',
-          'Run diagnostic tools to identify root cause'
+          "Review recent code changes for breaking issues",
+          "Check environment configuration",
+          "Consider reverting to last known good state",
+          "Run diagnostic tools to identify root cause",
         ],
-        priority: 'high',
-        category: 'workflow',
-        confidence: 0.9
+        priority: "high",
+        category: "workflow",
+        confidence: 0.9,
       });
     }
 
     if (trends.commonErrors.length > 0) {
       suggestions.push({
-        title: 'Recurring Issues Detected',
+        title: "Recurring Issues Detected",
         description: `Common error: ${trends.commonErrors[0]}`,
         actions: [
           ...trends.recommendations,
-          'Address the root cause rather than repeated fixes',
-          'Document the solution for future reference'
+          "Address the root cause rather than repeated fixes",
+          "Document the solution for future reference",
         ],
-        priority: 'high',
-        category: 'general',
-        confidence: 0.85
+        priority: "high",
+        category: "general",
+        confidence: 0.85,
       });
     }
 
@@ -571,7 +597,10 @@ export class SuggestionEngine {
    * console.log('Coverage by category:', stats.byCategory);
    * ```
    */
-  getKnowledgeBaseStats(): { totalPatterns: number; byCategory: Record<string, number> } {
+  getKnowledgeBaseStats(): {
+    totalPatterns: number;
+    byCategory: Record<string, number>;
+  } {
     return this.knowledgeBase.getStats();
   }
 
@@ -590,26 +619,25 @@ export class SuggestionEngine {
    * @returns {string} Cache key string
    * @private
    */
-  private buildCacheKey(result: ExecutionResult, context?: SuggestionContext): string {
+  private buildCacheKey(
+    result: ExecutionResult,
+    context?: SuggestionContext,
+  ): string {
     // Create a stable hash of the output (limit to first 500 chars to avoid huge keys)
     const outputSample = (result.stdout + result.stderr).substring(0, 500);
-    const outputHash = createHash('sha256')
+    const outputHash = createHash("sha256")
       .update(outputSample)
-      .digest('hex')
+      .digest("hex")
       .substring(0, 16); // First 16 chars of hash
 
     // Build cache key with command, exit code, and output hash
-    const parts = [
-      result.command,
-      result.exitCode.toString(),
-      outputHash
-    ];
+    const parts = [result.command, result.exitCode.toString(), outputHash];
 
     // Add context if available
     if (context?.tool) parts.push(`tool:${context.tool}`);
     if (context?.language) parts.push(`lang:${context.language}`);
     if (context?.projectType) parts.push(`proj:${context.projectType}`);
 
-    return parts.join(':');
+    return parts.join(":");
   }
 }
