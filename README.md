@@ -1,5 +1,12 @@
 # MCP DevTools Server
 
+[![CI Status](https://github.com/rshade/mcp-devtools-server/actions/workflows/ci.yml/badge.svg)](https://github.com/rshade/mcp-devtools-server/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/rshade/mcp-devtools-server/branch/main/graph/badge.svg)](https://codecov.io/gh/rshade/mcp-devtools-server)
+[![npm version](https://img.shields.io/npm/v/mcp-devtools-server.svg)](https://www.npmjs.com/package/mcp-devtools-server)
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
+[![Node.js Version](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen.svg)](package.json)
+[![Documentation](https://img.shields.io/badge/docs-GitHub%20Pages-blue)](https://rshade.github.io/mcp-devtools-server)
+
 An MCP (Model Context Protocol) server that standardizes and binds specific patterns for development
 tools, enabling Claude Code to generate code more efficiently with fewer errors and better
 autocorrection capabilities.
@@ -892,33 +899,15 @@ git add -u
 
 ## Architecture
 
-### Core Components
+The MCP DevTools Server is built on a modular, secure architecture:
 
-- **Shell Executor** - Secure command execution with validation
-- **Project Detector** - Auto-detection of project type and configuration
-- **Tool Classes** - Specialized handlers for make, lint, and test operations
-- **Plugin Manager** - Auto-discovery and lifecycle management for plugins
-- **MCP Server** - Main server implementation with tool registration
+- **Secure Shell Execution** - Command allowlist and argument sanitization
+- **Plugin System** - Auto-discovery and lifecycle management
+- **Intelligent Caching** - LRU cache with file-based invalidation (5-10x speedups)
+- **Project Detection** - Auto-configuration for Node.js, Python, Go, and more
+- **40+ Tools** - Comprehensive development tool integration
 
-### Security Model
-
-- Commands are validated against an allowlist
-- Arguments are sanitized to prevent injection attacks
-- Working directories are restricted to project boundaries
-- All operations have configurable timeouts
-- Plugins execute through shared ShellExecutor for security isolation
-
-### Tool Schema
-
-Each tool uses JSON Schema for input validation:
-
-```typescript
-{
-  directory?: string;    // Working directory
-  args?: string[];      // Additional arguments
-  // Tool-specific options...
-}
-```
+🏗️ **[View Complete Architecture Documentation](https://rshade.github.io/mcp-devtools-server/architecture)**
 
 ## Plugin System
 
@@ -1308,61 +1297,18 @@ This project represents an ongoing effort to improve the developer experience wh
 AI-powered coding assistants. All feedback and contributions help shape better development
 practices for the community.
 
-## Roadmap
+## Project Status & Roadmap
 
-Our development is organized into quarterly milestones with clear priorities:
+**Current Status:** MVP 0.0.1 Released ✅
 
-### 2025-Q1 - Go Support & Core Foundation 🎯 **CURRENT FOCUS**
+**Active Development:** 2025-Q2 - Plugin Architecture & Performance
 
-#### Priority: HIGHEST (P0)
+**Quick Overview:**
 
-- [x] Enhanced Go language support (go_test, go_build, go_fmt, go_lint, go_vet, go_mod_tidy)
-- [x] POSIX newline compliance validation (ensure_newline tool)
-- [x] **Extensible plugin architecture framework** (Issue #2 ✅)
-- [x] **git-spice reference plugin implementation** (Issue #58 ✅)
-- [ ] Complete Go toolchain integration
-- [ ] golangci-lint and staticcheck integration
-- [ ] Go project analysis and recommendations
-- [ ] Go-specific configuration options
+- ✅ Q1 2025: Go Support & Core Foundation (100% complete - 5/5 issues)
+- 🚀 Q2 2025: Plugin Ecosystem & Performance (2/10 issues)
+- 🔮 Q3 2025: User Experience & AI Integration
+- 📊 Q4 2025: Team Collaboration & Enterprise
 
-### 2025-Q2 - Plugin Ecosystem & Performance
-
-#### Priority: HIGH (P1)
-
-- [ ] Community plugin marketplace
-- [ ] Additional first-party plugins (Docker, Kubernetes, etc.)
-- [ ] Intelligent caching system (10x performance improvement)
-- [ ] Advanced telemetry and observability
-- [ ] Resource management and concurrency control
-- [ ] Event-driven architecture
-
-### 2025-Q3 - User Experience & AI Integration
-
-#### Priority: HIGH (P1)
-
-- [ ] Zero-configuration onboarding wizard
-- [ ] AI-powered smart suggestions and failure analysis
-- [ ] Workflow templates and patterns
-- [ ] Enhanced project discovery and analysis
-- [ ] Integration ecosystem (VS Code, GitHub Actions)
-
-### 2025-Q4 - Team Collaboration & Enterprise
-
-#### Priority: MEDIUM (P2)
-
-- [ ] Team workspace management
-- [ ] Shared configuration and standards enforcement
-- [ ] Enterprise features (SSO, RBAC, audit logging)
-- [ ] Advanced monitoring and compliance reporting
-- [ ] Multi-tenant support
-
-### Long-term Vision
-
-- [ ] Predictive analytics and failure prediction
-- [ ] Auto-remediation and self-healing workflows
-- [ ] Natural language interface ("Run the deployment checklist")
-- [ ] Cross-project learning and global best practices
-
-See our [GitHub Issues](https://github.com/rshade/mcp-devtools-server/issues) and
-[Milestones](https://github.com/rshade/mcp-devtools-server/milestones) for detailed tracking and
-progress updates.
+📚 **[View Full Roadmap](https://rshade.github.io/mcp-devtools-server/roadmap)**
+📊 **[Track Progress on GitHub](https://github.com/rshade/mcp-devtools-server/milestones)**

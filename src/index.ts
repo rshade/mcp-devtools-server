@@ -43,7 +43,7 @@ const logger = winston.createLogger({
 
 // Server configuration
 const SERVER_NAME = 'mcp-devtools-server';
-const SERVER_VERSION = '1.0.0';
+const SERVER_VERSION = '0.0.1';
 
 /**
  * Load project configuration from .mcp-devtools.json
