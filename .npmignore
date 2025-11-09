@@ -1,0 +1,69 @@
+# Source files
+src/
+
+# Tests
+**/__tests__/
+*.test.ts
+*.spec.ts
+coverage/
+jest.config.js
+
+# Documentation source
+docs/
+.vitepress/
+**/*.md
+!README.md
+!CHANGELOG.md
+
+# Build tools
+.github/
+.husky/
+.claude/
+examples/
+typedoc/
+
+# Config files
+tsconfig.json
+.eslintrc*
+.prettierrc
+.editorconfig
+commitlint.config.js
+Makefile
+
+# Docker
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# Environment
+.env*
+*.log
+
+# Project files
+PR_MESSAGE.md
+CONTRIBUTING.md
+CODE_OF_CONDUCT.md
+SECURITY.md
+CACHING.md
+CLAUDE.md
+codebase_analysis.md
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Misc
+node_modules/
+*.tgz

@@ -605,7 +605,8 @@ progress.
 - ✅ **SECURITY.md** - 220+ line security policy with vulnerability reporting
 - ✅ **CODE_OF_CONDUCT.md** - Contributor Covenant 2.1 community standards
 - ✅ **TypeDoc configured** - API documentation generation via `npm run docs`
-- ✅ **Comprehensive analysis** - `codebase_analysis.md` added (1,869 lines)
+- ✅ **Architecture documentation** - `docs/architecture.md` added (comprehensive system architecture)
+- ✅ **Roadmap documentation** - `docs/roadmap.md` added (quarterly milestones and progress)
 - ✅ **release-please** - Automated CHANGELOG management
 
 ### Development Workflow Recommendations
@@ -863,7 +864,8 @@ New test files added with comprehensive coverage:
 
 ### Documentation Enhancements
 
-- Comprehensive codebase analysis document added (`codebase_analysis.md` - 1,869 lines)
+- Architecture documentation added (`docs/architecture.md` - comprehensive system design)
+- Roadmap documentation added (`docs/roadmap.md` - quarterly milestones on GitHub Pages)
 - README.md significantly expanded with:
   - Smart suggestions documentation
   - Git tools usage examples

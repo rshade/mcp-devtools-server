@@ -7,6 +7,73 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.1] - 2025-11-08
+
+### Added
+
+- **Go Language Support (13 Tools)**
+  - go_test, go_build, go_fmt, go_lint, go_vet, go_mod_tidy, go_mod_download
+  - go_benchmark, go_generate, go_work, go_vulncheck, staticcheck, go_project_info
+- **Plugin Architecture**
+  - Extensible plugin system with auto-discovery
+  - git-spice reference plugin (6 tools for stacked branch management)
+  - Plugin lifecycle management and health monitoring
+  - Tool namespacing and security isolation
+- **Intelligent Caching System**
+  - LRU cache with file-based invalidation (SHA-256 checksums)
+  - Multi-namespace support with configurable TTLs
+  - 5-10x performance improvements for repeated operations
+- **AI-Powered Smart Suggestions**
+  - 15+ failure pattern recognition
+  - Context-aware recommendations
+  - Security vulnerability detection
+  - Performance issue identification
+- **Git Workflow Integration**
+  - code_review tool (security, performance, maintainability analysis)
+  - generate_pr_message tool (conventional commits, GitHub template support)
+- **File Validation**
+  - ensure_newline tool (POSIX compliance, check/fix/validate modes)
+  - Cross-platform support (Windows, macOS, Linux)
+- **GitHub Actions Integration**
+  - actionlint tool (workflow validation)
+  - CI/CD pipeline with multi-platform testing
+- **Zero-Configuration Onboarding**
+  - Auto-detection of project type, framework, and tools
+  - Configuration generation and validation
+  - Rollback support for safety
+- **Docker Support**
+  - Multi-platform images (linux/amd64, linux/arm64)
+  - Automated builds via GitHub Actions
+  - Security scanning with Trivy
+- **Comprehensive Documentation**
+  - 35+ documentation files
+  - Getting started guides
+  - Tool reference documentation
+  - Plugin development guide
+  - API documentation
+- **Community Guidelines**
+  - CONTRIBUTING.md with development workflow
+  - SECURITY.md with vulnerability reporting
+  - CODE_OF_CONDUCT.md (Contributor Covenant 2.1)
+- **Development Tooling**
+  - Makefile for standardized commands
+  - Pre-commit hooks with Husky
+  - commitlint for commit message validation
+  - TypeDoc for API documentation generation
+
+### Changed
+
+- Improved test coverage (584 tests across 22 test suites)
+- Enhanced security model with multiple layers of protection
+- Optimized performance with intelligent caching
+
+### Security
+
+- Implemented command allowlist validation
+- Added argument sanitization to prevent injection attacks
+- Restricted working directories to project boundaries
+- Added timeout protection for all operations
+
 ## [1.1.0] - 2025-08-19
 
 ### Added
