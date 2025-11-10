@@ -1116,6 +1116,158 @@ class MCPDevToolsServer {
           },
         },
 
+        // Phase 2: Advanced Node.js tools
+        {
+          name: "nodejs_version",
+          description:
+            "Get version information for Node.js tools (node, npm, yarn, pnpm, bun) with caching",
+          inputSchema: {
+            type: "object",
+            properties: {
+              directory: {
+                type: "string",
+                description: "Working directory",
+              },
+              tool: {
+                type: "string",
+                enum: ["node", "npm", "yarn", "pnpm", "bun", "all"],
+                description: "Tool to check version for (default: all)",
+              },
+            },
+          },
+        },
+        {
+          name: "nodejs_security",
+          description:
+            "Run security audit with npm/yarn audit to detect vulnerabilities",
+          inputSchema: {
+            type: "object",
+            properties: {
+              directory: {
+                type: "string",
+                description: "Working directory",
+              },
+              audit: {
+                type: "boolean",
+                description: "Run audit (default: true)",
+              },
+              fix: {
+                type: "boolean",
+                description: "Automatically fix vulnerabilities",
+              },
+              production: {
+                type: "boolean",
+                description: "Only check production dependencies",
+              },
+              args: {
+                type: "array",
+                items: { type: "string" },
+                description: "Additional arguments",
+              },
+              timeout: {
+                type: "number",
+                description: "Command timeout in milliseconds",
+              },
+            },
+          },
+        },
+        {
+          name: "nodejs_build",
+          description: "Run build script with package manager (npm/yarn/pnpm/bun)",
+          inputSchema: {
+            type: "object",
+            properties: {
+              directory: {
+                type: "string",
+                description: "Working directory",
+              },
+              script: {
+                type: "string",
+                description: "Build script name (default: build)",
+              },
+              production: {
+                type: "boolean",
+                description: "Production build",
+              },
+              watch: {
+                type: "boolean",
+                description: "Watch mode",
+              },
+              args: {
+                type: "array",
+                items: { type: "string" },
+                description: "Additional arguments",
+              },
+              timeout: {
+                type: "number",
+                description: "Command timeout in milliseconds",
+              },
+            },
+          },
+        },
+        {
+          name: "nodejs_scripts",
+          description:
+            "Run or list npm scripts from package.json with caching",
+          inputSchema: {
+            type: "object",
+            properties: {
+              directory: {
+                type: "string",
+                description: "Working directory",
+              },
+              script: {
+                type: "string",
+                description: "Script name to run",
+              },
+              list: {
+                type: "boolean",
+                description: "List available scripts",
+              },
+              args: {
+                type: "array",
+                items: { type: "string" },
+                description: "Additional arguments",
+              },
+              timeout: {
+                type: "number",
+                description: "Command timeout in milliseconds",
+              },
+            },
+          },
+        },
+        {
+          name: "nodejs_benchmark",
+          description:
+            "Run performance benchmarks with Vitest, benchmark.js, or custom scripts",
+          inputSchema: {
+            type: "object",
+            properties: {
+              directory: {
+                type: "string",
+                description: "Working directory",
+              },
+              pattern: {
+                type: "string",
+                description: "Benchmark file pattern (default: **/*.bench.{ts,js})",
+              },
+              iterations: {
+                type: "number",
+                description: "Number of iterations",
+              },
+              args: {
+                type: "array",
+                items: { type: "string" },
+                description: "Additional arguments",
+              },
+              timeout: {
+                type: "number",
+                description: "Command timeout in milliseconds",
+              },
+            },
+          },
+        },
+
         // Status and analysis tools
         {
           name: "project_status",
@@ -2026,6 +2178,72 @@ class MCPDevToolsServer {
             const validatedArgs = NodejsTools.validateInstallDepsArgs(args);
             const result =
               await this.nodejsTools.installDependencies(validatedArgs);
+            return {
+              content: [
+                {
+                  type: "text",
+                  text: this.formatNodejsToolResult(result),
+                },
+              ],
+            };
+          }
+
+          // Phase 2: Advanced Node.js tools
+          case "nodejs_version": {
+            const validatedArgs = NodejsTools.validateVersionArgs(args);
+            const result = await this.nodejsTools.getVersion(validatedArgs);
+            return {
+              content: [
+                {
+                  type: "text",
+                  text: this.formatNodejsToolResult(result),
+                },
+              ],
+            };
+          }
+
+          case "nodejs_security": {
+            const validatedArgs = NodejsTools.validateSecurityArgs(args);
+            const result = await this.nodejsTools.runSecurity(validatedArgs);
+            return {
+              content: [
+                {
+                  type: "text",
+                  text: this.formatNodejsToolResult(result),
+                },
+              ],
+            };
+          }
+
+          case "nodejs_build": {
+            const validatedArgs = NodejsTools.validateBuildArgs(args);
+            const result = await this.nodejsTools.runBuild(validatedArgs);
+            return {
+              content: [
+                {
+                  type: "text",
+                  text: this.formatNodejsToolResult(result),
+                },
+              ],
+            };
+          }
+
+          case "nodejs_scripts": {
+            const validatedArgs = NodejsTools.validateScriptsArgs(args);
+            const result = await this.nodejsTools.runScripts(validatedArgs);
+            return {
+              content: [
+                {
+                  type: "text",
+                  text: this.formatNodejsToolResult(result),
+                },
+              ],
+            };
+          }
+
+          case "nodejs_benchmark": {
+            const validatedArgs = NodejsTools.validateBenchmarkArgs(args);
+            const result = await this.nodejsTools.runBenchmark(validatedArgs);
             return {
               content: [
                 {

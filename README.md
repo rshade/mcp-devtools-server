@@ -176,6 +176,79 @@ mcp-devtools detect_project
 - **staticcheck** - Enhanced static analysis
 - **go_project_info** - Comprehensive Go project analysis and detection
 
+#### Node.js/TypeScript Tools
+
+##### Phase 1: Core Development Tools
+
+- **nodejs_project_info** - Comprehensive Node.js project analysis with smart caching
+  - Auto-detects package manager (npm, yarn, pnpm, bun)
+  - Framework detection (React, Vue, Angular, Next.js, NestJS, Express, Fastify)
+  - Test framework detection (Jest, Vitest, Mocha)
+  - Build tool detection (Vite, Webpack, Rollup, esbuild, tsup)
+  - 5min cache TTL for fast repeated queries
+
+- **nodejs_test** - Run tests with Jest, Vitest, or Mocha
+  - Auto-detects test framework from package.json
+  - Coverage reporting support
+  - Watch mode for development
+  - Framework-specific coverage extraction
+
+- **nodejs_lint** - ESLint integration with auto-fix
+  - Auto-fix issues with `--fix` flag
+  - Custom output formats (stylish, json, compact)
+  - File pattern filtering
+  - Integration with existing ESLint configs
+
+- **nodejs_format** - Prettier code formatting
+  - Check mode for CI/CD validation
+  - Write mode for applying changes
+  - Custom file patterns support
+  - Respects existing Prettier configuration
+
+- **nodejs_check_types** - TypeScript type checking
+  - Uses tsc for strict type validation
+  - Custom tsconfig.json support
+  - Incremental compilation mode
+  - No-emit mode for type-only checks
+
+- **nodejs_install_deps** - Dependency management
+  - Auto-detects package manager from lockfiles
+  - Production-only installation mode
+  - Frozen lockfile support (for CI/CD)
+  - Timeout configuration (default: 10min)
+
+##### Phase 2: Advanced Tools
+
+- **nodejs_version** - Version detection with 1hr caching
+  - Check node, npm, yarn, pnpm, bun versions
+  - Single tool or all tools at once
+  - Gracefully handles missing tools
+  - Uses commandAvailability cache namespace
+
+- **nodejs_security** - Security vulnerability scanning
+  - Run npm/yarn/pnpm/bun audit
+  - Auto-fix vulnerabilities with `--fix` flag
+  - Production-only dependency checks
+  - JSON output for CI/CD integration
+
+- **nodejs_build** - Build orchestration
+  - Run build scripts with any package manager
+  - Production and watch mode support
+  - Configurable timeout (default: 10min)
+  - Pass-through arguments to build tools
+
+- **nodejs_scripts** - Script management with caching
+  - List all available npm scripts
+  - Run scripts with additional arguments
+  - Uses cached project info (5min TTL)
+  - Helpful error messages for missing scripts
+
+- **nodejs_benchmark** - Performance benchmarking
+  - Auto-detects benchmark framework (Vitest, benchmark.js, tinybench)
+  - Vitest bench integration with pattern support
+  - Fallback to npm run bench script
+  - Configurable timeout (default: 5min)
+
 #### General Linting
 
 - **markdownlint** - Run markdownlint on markdown files
