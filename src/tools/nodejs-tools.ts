@@ -87,12 +87,60 @@ const NodejsInstallDepsArgsSchema = z.object({
   timeout: z.number().optional().describe("Command timeout in milliseconds"),
 });
 
+// Phase 2 schemas
+const NodejsVersionArgsSchema = z.object({
+  directory: z.string().optional().describe("Working directory"),
+  tool: z
+    .enum(["node", "npm", "yarn", "pnpm", "bun", "all"])
+    .optional()
+    .describe("Tool to check version for"),
+});
+
+const NodejsSecurityArgsSchema = z.object({
+  directory: z.string().optional().describe("Working directory"),
+  audit: z.boolean().optional().describe("Run npm/yarn audit"),
+  fix: z.boolean().optional().describe("Automatically fix vulnerabilities"),
+  production: z.boolean().optional().describe("Only check production dependencies"),
+  args: z.array(z.string()).optional().describe("Additional arguments"),
+  timeout: z.number().optional().describe("Command timeout in milliseconds"),
+});
+
+const NodejsBuildArgsSchema = z.object({
+  directory: z.string().optional().describe("Working directory"),
+  script: z.string().optional().describe("Build script name (default: build)"),
+  production: z.boolean().optional().describe("Production build"),
+  watch: z.boolean().optional().describe("Watch mode"),
+  args: z.array(z.string()).optional().describe("Additional arguments"),
+  timeout: z.number().optional().describe("Command timeout in milliseconds"),
+});
+
+const NodejsScriptsArgsSchema = z.object({
+  directory: z.string().optional().describe("Working directory"),
+  script: z.string().optional().describe("Script name to run"),
+  list: z.boolean().optional().describe("List available scripts"),
+  args: z.array(z.string()).optional().describe("Additional arguments"),
+  timeout: z.number().optional().describe("Command timeout in milliseconds"),
+});
+
+const NodejsBenchmarkArgsSchema = z.object({
+  directory: z.string().optional().describe("Working directory"),
+  pattern: z.string().optional().describe("Benchmark file pattern"),
+  iterations: z.number().optional().describe("Number of iterations"),
+  args: z.array(z.string()).optional().describe("Additional arguments"),
+  timeout: z.number().optional().describe("Command timeout in milliseconds"),
+});
+
 export type NodejsToolArgs = z.infer<typeof NodejsToolArgsSchema>;
 export type NodejsTestArgs = z.infer<typeof NodejsTestArgsSchema>;
 export type NodejsLintArgs = z.infer<typeof NodejsLintArgsSchema>;
 export type NodejsFormatArgs = z.infer<typeof NodejsFormatArgsSchema>;
 export type NodejsTypeCheckArgs = z.infer<typeof NodejsTypeCheckArgsSchema>;
 export type NodejsInstallDepsArgs = z.infer<typeof NodejsInstallDepsArgsSchema>;
+export type NodejsVersionArgs = z.infer<typeof NodejsVersionArgsSchema>;
+export type NodejsSecurityArgs = z.infer<typeof NodejsSecurityArgsSchema>;
+export type NodejsBuildArgs = z.infer<typeof NodejsBuildArgsSchema>;
+export type NodejsScriptsArgs = z.infer<typeof NodejsScriptsArgsSchema>;
+export type NodejsBenchmarkArgs = z.infer<typeof NodejsBenchmarkArgsSchema>;
 
 export interface NodejsToolResult {
   success: boolean;
@@ -795,6 +843,262 @@ export class NodejsTools {
   }
 
   /**
+   * Get version information for Node.js tools with caching (1hr TTL)
+   */
+  async getVersion(args: NodejsVersionArgs): Promise<NodejsToolResult> {
+    const dir = args.directory || this.projectRoot;
+    const tool = args.tool || "all";
+
+    // Try cache first (1hr TTL)
+    const cacheKey = this.buildNodejsCacheKey("version", { directory: dir, tool });
+    const cached = this.cacheManager.get<NodejsToolResult>(
+      "commandAvailability",
+      cacheKey,
+    );
+    if (cached) {
+      return cached;
+    }
+
+    const versions: Record<string, string> = {};
+    const tools = tool === "all" ? ["node", "npm", "yarn", "pnpm", "bun"] : [tool];
+
+    for (const t of tools) {
+      try {
+        const result = await this.executor.execute(t, {
+          cwd: dir,
+          args: ["--version"],
+          timeout: 5000,
+        });
+        if (result.success) {
+          versions[t] = result.stdout.trim().replace(/^v/, "");
+        }
+      } catch {
+        // Tool not available
+        versions[t] = "not installed";
+      }
+    }
+
+    const output = Object.entries(versions)
+      .map(([k, v]) => `${k}: ${v}`)
+      .join("\n");
+
+    const toolResult: NodejsToolResult = {
+      success: true,
+      output,
+      command: `version check for ${tool}`,
+      duration: 0,
+    };
+
+    // Cache result
+    this.cacheManager.set("commandAvailability", cacheKey, toolResult);
+
+    return toolResult;
+  }
+
+  /**
+   * Run security audit
+   */
+  async runSecurity(args: NodejsSecurityArgs): Promise<NodejsToolResult> {
+    const dir = args.directory || this.projectRoot;
+    const projectInfo = await this.getProjectInfo(dir);
+    const packageManager = projectInfo.packageManager || "npm";
+
+    const commandArgs: string[] = ["audit"];
+
+    // Add fix flag if requested
+    if (args.fix) {
+      commandArgs.push("fix");
+    }
+
+    // Add production flag
+    if (args.production) {
+      commandArgs.push("--production");
+    }
+
+    // Add JSON format for better parsing
+    if (!args.fix) {
+      commandArgs.push("--json");
+    }
+
+    // Add additional arguments
+    if (args.args) {
+      commandArgs.push(...args.args);
+    }
+
+    const result = await this.executor.execute(packageManager, {
+      cwd: dir,
+      args: commandArgs,
+      timeout: args.timeout || 120000,
+    });
+
+    return this.processNodejsResult(
+      result,
+      `${packageManager} ${commandArgs.join(" ")}`,
+    );
+  }
+
+  /**
+   * Run build command
+   */
+  async runBuild(args: NodejsBuildArgs): Promise<NodejsToolResult> {
+    const dir = args.directory || this.projectRoot;
+    const projectInfo = await this.getProjectInfo(dir);
+    const packageManager = projectInfo.packageManager || "npm";
+
+    const scriptName = args.script || "build";
+    const commandArgs: string[] = ["run", scriptName];
+
+    // Add additional arguments
+    if (args.args) {
+      commandArgs.push("--");
+      commandArgs.push(...args.args);
+    }
+
+    // Add production flag for some build tools
+    if (args.production && !args.args?.includes("--mode")) {
+      commandArgs.push("--", "--mode", "production");
+    }
+
+    // Add watch flag
+    if (args.watch) {
+      commandArgs.push("--", "--watch");
+    }
+
+    const result = await this.executor.execute(packageManager, {
+      cwd: dir,
+      args: commandArgs,
+      timeout: args.timeout || 600000, // 10 minutes for builds
+    });
+
+    return this.processNodejsResult(
+      result,
+      `${packageManager} ${commandArgs.join(" ")}`,
+    );
+  }
+
+  /**
+   * Run or list npm scripts with caching (5min TTL)
+   */
+  async runScripts(args: NodejsScriptsArgs): Promise<NodejsToolResult> {
+    const dir = args.directory || this.projectRoot;
+
+    // If listing scripts, use cached project info
+    if (args.list) {
+      const projectInfo = await this.getProjectInfo(dir);
+      const output = projectInfo.scripts.length > 0
+        ? `Available scripts:\n${projectInfo.scripts.map(s => `  - ${s}`).join("\n")}`
+        : "No scripts found in package.json";
+
+      return {
+        success: true,
+        output,
+        command: "list scripts",
+        duration: 0,
+      };
+    }
+
+    // Run specific script
+    if (!args.script) {
+      return {
+        success: false,
+        output: "",
+        error: "No script specified. Use 'list: true' to see available scripts or provide a script name.",
+        command: "run script",
+        duration: 0,
+        suggestions: ["Specify a script name", "Use list: true to see available scripts"],
+      };
+    }
+
+    const projectInfo = await this.getProjectInfo(dir);
+    const packageManager = projectInfo.packageManager || "npm";
+
+    const commandArgs: string[] = ["run", args.script];
+
+    // Add additional arguments
+    if (args.args) {
+      commandArgs.push("--");
+      commandArgs.push(...args.args);
+    }
+
+    const result = await this.executor.execute(packageManager, {
+      cwd: dir,
+      args: commandArgs,
+      timeout: args.timeout || 300000, // 5 minutes default
+    });
+
+    return this.processNodejsResult(
+      result,
+      `${packageManager} ${commandArgs.join(" ")}`,
+    );
+  }
+
+  /**
+   * Run benchmarks
+   */
+  async runBenchmark(args: NodejsBenchmarkArgs): Promise<NodejsToolResult> {
+    const dir = args.directory || this.projectRoot;
+    const pattern = args.pattern || "**/*.bench.{ts,js}";
+
+    // Check for common benchmark tools
+    const projectInfo = await this.getProjectInfo(dir);
+    const hasBenchmark = projectInfo.devDependencies.includes("benchmark") ||
+      projectInfo.devDependencies.includes("vitest") ||
+      projectInfo.devDependencies.includes("tinybench");
+
+    if (!hasBenchmark) {
+      return {
+        success: false,
+        output: "",
+        error: "No benchmark tool detected",
+        command: "benchmark",
+        duration: 0,
+        suggestions: [
+          "Install benchmark: npm install --save-dev benchmark",
+          "Or use Vitest bench: npm install --save-dev vitest",
+          "Or use tinybench: npm install --save-dev tinybench",
+        ],
+      };
+    }
+
+    // Try Vitest benchmark first
+    if (projectInfo.devDependencies.includes("vitest")) {
+      const commandArgs: string[] = ["bench"];
+      if (pattern) commandArgs.push(pattern);
+      if (args.args) commandArgs.push(...args.args);
+
+      const result = await this.executor.execute("vitest", {
+        cwd: dir,
+        args: commandArgs,
+        timeout: args.timeout || 300000,
+      });
+
+      return this.processNodejsResult(
+        result,
+        `vitest ${commandArgs.join(" ")}`,
+      );
+    }
+
+    // Fallback to npm run bench script
+    const commandArgs: string[] = ["run", "bench"];
+    if (args.args) {
+      commandArgs.push("--");
+      commandArgs.push(...args.args);
+    }
+
+    const packageManager = projectInfo.packageManager || "npm";
+    const result = await this.executor.execute(packageManager, {
+      cwd: dir,
+      args: commandArgs,
+      timeout: args.timeout || 300000,
+    });
+
+    return this.processNodejsResult(
+      result,
+      `${packageManager} ${commandArgs.join(" ")}`,
+    );
+  }
+
+  /**
    * Validate Node.js tool arguments
    */
   static validateArgs(args: unknown): NodejsToolArgs {
@@ -834,5 +1138,40 @@ export class NodejsTools {
    */
   static validateInstallDepsArgs(args: unknown): NodejsInstallDepsArgs {
     return NodejsInstallDepsArgsSchema.parse(args);
+  }
+
+  /**
+   * Validate Node.js version arguments
+   */
+  static validateVersionArgs(args: unknown): NodejsVersionArgs {
+    return NodejsVersionArgsSchema.parse(args);
+  }
+
+  /**
+   * Validate Node.js security arguments
+   */
+  static validateSecurityArgs(args: unknown): NodejsSecurityArgs {
+    return NodejsSecurityArgsSchema.parse(args);
+  }
+
+  /**
+   * Validate Node.js build arguments
+   */
+  static validateBuildArgs(args: unknown): NodejsBuildArgs {
+    return NodejsBuildArgsSchema.parse(args);
+  }
+
+  /**
+   * Validate Node.js scripts arguments
+   */
+  static validateScriptsArgs(args: unknown): NodejsScriptsArgs {
+    return NodejsScriptsArgsSchema.parse(args);
+  }
+
+  /**
+   * Validate Node.js benchmark arguments
+   */
+  static validateBenchmarkArgs(args: unknown): NodejsBenchmarkArgs {
+    return NodejsBenchmarkArgsSchema.parse(args);
   }
 }
