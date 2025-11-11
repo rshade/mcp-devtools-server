@@ -1289,12 +1289,10 @@ class MCPDevToolsServer {
             },
           },
         },
-
-        // Phase 3: Specialized Node.js tools
         {
           name: "nodejs_update_deps",
           description:
-            "Update Node.js dependencies with npm, yarn, pnpm, or bun",
+            "Update Node.js dependencies with support for different package managers",
           inputSchema: {
             type: "object",
             properties: {
@@ -1304,7 +1302,7 @@ class MCPDevToolsServer {
               },
               interactive: {
                 type: "boolean",
-                description: "Interactive update mode (yarn/pnpm)",
+                description: "Interactive update mode",
               },
               latest: {
                 type: "boolean",
@@ -1334,7 +1332,7 @@ class MCPDevToolsServer {
         {
           name: "nodejs_compatibility",
           description:
-            "Check Node.js version compatibility with caching (2hr TTL)",
+            "Check Node.js version compatibility and validate against package.json engines field",
           inputSchema: {
             type: "object",
             properties: {
@@ -1348,11 +1346,11 @@ class MCPDevToolsServer {
               },
               checkEngines: {
                 type: "boolean",
-                description: "Check package.json engines field (default: true)",
+                description: "Check package.json engines field",
               },
               checkDeps: {
                 type: "boolean",
-                description: "Check dependency compatibility (default: true)",
+                description: "Check dependency compatibility",
               },
             },
           },
@@ -1360,7 +1358,7 @@ class MCPDevToolsServer {
         {
           name: "nodejs_profile",
           description:
-            "Run performance profiling with Node.js built-in profiler",
+            "Profile Node.js application performance using built-in Node.js profiler",
           inputSchema: {
             type: "object",
             properties: {
