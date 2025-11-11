@@ -1173,7 +1173,8 @@ class MCPDevToolsServer {
         },
         {
           name: "nodejs_build",
-          description: "Run build script with package manager (npm/yarn/pnpm/bun)",
+          description:
+            "Run build script with package manager (npm/yarn/pnpm/bun)",
           inputSchema: {
             type: "object",
             properties: {
@@ -1207,8 +1208,7 @@ class MCPDevToolsServer {
         },
         {
           name: "nodejs_scripts",
-          description:
-            "Run or list npm scripts from package.json with caching",
+          description: "Run or list npm scripts from package.json with caching",
           inputSchema: {
             type: "object",
             properties: {
@@ -1249,11 +1249,123 @@ class MCPDevToolsServer {
               },
               pattern: {
                 type: "string",
-                description: "Benchmark file pattern (default: **/*.bench.{ts,js})",
+                description:
+                  "Benchmark file pattern (default: **/*.bench.{ts,js})",
               },
               iterations: {
                 type: "number",
                 description: "Number of iterations",
+              },
+              args: {
+                type: "array",
+                items: { type: "string" },
+                description: "Additional arguments",
+              },
+              timeout: {
+                type: "number",
+                description: "Command timeout in milliseconds",
+              },
+            },
+          },
+        },
+
+        // Phase 3: Specialized Node.js tools
+        {
+          name: "nodejs_update_deps",
+          description:
+            "Update Node.js dependencies with npm, yarn, pnpm, or bun",
+          inputSchema: {
+            type: "object",
+            properties: {
+              directory: {
+                type: "string",
+                description: "Working directory",
+              },
+              interactive: {
+                type: "boolean",
+                description: "Interactive update mode (yarn/pnpm)",
+              },
+              latest: {
+                type: "boolean",
+                description: "Update to latest versions (ignore semver)",
+              },
+              packages: {
+                type: "array",
+                items: { type: "string" },
+                description: "Specific packages to update",
+              },
+              dev: {
+                type: "boolean",
+                description: "Update devDependencies only",
+              },
+              args: {
+                type: "array",
+                items: { type: "string" },
+                description: "Additional arguments",
+              },
+              timeout: {
+                type: "number",
+                description: "Command timeout in milliseconds",
+              },
+            },
+          },
+        },
+        {
+          name: "nodejs_compatibility",
+          description:
+            "Check Node.js version compatibility with caching (2hr TTL)",
+          inputSchema: {
+            type: "object",
+            properties: {
+              directory: {
+                type: "string",
+                description: "Working directory",
+              },
+              nodeVersion: {
+                type: "string",
+                description: "Target Node.js version (e.g., '18.0.0')",
+              },
+              checkEngines: {
+                type: "boolean",
+                description: "Check package.json engines field (default: true)",
+              },
+              checkDeps: {
+                type: "boolean",
+                description: "Check dependency compatibility (default: true)",
+              },
+            },
+          },
+        },
+        {
+          name: "nodejs_profile",
+          description:
+            "Run performance profiling with Node.js built-in profiler",
+          inputSchema: {
+            type: "object",
+            properties: {
+              directory: {
+                type: "string",
+                description: "Working directory",
+              },
+              script: {
+                type: "string",
+                description: "Script to profile (default: start)",
+              },
+              duration: {
+                type: "number",
+                description: "Profile duration in seconds",
+              },
+              cpuProfile: {
+                type: "boolean",
+                description: "Generate CPU profile",
+              },
+              heapProfile: {
+                type: "boolean",
+                description: "Generate heap profile",
+              },
+              outputDir: {
+                type: "string",
+                description: "Output directory for profile files",
               },
               args: {
                 type: "array",
@@ -2244,6 +2356,48 @@ class MCPDevToolsServer {
           case "nodejs_benchmark": {
             const validatedArgs = NodejsTools.validateBenchmarkArgs(args);
             const result = await this.nodejsTools.runBenchmark(validatedArgs);
+            return {
+              content: [
+                {
+                  type: "text",
+                  text: this.formatNodejsToolResult(result),
+                },
+              ],
+            };
+          }
+
+          // Phase 3: Specialized Node.js tools
+          case "nodejs_update_deps": {
+            const validatedArgs = NodejsTools.validateUpdateDepsArgs(args);
+            const result =
+              await this.nodejsTools.updateDependencies(validatedArgs);
+            return {
+              content: [
+                {
+                  type: "text",
+                  text: this.formatNodejsToolResult(result),
+                },
+              ],
+            };
+          }
+
+          case "nodejs_compatibility": {
+            const validatedArgs = NodejsTools.validateCompatibilityArgs(args);
+            const result =
+              await this.nodejsTools.checkCompatibility(validatedArgs);
+            return {
+              content: [
+                {
+                  type: "text",
+                  text: this.formatNodejsToolResult(result),
+                },
+              ],
+            };
+          }
+
+          case "nodejs_profile": {
+            const validatedArgs = NodejsTools.validateProfileArgs(args);
+            const result = await this.nodejsTools.runProfile(validatedArgs);
             return {
               content: [
                 {

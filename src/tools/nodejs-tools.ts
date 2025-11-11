@@ -5,6 +5,7 @@ import * as fs from "fs/promises";
 import { getCacheManager } from "../utils/cache-manager.js";
 import { createHash } from "crypto";
 import { FileScanner } from "../utils/file-scanner.js";
+import * as semver from "semver";
 
 // Schema for Node.js tool arguments
 const NodejsToolArgsSchema = z.object({
@@ -100,7 +101,10 @@ const NodejsSecurityArgsSchema = z.object({
   directory: z.string().optional().describe("Working directory"),
   audit: z.boolean().optional().describe("Run npm/yarn audit"),
   fix: z.boolean().optional().describe("Automatically fix vulnerabilities"),
-  production: z.boolean().optional().describe("Only check production dependencies"),
+  production: z
+    .boolean()
+    .optional()
+    .describe("Only check production dependencies"),
   args: z.array(z.string()).optional().describe("Additional arguments"),
   timeout: z.number().optional().describe("Command timeout in milliseconds"),
 });
@@ -130,6 +134,50 @@ const NodejsBenchmarkArgsSchema = z.object({
   timeout: z.number().optional().describe("Command timeout in milliseconds"),
 });
 
+// Phase 3 schemas
+const NodejsUpdateDepsArgsSchema = z.object({
+  directory: z.string().optional().describe("Working directory"),
+  interactive: z.boolean().optional().describe("Interactive update mode"),
+  latest: z
+    .boolean()
+    .optional()
+    .describe("Update to latest versions (ignore semver)"),
+  packages: z
+    .array(z.string())
+    .optional()
+    .describe("Specific packages to update"),
+  dev: z.boolean().optional().describe("Update devDependencies only"),
+  args: z.array(z.string()).optional().describe("Additional arguments"),
+  timeout: z.number().optional().describe("Command timeout in milliseconds"),
+});
+
+const NodejsCompatibilityArgsSchema = z.object({
+  directory: z.string().optional().describe("Working directory"),
+  nodeVersion: z
+    .string()
+    .optional()
+    .describe("Target Node.js version (e.g., '18.0.0')"),
+  checkEngines: z
+    .boolean()
+    .optional()
+    .describe("Check package.json engines field"),
+  checkDeps: z.boolean().optional().describe("Check dependency compatibility"),
+});
+
+const NodejsProfileArgsSchema = z.object({
+  directory: z.string().optional().describe("Working directory"),
+  script: z.string().optional().describe("Script to profile (default: start)"),
+  duration: z.number().optional().describe("Profile duration in seconds"),
+  cpuProfile: z.boolean().optional().describe("Generate CPU profile"),
+  heapProfile: z.boolean().optional().describe("Generate heap profile"),
+  outputDir: z
+    .string()
+    .optional()
+    .describe("Output directory for profile files"),
+  args: z.array(z.string()).optional().describe("Additional arguments"),
+  timeout: z.number().optional().describe("Command timeout in milliseconds"),
+});
+
 export type NodejsToolArgs = z.infer<typeof NodejsToolArgsSchema>;
 export type NodejsTestArgs = z.infer<typeof NodejsTestArgsSchema>;
 export type NodejsLintArgs = z.infer<typeof NodejsLintArgsSchema>;
@@ -141,6 +189,11 @@ export type NodejsSecurityArgs = z.infer<typeof NodejsSecurityArgsSchema>;
 export type NodejsBuildArgs = z.infer<typeof NodejsBuildArgsSchema>;
 export type NodejsScriptsArgs = z.infer<typeof NodejsScriptsArgsSchema>;
 export type NodejsBenchmarkArgs = z.infer<typeof NodejsBenchmarkArgsSchema>;
+export type NodejsUpdateDepsArgs = z.infer<typeof NodejsUpdateDepsArgsSchema>;
+export type NodejsCompatibilityArgs = z.infer<
+  typeof NodejsCompatibilityArgsSchema
+>;
+export type NodejsProfileArgs = z.infer<typeof NodejsProfileArgsSchema>;
 
 export interface NodejsToolResult {
   success: boolean;
@@ -850,7 +903,10 @@ export class NodejsTools {
     const tool = args.tool || "all";
 
     // Try cache first (1hr TTL)
-    const cacheKey = this.buildNodejsCacheKey("version", { directory: dir, tool });
+    const cacheKey = this.buildNodejsCacheKey("version", {
+      directory: dir,
+      tool,
+    });
     const cached = this.cacheManager.get<NodejsToolResult>(
       "commandAvailability",
       cacheKey,
@@ -860,7 +916,8 @@ export class NodejsTools {
     }
 
     const versions: Record<string, string> = {};
-    const tools = tool === "all" ? ["node", "npm", "yarn", "pnpm", "bun"] : [tool];
+    const tools =
+      tool === "all" ? ["node", "npm", "yarn", "pnpm", "bun"] : [tool];
 
     for (const t of tools) {
       try {
@@ -985,9 +1042,10 @@ export class NodejsTools {
     // If listing scripts, use cached project info
     if (args.list) {
       const projectInfo = await this.getProjectInfo(dir);
-      const output = projectInfo.scripts.length > 0
-        ? `Available scripts:\n${projectInfo.scripts.map(s => `  - ${s}`).join("\n")}`
-        : "No scripts found in package.json";
+      const output =
+        projectInfo.scripts.length > 0
+          ? `Available scripts:\n${projectInfo.scripts.map((s) => `  - ${s}`).join("\n")}`
+          : "No scripts found in package.json";
 
       return {
         success: true,
@@ -1002,10 +1060,14 @@ export class NodejsTools {
       return {
         success: false,
         output: "",
-        error: "No script specified. Use 'list: true' to see available scripts or provide a script name.",
+        error:
+          "No script specified. Use 'list: true' to see available scripts or provide a script name.",
         command: "run script",
         duration: 0,
-        suggestions: ["Specify a script name", "Use list: true to see available scripts"],
+        suggestions: [
+          "Specify a script name",
+          "Use list: true to see available scripts",
+        ],
       };
     }
 
@@ -1041,7 +1103,8 @@ export class NodejsTools {
 
     // Check for common benchmark tools
     const projectInfo = await this.getProjectInfo(dir);
-    const hasBenchmark = projectInfo.devDependencies.includes("benchmark") ||
+    const hasBenchmark =
+      projectInfo.devDependencies.includes("benchmark") ||
       projectInfo.devDependencies.includes("vitest") ||
       projectInfo.devDependencies.includes("tinybench");
 
@@ -1096,6 +1159,311 @@ export class NodejsTools {
       result,
       `${packageManager} ${commandArgs.join(" ")}`,
     );
+  }
+
+  /**
+   * Update Node.js dependencies
+   */
+  async updateDependencies(
+    args: NodejsUpdateDepsArgs,
+  ): Promise<NodejsToolResult> {
+    const dir = args.directory || this.projectRoot;
+    const projectInfo = await this.getProjectInfo(dir);
+    const packageManager = projectInfo.packageManager || "npm";
+
+    const commandArgs: string[] = [];
+
+    // Different package managers have different update commands
+    switch (packageManager) {
+      case "npm":
+        commandArgs.push("update");
+        if (args.latest) {
+          // npm-check-updates for latest versions
+          return {
+            success: false,
+            output: "",
+            error:
+              "For latest updates with npm, use: npx npm-check-updates -u && npm install",
+            command: "npm update",
+            duration: 0,
+            suggestions: [
+              "Install npm-check-updates: npm install -g npm-check-updates",
+              "Run: npx npm-check-updates -u",
+              "Then: npm install",
+            ],
+          };
+        }
+        break;
+
+      case "yarn":
+        commandArgs.push("upgrade");
+        if (args.interactive) commandArgs.push("--interactive");
+        if (args.latest) commandArgs.push("--latest");
+        break;
+
+      case "pnpm":
+        commandArgs.push("update");
+        if (args.interactive) commandArgs.push("--interactive");
+        if (args.latest) commandArgs.push("--latest");
+        break;
+
+      case "bun":
+        commandArgs.push("update");
+        if (args.latest) commandArgs.push("--latest");
+        break;
+    }
+
+    // Add specific packages
+    if (args.packages && args.packages.length > 0) {
+      commandArgs.push(...args.packages);
+    }
+
+    // Add dev flag
+    if (args.dev) {
+      if (packageManager === "npm") {
+        commandArgs.push("--save-dev");
+      } else {
+        commandArgs.push("--dev");
+      }
+    }
+
+    // Add additional arguments
+    if (args.args) {
+      commandArgs.push(...args.args);
+    }
+
+    const result = await this.executor.execute(packageManager, {
+      cwd: dir,
+      args: commandArgs,
+      timeout: args.timeout || 300000, // 5 minutes default
+    });
+
+    return this.processNodejsResult(
+      result,
+      `${packageManager} ${commandArgs.join(" ")}`,
+    );
+  }
+
+  /**
+   * Check Node.js version compatibility with caching (2hr TTL)
+   */
+  async checkCompatibility(
+    args: NodejsCompatibilityArgs,
+  ): Promise<NodejsToolResult> {
+    const dir = args.directory || this.projectRoot;
+
+    // Try cache first (2hr TTL)
+    const cacheKey = this.buildNodejsCacheKey("compatibility", {
+      directory: dir,
+      nodeVersion: args.nodeVersion || "current",
+    });
+    const cached = this.cacheManager.get<NodejsToolResult>(
+      "nodeModules",
+      cacheKey,
+    );
+    if (cached) {
+      return cached;
+    }
+
+    const issues: string[] = [];
+    const warnings: string[] = [];
+
+    // Get current Node.js version
+    const nodeVersionResult = await this.executor.execute("node", {
+      cwd: dir,
+      args: ["--version"],
+    });
+    const currentVersion = nodeVersionResult.stdout.trim().replace(/^v/, "");
+
+    // Check package.json engines field
+    if (args.checkEngines !== false) {
+      try {
+        const packageJsonPath = path.join(dir, "package.json");
+        const packageJsonContent = await fs.readFile(packageJsonPath, "utf8");
+        const packageJson = JSON.parse(packageJsonContent);
+
+        if (packageJson.engines?.node) {
+          const engineSpec = packageJson.engines.node;
+          issues.push(`Engine requirement: Node.js ${engineSpec}`);
+          issues.push(`Current version: ${currentVersion}`);
+
+          // Use semver for proper version range checking
+          try {
+            const coercedVersion = semver.coerce(currentVersion);
+            if (coercedVersion && !semver.satisfies(coercedVersion, engineSpec)) {
+              warnings.push(
+                `⚠️  Node.js version ${currentVersion} does not satisfy requirement ${engineSpec}`,
+              );
+            }
+          } catch {
+            // If semver parsing fails, fall back to warning
+            warnings.push(
+              `⚠️  Could not validate Node.js version ${currentVersion} against requirement ${engineSpec}`,
+            );
+          }
+        } else {
+          warnings.push("No engines.node field in package.json");
+        }
+      } catch {
+        warnings.push("Could not read or parse package.json");
+      }
+    }
+
+    // Check dependencies compatibility (basic check)
+    if (args.checkDeps !== false) {
+      const projectInfo = await this.getProjectInfo(dir);
+      const allDeps = [
+        ...projectInfo.dependencies,
+        ...projectInfo.devDependencies,
+      ];
+
+      // Known Node.js 18+ only packages
+      const modernPackages = ["undici", "node:test", "node:crypto"];
+      const foundModern = allDeps.filter((dep) =>
+        modernPackages.some((mod) => dep.includes(mod)),
+      );
+
+      if (foundModern.length > 0 && currentVersion.startsWith("16")) {
+        warnings.push(
+          `⚠️  Found packages requiring Node.js 18+: ${foundModern.join(", ")}`,
+        );
+      }
+    }
+
+    const output = [
+      `Node.js Compatibility Check`,
+      `Current Version: ${currentVersion}`,
+      args.nodeVersion ? `Target Version: ${args.nodeVersion}` : "",
+      "",
+      issues.length > 0
+        ? `Issues:\n${issues.map((i) => `  - ${i}`).join("\n")}`
+        : "",
+      warnings.length > 0
+        ? `\nWarnings:\n${warnings.map((w) => `  - ${w}`).join("\n")}`
+        : "",
+      warnings.length === 0 && issues.length <= 2
+        ? "\n✅ No compatibility issues detected"
+        : "",
+    ]
+      .filter(Boolean)
+      .join("\n");
+
+    const toolResult: NodejsToolResult = {
+      success:
+        warnings.length === 0 || warnings.every((w) => !w.includes("⚠️")),
+      output,
+      command: "compatibility check",
+      duration: 0,
+      suggestions:
+        warnings.length > 0
+          ? [
+              "Consider upgrading Node.js version",
+              "Check package.json engines field",
+              "Review dependency compatibility",
+            ]
+          : [],
+    };
+
+    // Cache result
+    this.cacheManager.set("nodeModules", cacheKey, toolResult);
+
+    return toolResult;
+  }
+
+  /**
+   * Run performance profiling
+   */
+  async runProfile(args: NodejsProfileArgs): Promise<NodejsToolResult> {
+    const dir = args.directory || this.projectRoot;
+    const projectInfo = await this.getProjectInfo(dir);
+    const packageManager = projectInfo.packageManager || "npm";
+    const script = args.script || "start";
+    const outputDir = args.outputDir || path.join(dir, "profiles");
+
+    // Create output directory if it doesn't exist
+    try {
+      await fs.mkdir(outputDir, { recursive: true });
+    } catch (error) {
+      // Only ignore EEXIST errors (directory already exists)
+      // Re-throw other errors (permissions, invalid path, etc.)
+      if ((error as NodeJS.ErrnoException).code !== "EEXIST") {
+        throw new Error(
+          `Failed to create profile output directory ${outputDir}: ${(error as Error).message}`,
+        );
+      }
+    }
+
+    const commandArgs: string[] = [];
+    let profilerArgs: string[] = [];
+
+    // Build Node.js profiler arguments
+    if (args.cpuProfile) {
+      profilerArgs.push(`--cpu-prof`);
+      profilerArgs.push(`--cpu-prof-dir=${outputDir}`);
+    }
+
+    if (args.heapProfile) {
+      profilerArgs.push(`--heap-prof`);
+      profilerArgs.push(`--heap-prof-dir=${outputDir}`);
+    }
+
+    // If no profiling flags specified, default to CPU profiling
+    if (!args.cpuProfile && !args.heapProfile) {
+      profilerArgs.push(`--cpu-prof`);
+      profilerArgs.push(`--cpu-prof-dir=${outputDir}`);
+    }
+
+    // Use NODE_OPTIONS to pass profiler flags
+    const env = {
+      ...process.env,
+      NODE_OPTIONS:
+        `${process.env.NODE_OPTIONS || ""} ${profilerArgs.join(" ")}`.trim(),
+    };
+
+    // Build package manager command
+    commandArgs.push("run", script);
+    if (args.args) {
+      commandArgs.push("--");
+      commandArgs.push(...args.args);
+    }
+
+    // Run with timeout if duration specified
+    const timeout = args.duration
+      ? args.duration * 1000
+      : args.timeout || 60000; // 1 minute default
+
+    const result = await this.executor.execute(packageManager, {
+      cwd: dir,
+      args: commandArgs,
+      timeout,
+      env,
+    });
+
+    const output = [
+      `Performance Profile Generated`,
+      `Script: ${script}`,
+      `Output Directory: ${outputDir}`,
+      ``,
+      result.stdout || result.stderr,
+      ``,
+      `Profile files saved to: ${outputDir}`,
+      `View CPU profiles with Chrome DevTools (chrome://inspect)`,
+    ].join("\n");
+
+    return {
+      success: result.success,
+      output,
+      command: `${packageManager} ${commandArgs.join(" ")} (with profiling)`,
+      duration: result.duration,
+      error: result.error,
+      suggestions: result.success
+        ? [
+            `Open ${outputDir} to view profile files`,
+            "Import .cpuprofile files into Chrome DevTools",
+            "Use clinic.js for more advanced profiling: npm install -g clinic",
+          ]
+        : [],
+    };
   }
 
   /**
@@ -1173,5 +1541,26 @@ export class NodejsTools {
    */
   static validateBenchmarkArgs(args: unknown): NodejsBenchmarkArgs {
     return NodejsBenchmarkArgsSchema.parse(args);
+  }
+
+  /**
+   * Validate Node.js update dependencies arguments
+   */
+  static validateUpdateDepsArgs(args: unknown): NodejsUpdateDepsArgs {
+    return NodejsUpdateDepsArgsSchema.parse(args);
+  }
+
+  /**
+   * Validate Node.js compatibility arguments
+   */
+  static validateCompatibilityArgs(args: unknown): NodejsCompatibilityArgs {
+    return NodejsCompatibilityArgsSchema.parse(args);
+  }
+
+  /**
+   * Validate Node.js profile arguments
+   */
+  static validateProfileArgs(args: unknown): NodejsProfileArgs {
+    return NodejsProfileArgsSchema.parse(args);
   }
 }
