@@ -249,6 +249,30 @@ mcp-devtools detect_project
   - Fallback to npm run bench script
   - Configurable timeout (default: 5min)
 
+##### Phase 3: Specialized Tools
+
+- **nodejs_update_deps** - Dependency updates
+  - Package manager-specific update commands (npm, yarn, pnpm, bun)
+  - Interactive mode for yarn/pnpm
+  - Latest version updates (ignore semver constraints)
+  - Specific package updates or all dependencies
+  - DevDependencies-only updates
+
+- **nodejs_compatibility** - Compatibility checking with 2hr caching
+  - Check Node.js version against package.json engines field
+  - Validate current version meets requirements
+  - Detect Node.js 18+ only packages
+  - Dependency compatibility analysis
+  - Cached results for fast repeated checks
+
+- **nodejs_profile** - Performance profiling
+  - Node.js built-in profiler integration (--cpu-prof, --heap-prof)
+  - CPU and heap profiling support
+  - Configurable profile duration
+  - Automatic output directory creation
+  - Chrome DevTools compatible profiles (.cpuprofile files)
+  - Suggestions for advanced profiling with clinic.js
+
 #### General Linting
 
 - **markdownlint** - Run markdownlint on markdown files
