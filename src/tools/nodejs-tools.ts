@@ -1005,20 +1005,18 @@ export class NodejsTools {
     const scriptName = args.script || "build";
     const commandArgs: string[] = ["run", scriptName];
 
-    // Add additional arguments
-    if (args.args) {
-      commandArgs.push("--");
-      commandArgs.push(...args.args);
-    }
-
-    // Add production flag for some build tools
+    // Collect all extra arguments to pass to the build script
+    const extraArgs: string[] = [];
+    if (args.args) extraArgs.push(...args.args);
     if (args.production && !args.args?.includes("--mode")) {
-      commandArgs.push("--", "--mode", "production");
+      extraArgs.push("--mode", "production");
     }
+    if (args.watch) extraArgs.push("--watch");
 
-    // Add watch flag
-    if (args.watch) {
-      commandArgs.push("--", "--watch");
+    // Add all extra args with single double-dash separator
+    if (extraArgs.length > 0) {
+      commandArgs.push("--");
+      commandArgs.push(...extraArgs);
     }
 
     const result = await this.executor.execute(packageManager, {
@@ -1289,8 +1287,7 @@ export class NodejsTools {
 
           // Use semver for proper version range checking
           try {
-            const coercedVersion = semver.coerce(currentVersion);
-            if (coercedVersion && !semver.satisfies(coercedVersion, engineSpec)) {
+            if (!semver.satisfies(currentVersion, engineSpec)) {
               warnings.push(
                 `⚠️  Node.js version ${currentVersion} does not satisfy requirement ${engineSpec}`,
               );
@@ -1385,11 +1382,20 @@ export class NodejsTools {
       await fs.mkdir(outputDir, { recursive: true });
     } catch (error) {
       // Only ignore EEXIST errors (directory already exists)
-      // Re-throw other errors (permissions, invalid path, etc.)
+      // Return error for other errors (permissions, invalid path, etc.)
       if ((error as NodeJS.ErrnoException).code !== "EEXIST") {
-        throw new Error(
-          `Failed to create profile output directory ${outputDir}: ${(error as Error).message}`,
-        );
+        return {
+          success: false,
+          output: "",
+          error: `Failed to create profile output directory ${outputDir}: ${(error as Error).message}`,
+          command: "profile setup",
+          duration: 0,
+          suggestions: [
+            "Check directory permissions",
+            "Verify the output path is valid",
+            "Try using a different output directory with --outputDir",
+          ],
+        };
       }
     }
 
