@@ -1167,7 +1167,23 @@ export class NodejsTools {
   ): Promise<NodejsToolResult> {
     const dir = args.directory || this.projectRoot;
     const projectInfo = await this.getProjectInfo(dir);
-    const packageManager = projectInfo.packageManager || "npm";
+
+    if (!projectInfo.packageManager) {
+      return {
+        success: false,
+        output: "",
+        error: "Could not detect package manager. Please ensure package.json and lockfile exist.",
+        command: "update dependencies",
+        duration: 0,
+        suggestions: [
+          "Check that package.json exists in the project directory",
+          "Ensure you have a lockfile (package-lock.json, yarn.lock, pnpm-lock.yaml, or bun.lockb)",
+          "Try running the install command first to generate a lockfile",
+        ],
+      };
+    }
+
+    const packageManager = projectInfo.packageManager;
 
     const commandArgs: string[] = [];
 
@@ -1254,6 +1270,8 @@ export class NodejsTools {
     const cacheKey = this.buildNodejsCacheKey("compatibility", {
       directory: dir,
       nodeVersion: args.nodeVersion || "current",
+      checkEngines: args.checkEngines ?? true,
+      checkDeps: args.checkDeps ?? true,
     });
     const cached = this.cacheManager.get<NodejsToolResult>(
       "nodeModules",
@@ -1372,6 +1390,22 @@ export class NodejsTools {
    */
   async runProfile(args: NodejsProfileArgs): Promise<NodejsToolResult> {
     const dir = args.directory || this.projectRoot;
+
+    // Validate duration parameter if provided
+    if (args.duration !== undefined && args.duration <= 0) {
+      return {
+        success: false,
+        output: "",
+        error: `Invalid duration: ${args.duration}. Duration must be a positive number (in seconds).`,
+        command: "profile setup",
+        duration: 0,
+        suggestions: [
+          "Provide a positive duration value (e.g., duration: 30 for 30 seconds)",
+          "Omit the duration parameter to use the default timeout (60 seconds)",
+        ],
+      };
+    }
+
     const projectInfo = await this.getProjectInfo(dir);
     const packageManager = projectInfo.packageManager || "npm";
     const script = args.script || "start";
@@ -1420,8 +1454,12 @@ export class NodejsTools {
     }
 
     // Use NODE_OPTIONS to pass profiler flags
-    const env = {
-      ...process.env,
+    const env: Record<string, string> = {
+      ...(Object.fromEntries(
+        Object.entries(process.env).filter(
+          ([, v]) => v !== undefined,
+        ) as [string, string][],
+      ) as Record<string, string>),
       NODE_OPTIONS:
         `${process.env.NODE_OPTIONS || ""} ${profilerArgs.join(" ")}`.trim(),
     };
