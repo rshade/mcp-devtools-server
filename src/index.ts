@@ -113,10 +113,19 @@ class MCPDevToolsServer {
   private pluginManager!: PluginManager;
 
   constructor() {
-    this.instructions = readFileSync(
-      path.join(__dirname, "instructions.md"),
-      "utf-8",
-    );
+    // Load system prompt instructions with graceful fallback
+    try {
+      this.instructions = readFileSync(
+        path.join(__dirname, "instructions.md"),
+        "utf-8",
+      );
+    } catch (error) {
+      logger.error("Failed to load instructions.md:", error);
+      // Provide minimal fallback instructions to ensure server can still start
+      this.instructions =
+        "# mcp-devtools\n\nDevelopment tools MCP server with 50+ tools for make, linting, testing, Go, Node.js, Git workflows, and smart analysis.\n\nUse `project_status` to see available tools.";
+    }
+
     this.server = new Server(
       {
         name: SERVER_NAME,
