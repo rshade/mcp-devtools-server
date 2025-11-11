@@ -794,6 +794,25 @@ Create a `.mcp-devtools.json` file in your project root:
 }
 ```
 
+### System Prompt Instructions
+
+The MCP server automatically provides guidance to Claude via system prompt instructions (`src/instructions.md`).
+These instructions help Claude:
+
+- **Auto-discover** the 50+ available mcp-devtools tools
+- **Prefer MCP tools** over built-in Bash commands for development tasks
+- **Use onboarding wizard** proactively when no configuration exists
+- **Follow common workflows** for linting, testing, PR preparation, and error analysis
+
+**Key behaviors enabled:**
+
+- When starting work, Claude checks for `.mcp-devtools.json` and offers to run `onboarding_wizard` if missing
+- For linting, Claude uses `make_lint`, `eslint`, etc. instead of `Bash(make lint)`
+- For error handling, Claude uses `analyze_command` for automatic failure analysis
+- Claude runs `project_status` before starting work to understand available tooling
+
+The instructions are token-efficient (< 100 lines) and focus on operational guidance rather than marketing content.
+
 ## Usage Examples
 
 ### Basic Commands

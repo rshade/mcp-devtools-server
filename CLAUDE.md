@@ -114,6 +114,38 @@ npm run clean
 **CRITICAL**: If you edit ANY markdown file (*.md), you MUST run `make lint-md` before considering the
 task complete. Do not claim success until all linting passes.
 
+## Dogfooding Principle
+
+**When working on the mcp-devtools codebase itself, always prioritize using MCP tools over built-in Bash commands.**
+
+This validates that:
+
+- Tools are actually usable in real-world scenarios
+- Error messages are helpful and actionable
+- Tool behavior matches expectations
+- Performance is acceptable
+- API design is intuitive
+
+**Examples:**
+
+- Use `make_lint` instead of `Bash(make lint)`
+- Use `make_test` instead of `Bash(npm test)`
+- Use `analyze_command` for commands that might fail
+- Use `markdownlint` instead of `Bash(npx markdownlint-cli ...)`
+
+**Benefits:**
+
+- Immediate feedback on usability issues
+- Dogfooding catches edge cases early
+- Ensures tools provide value to users
+- Validates system prompt instructions work correctly
+
+**Reporting Issues:**
+
+- If a tool is hard to use, improve it
+- If an error message is unclear, fix it
+- If you find yourself using Bash instead, consider why
+
 ## Test Quality Standards
 
 **CRITICAL**: We are burning cycles fixing low-quality tests. Tests MUST be:
