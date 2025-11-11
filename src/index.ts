@@ -1,5 +1,7 @@
 #!/usr/bin/env node
-
+import { readFileSync } from "fs";
+import { fileURLToPath } from "url";
+import { dirname } from "path";
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import {
@@ -7,6 +9,10 @@ import {
   ListToolsRequestSchema,
 } from "@modelcontextprotocol/sdk/types.js";
 import winston from "winston";
+
+// ES module __dirname equivalent
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 // Import tool classes
 import {
@@ -93,6 +99,7 @@ async function loadConfig(): Promise<Record<string, unknown>> {
 
 class MCPDevToolsServer {
   private server: Server;
+  private instructions: string;
   private makeTools: MakeTools;
   private lintTools: LintTools;
   private testTools: TestTools;
@@ -106,6 +113,19 @@ class MCPDevToolsServer {
   private pluginManager!: PluginManager;
 
   constructor() {
+    // Load system prompt instructions with graceful fallback
+    try {
+      this.instructions = readFileSync(
+        path.join(__dirname, "instructions.md"),
+        "utf-8",
+      );
+    } catch (error) {
+      logger.error("Failed to load instructions.md:", error);
+      // Provide minimal fallback instructions to ensure server can still start
+      this.instructions =
+        "# mcp-devtools\n\nDevelopment tools MCP server with 50+ tools for make, linting, testing, Go, Node.js, Git workflows, and smart analysis.\n\nUse `project_status` to see available tools.";
+    }
+
     this.server = new Server(
       {
         name: SERVER_NAME,
@@ -115,6 +135,7 @@ class MCPDevToolsServer {
         capabilities: {
           tools: {},
         },
+        instructions: this.instructions,
       },
     );
 
