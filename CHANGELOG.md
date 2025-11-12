@@ -5,6 +5,39 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 1.0.0 (2025-11-12)
+
+
+### ⚠ BREAKING CHANGES
+
+* None - backward compatible feature addition
+
+### Features
+
+* add AI-powered smart suggestions for development workflows ([#62](https://github.com/rshade/mcp-devtools-server/issues/62)) ([d35cad5](https://github.com/rshade/mcp-devtools-server/commit/d35cad5b8c387e6e76ac069928b11e1d06e8f1e1)), closes [#5](https://github.com/rshade/mcp-devtools-server/issues/5)
+* add extensible plugin architecture with git-spice reference plugin ([#79](https://github.com/rshade/mcp-devtools-server/issues/79)) ([0a32f19](https://github.com/rshade/mcp-devtools-server/commit/0a32f193fd6df1c375fc2541ec90c96a08b4610e)), closes [#2](https://github.com/rshade/mcp-devtools-server/issues/2) [#58](https://github.com/rshade/mcp-devtools-server/issues/58)
+* add Makefile as thin wrapper around npm scripts ([#94](https://github.com/rshade/mcp-devtools-server/issues/94)) ([f265d30](https://github.com/rshade/mcp-devtools-server/commit/f265d30d9623da0b6980be1dbfb8b14c9139cdb4)), closes [#66](https://github.com/rshade/mcp-devtools-server/issues/66)
+* **cache:** complete Phase 3-4 intelligent caching system ([#124](https://github.com/rshade/mcp-devtools-server/issues/124)) ([08aa2c5](https://github.com/rshade/mcp-devtools-server/commit/08aa2c53d32585e320f9718d58871bd32a4d3afb))
+* **cache:** complete Phase 4 with comprehensive tests and LintTools integration ([#149](https://github.com/rshade/mcp-devtools-server/issues/149)) ([dd90781](https://github.com/rshade/mcp-devtools-server/commit/dd907819d83eb2611b2b2d3407aa0f8a2cdcdd3b))
+* configure Husky pre-commit hooks to prevent broken commits ([#103](https://github.com/rshade/mcp-devtools-server/issues/103)) ([42a1c34](https://github.com/rshade/mcp-devtools-server/commit/42a1c344aa0fe4b8494214b9814a59686de8c454))
+* **docker:** add comprehensive Docker support for containerized deployment ([#125](https://github.com/rshade/mcp-devtools-server/issues/125)) ([b95b671](https://github.com/rshade/mcp-devtools-server/commit/b95b671cae2455ab1d75f41e72b75d4fc435fcb4))
+* enhance Go language support with P0 tools and improved detection ([#31](https://github.com/rshade/mcp-devtools-server/issues/31)) ([39f305f](https://github.com/rshade/mcp-devtools-server/commit/39f305f0b79456f2c4b6d97b7f83e4dd4bd2d73d))
+* implement smart suggestions caching and multi-language support ([#89](https://github.com/rshade/mcp-devtools-server/issues/89)) ([729381c](https://github.com/rshade/mcp-devtools-server/commit/729381c22f3e8467c7ba600a440564b564c51665))
+* **mvp:** prepare MVP 0.0.1 release with comprehensive Node.js roadmap ([#170](https://github.com/rshade/mcp-devtools-server/issues/170)) ([79e6f50](https://github.com/rshade/mcp-devtools-server/commit/79e6f50f4b157c3847b4dcaeeb91c3e6db81d68f))
+* **nodejs:** add Phase 1 Node.js language support with 6 core tools ([#171](https://github.com/rshade/mcp-devtools-server/issues/171)) ([ccd6193](https://github.com/rshade/mcp-devtools-server/commit/ccd619360256df04f87083244d6f5ff27c978e9b))
+* **nodejs:** add Phase 2 Node.js advanced tools (5 new tools) ([#172](https://github.com/rshade/mcp-devtools-server/issues/172)) ([cff1be9](https://github.com/rshade/mcp-devtools-server/commit/cff1be9d040f400588c98536a94e63efc7e685df))
+* **nodejs:** add Phase 3 Node.js specialized tools (3 new tools) ([#179](https://github.com/rshade/mcp-devtools-server/issues/179)) ([0239e45](https://github.com/rshade/mcp-devtools-server/commit/0239e45ffb31d7286a2ba78f54c5e250487c1ddf))
+* **onboarding:** implement zero-configuration onboarding wizard ([#75](https://github.com/rshade/mcp-devtools-server/issues/75)) ([39840af](https://github.com/rshade/mcp-devtools-server/commit/39840afa0880e062409f1366c60055dd54648297))
+* **plugins:** complete plugin architecture with multi-location discovery and documentation ([#95](https://github.com/rshade/mcp-devtools-server/issues/95)) ([865e72c](https://github.com/rshade/mcp-devtools-server/commit/865e72cb8f7d0bf4c446461de0a5ca6c53db465d))
+* **server:** add system prompt instructions for tool discoverability ([#176](https://github.com/rshade/mcp-devtools-server/issues/176)) ([8ddc70b](https://github.com/rshade/mcp-devtools-server/commit/8ddc70b12d132c5787b2b1ca8a52223cda5f8864))
+
+
+### Bug Fixes
+
+* **ci:** correct docker.yml YAML syntax and release-please config ([#187](https://github.com/rshade/mcp-devtools-server/issues/187)) ([7e4002b](https://github.com/rshade/mcp-devtools-server/commit/7e4002b54e21d17afd94077dba0e48d60831c97c))
+* **deps:** update dependency execa to v9 ([#17](https://github.com/rshade/mcp-devtools-server/issues/17)) ([3e4cdb9](https://github.com/rshade/mcp-devtools-server/commit/3e4cdb940063c6310e959b2510b3f09e4151880b))
+* **deps:** update dependency glob to v11 ([#18](https://github.com/rshade/mcp-devtools-server/issues/18)) ([58f3a48](https://github.com/rshade/mcp-devtools-server/commit/58f3a48cbbe502a686a22107bab0b20bb88cb909))
+
 ## [Unreleased]
 
 ### Added
