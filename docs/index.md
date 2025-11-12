@@ -18,8 +18,8 @@ hero:
 
 features:
   - icon: 🛠️
-    title: 40+ Development Tools
-    details: Go, Make, Git, Linting, Testing, and more - all through a unified MCP interface
+    title: 50+ Development Tools
+    details: Go (13), Node.js (14), Make, Git, Linting, Testing, and more - all through a unified MCP interface
   - icon: 🤖
     title: AI-Powered Smart Suggestions
     details: Intelligent failure analysis with actionable recommendations for fixing issues
@@ -33,8 +33,8 @@ features:
     title: Secure Execution
     details: Command validation and sandboxing for safe tool execution
   - icon: 🎯
-    title: Go-First Design
-    details: Comprehensive Go language support as highest priority
+    title: Multi-Language Support
+    details: Comprehensive Go (13 tools) and Node.js (14 tools) language support for modern development
 ---
 
 ## Quick Example

@@ -505,18 +505,15 @@ When working with Go tools:
 
 When working with Node.js tools (`src/tools/nodejs-tools.ts`):
 
-1. **Phase 1 Complete** (6 core tools) - Available in production:
-   - `nodejs_project_info` - Project analysis with framework/package manager detection
-   - `nodejs_test` - Test execution (Jest, Vitest, Mocha)
-   - `nodejs_lint` - ESLint integration
-   - `nodejs_format` - Prettier formatting
-   - `nodejs_check_types` - TypeScript type checking
-   - `nodejs_install_deps` - Dependency installation (npm/yarn/pnpm/bun)
+1. **All Phases Complete** (14 tools total) - Epic #155 ✅:
+   - **Phase 1 - Core Tools:** nodejs_project_info, nodejs_test, nodejs_lint, nodejs_format, nodejs_check_types, nodejs_install_deps
+   - **Phase 2 - Advanced Tools:** nodejs_version, nodejs_security, nodejs_build, nodejs_scripts, nodejs_benchmark
+   - **Phase 3 - Specialized Tools:** nodejs_update_deps, nodejs_compatibility, nodejs_profile
 
 2. **Architecture Patterns**:
    - Follows Go tools pattern exactly (same structure, caching, error handling)
    - All commands must be in `ALLOWED_COMMANDS` in `shell-executor.ts`
-   - Uses `nodeModules` cache namespace (5min TTL)
+   - Uses `nodeModules` cache namespace (5min TTL) and `commandAvailability` (1hr TTL)
    - Auto-detects package manager from lockfiles (priority: bun → pnpm → yarn → npm)
    - Auto-detects test framework from devDependencies
 
@@ -535,16 +532,17 @@ When working with Node.js tools (`src/tools/nodejs-tools.ts`):
    - Missing test framework must return helpful suggestions
    - All errors should provide actionable next steps
 
-6. **Known Limitations** (to fix in future PRs):
-   - Test file discovery is stubbed (testFiles array empty)
-   - Coverage regex pattern only reliable for Jest
-   - Cache doesn't invalidate on package.json changes
-   - Glob patterns in Prettier may need shell quoting
+6. **Smart Caching** (4 tools with intelligent caching):
+   - nodejs_project_info: 5min TTL, invalidates on package.json changes
+   - nodejs_version: 1hr TTL, invalidates on .nvmrc changes
+   - nodejs_scripts: 5min TTL, invalidates on package.json scripts changes
+   - nodejs_compatibility: 2hr TTL, invalidates on package.json/engines changes
 
-7. **Future Phases**:
-   - Phase 2 (5 tools): version, security, build, scripts, benchmark
-   - Phase 3 (3 tools): update_deps, compatibility, profile
-   - Target: 85-90% test coverage for all tools
+7. **Known Technical Debt** (non-blocking, tracked in GitHub issues):
+   - Test file discovery implementation can be enhanced (#180)
+   - Coverage regex pattern works best for Jest (#180)
+   - Cache invalidation for package.json changes in checkCompatibility (#183)
+   - Empty catch block needs logging in checkCompatibility (#181)
 
 ## File Validation Tools
 
