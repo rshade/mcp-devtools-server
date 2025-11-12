@@ -7,6 +7,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Node.js/TypeScript Language Support (14 Tools)**
+  - **Phase 1 - Core Development Tools:**
+    - nodejs_project_info - Project analysis with smart caching (5min TTL)
+    - nodejs_test - Test execution (Jest, Vitest, Mocha)
+    - nodejs_lint - ESLint integration with auto-fix
+    - nodejs_format - Prettier formatting
+    - nodejs_check_types - TypeScript type checking
+    - nodejs_install_deps - Dependency management (npm/yarn/pnpm/bun)
+  - **Phase 2 - Advanced Tools:**
+    - nodejs_version - Version detection with 1hr caching
+    - nodejs_security - Security vulnerability scanning
+    - nodejs_build - Build orchestration
+    - nodejs_scripts - Script management with caching
+    - nodejs_benchmark - Performance benchmarking
+  - **Phase 3 - Specialized Tools:**
+    - nodejs_update_deps - Dependency updates
+    - nodejs_compatibility - Compatibility checking with 2hr caching
+    - nodejs_profile - Performance profiling (CPU/heap profiles)
+  - Auto-detection of package managers (npm, yarn, pnpm, bun)
+  - Framework detection (React, Vue, Angular, Next.js, NestJS, Express, Fastify)
+  - Test framework detection (Jest, Vitest, Mocha)
+  - Build tool detection (Vite, Webpack, Rollup, esbuild, tsup)
+  - Intelligent caching for fast repeated operations
+- **System Prompt Instructions** - Auto-discovery guidance for Claude (src/instructions.md)
+
+### Fixed
+
+- Missing @types/semver dependency causing TypeScript compilation errors
+
 ## [0.0.1] - 2025-11-08
 
 ### Added

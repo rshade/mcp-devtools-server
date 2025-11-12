@@ -31,7 +31,7 @@ through [GitHub Milestones](https://github.com/rshade/mcp-devtools-server/milest
 
 ## 2025-Q2 - Plugin Architecture & Performance 🚀 **CURRENT FOCUS**
 
-**Status:** 8/16 issues open (6 Node.js Phase 1 tools completed)
+**Status:** 2/16 issues open (Epic #155 Node.js complete - 14/14 tools ✅)
 **Due Date:** June 30, 2025
 
 ### In Progress
@@ -62,11 +62,11 @@ through [GitHub Milestones](https://github.com/rshade/mcp-devtools-server/milest
 - Parallel plugin loading for faster startup (Issue #113)
 - Environment-aware glob patterns (Issue #114)
 
-## Node.js Language Support Epic 🟢 **CRITICAL PRIORITY**
+## Node.js Language Support Epic ✅ **COMPLETE**
 
-**Status:** Epic #155 + 14 sub-issues (6/15 complete - 40%)
+**Status:** Epic #155 + 14 sub-issues (14/14 complete - 100%) **CLOSED**
 **Milestone:** 2025-Q2 - Plugin Architecture & Performance
-**Priority:** P0 (Critical - foundational ecosystem support)
+**Completed:** November 11, 2025
 
 ### Rationale
 
@@ -95,30 +95,25 @@ Node.js support enables:
 - ✅ **nodejs_install_deps** - Dependency management (npm/yarn/pnpm/bun) (Issue #161)
   - Auto-detects package manager from lockfiles
 
-**Phase 1 Status:**
-- Implementation: ✅ Complete (639 lines in nodejs-tools.ts)
-- Test Coverage: 48% (8 test cases) - target: 85-90%
-- Known Limitations: Test file discovery stubbed, coverage regex Jest-only, cache invalidation gaps
+#### Phase 2 - Advanced Tools ✅ **COMPLETED** (5/5 tools - PR #172)
 
-#### Phase 2 - Advanced Tools (5 tools)
-
-- **nodejs_version** - Version detection and recommendations (Issue #162)
-  - ✅ **CACHED** (1hr TTL, commandAvailability namespace)
+- ✅ **nodejs_version** - Version detection and recommendations (Issue #162)
+  - **CACHED** (1hr TTL, commandAvailability namespace)
   - Invalidation: .nvmrc, .node-version
-- **nodejs_security** - Security scanning (npm audit/Snyk) (Issue #163)
-- **nodejs_build** - Package building and bundling (Issue #164)
-- **nodejs_scripts** - npm scripts management (Issue #165)
-  - ✅ **CACHED** (5min TTL, nodeModules namespace)
+- ✅ **nodejs_security** - Security scanning (npm audit/Snyk) (Issue #163)
+- ✅ **nodejs_build** - Package building and bundling (Issue #164)
+- ✅ **nodejs_scripts** - npm scripts management (Issue #165)
+  - **CACHED** (5min TTL, nodeModules namespace)
   - Invalidation: package.json scripts section
-- **nodejs_benchmark** - Performance benchmarking (Issue #166)
+- ✅ **nodejs_benchmark** - Performance benchmarking (Issue #166)
 
-#### Phase 3 - Specialized Tools (3 tools)
+#### Phase 3 - Specialized Tools ✅ **COMPLETED** (3/3 tools - PRs #175, #179)
 
-- **nodejs_update_deps** - Dependency updates (Issue #167)
-- **nodejs_compatibility** - Node version compatibility checking (Issue #168)
-  - ✅ **CACHED** (2hr TTL, nodeModules namespace)
+- ✅ **nodejs_update_deps** - Dependency updates (Issue #167)
+- ✅ **nodejs_compatibility** - Node version compatibility checking (Issue #168)
+  - **CACHED** (2hr TTL, nodeModules namespace)
   - Invalidation: package.json, .nvmrc
-- **nodejs_profile** - Performance profiling (Issue #169)
+- ✅ **nodejs_profile** - Performance profiling (Issue #169)
 
 **Key Features:**
 
