@@ -5,7 +5,7 @@
 .DEFAULT_GOAL := help
 .PHONY: help install build install-mcp start dev clean test test-watch test-coverage
 .PHONY: lint lint-ts lint-md lint-yaml lint-changelog lint-commit
-.PHONY: docs-api docs-dev docs-build docs-preview
+.PHONY: docs-api docs-dev docs-build docs-preview validate-docs
 .PHONY: check all
 
 # Colors for output
@@ -46,6 +46,7 @@ help:
 	@echo "  $(YELLOW)make docs-dev$(RESET)       Start docs dev server"
 	@echo "  $(YELLOW)make docs-build$(RESET)     Build docs"
 	@echo "  $(YELLOW)make docs-preview$(RESET)   Preview built docs"
+	@echo "  $(YELLOW)make validate-docs$(RESET)  Validate VitePress config"
 	@echo ""
 	@echo "$(GREEN)CI/CD:$(RESET)"
 	@echo "  $(YELLOW)make check$(RESET)          Run all linters and tests"
@@ -148,6 +149,23 @@ docs-build:
 docs-preview:
 	@echo "$(CYAN)Previewing documentation...$(RESET)"
 	npm run docs:preview
+
+## Validate VitePress configuration
+validate-docs:
+	@echo "$(CYAN)Validating VitePress configuration...$(RESET)"
+	@if [ ! -f docs/.vitepress/config.ts ]; then \
+		echo "$(YELLOW)✗ docs/.vitepress/config.ts not found!$(RESET)"; \
+		exit 1; \
+	fi
+	@if [ -d docs/docs/.vitepress ]; then \
+		echo "$(YELLOW)✗ Found nested docs/docs/.vitepress/ directory (should be docs/.vitepress/)$(RESET)"; \
+		exit 1; \
+	fi
+	@if ! grep -q "base: '/mcp-devtools-server/'" docs/.vitepress/config.ts; then \
+		echo "$(YELLOW)✗ Base path mismatch in config.ts (should be '/mcp-devtools-server/')$(RESET)"; \
+		exit 1; \
+	fi
+	@echo "$(GREEN)✓ VitePress configuration valid$(RESET)"
 
 ## Run all checks (lint + test + build)
 check: lint test build
