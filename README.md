@@ -659,6 +659,30 @@ All IANA timezone identifiers are supported, including:
 - `Asia/Shanghai` - China Standard Time
 - And 400+ more IANA timezones
 
+#### Environment Variables
+
+- **dotenv_environment** - Load and parse environment variables from .env files
+
+  Makes environment variables visible to AI assistants through MCP context, enabling better
+  debugging and configuration assistance. Automatically masks sensitive values (passwords,
+  tokens, API keys) while exposing configuration safely.
+
+  **Features:**
+
+  - Automatic masking of sensitive values (PASSWORD, SECRET, TOKEN, KEY, API_KEY, etc.)
+  - Support for custom mask patterns
+  - Load from any .env file (.env, .env.production, etc.)
+  - Optional inclusion of process.env variables
+  - Helpful warnings for missing NODE_ENV and common variables
+  - Security reminders about not committing .env files
+
+  **Why This Matters:**
+
+  - **Context Awareness:** AI can see what environment variables are configured
+  - **Debugging:** Helps identify missing or misconfigured environment variables
+  - **Setup Assistance:** AI can guide users through required configuration
+  - **Security:** Sensitive values are masked by default to prevent accidental exposure
+
 ### Security Features
 
 - Input sanitization to prevent command injection
@@ -1117,6 +1141,42 @@ await callTool('ensure_newline', {
   patterns: ['src/**/*.ts', 'test/**/*.ts'],
   mode: 'fix',
   skipBinary: true  // default: true
+});
+```
+
+### Environment Variables Usage
+
+```javascript
+// Load default .env file with masking (default behavior)
+await callTool('dotenv_environment', {});
+
+// Load specific .env file
+await callTool('dotenv_environment', {
+  file: '.env.production'
+});
+
+// Load without masking (for debugging - use carefully!)
+await callTool('dotenv_environment', {
+  mask: false
+});
+
+// Load with custom mask patterns
+await callTool('dotenv_environment', {
+  maskPatterns: ['CUSTOM_SECRET', 'INTERNAL']
+});
+
+// Include process.env variables
+await callTool('dotenv_environment', {
+  includeProcessEnv: true
+});
+
+// Full control example
+await callTool('dotenv_environment', {
+  file: '.env.staging',
+  directory: '/path/to/project',
+  mask: true,
+  maskPatterns: ['CUSTOM_SECRET'],
+  includeProcessEnv: false
 });
 ```
 

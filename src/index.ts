@@ -49,6 +49,7 @@ import {
   KnowledgeBaseStatsResult,
   RecommendMCPServersResult,
 } from "./tools/smart-suggestions-tools.js";
+import { EnvTools } from "./tools/env-tools.js";
 import {
   OnboardingTools,
   OnboardingResult,
@@ -1584,6 +1585,42 @@ class MCPDevToolsServer {
           },
         },
 
+        // Environment variable tools
+        {
+          name: "dotenv_environment",
+          description:
+            "Load and parse environment variables from .env files, making them visible " +
+            "to AI assistants through MCP context. Automatically masks sensitive values " +
+            "(passwords, tokens, API keys) while exposing configuration values safely.",
+          inputSchema: {
+            type: "object",
+            properties: {
+              file: {
+                type: "string",
+                description: "Path to .env file (default: .env)",
+              },
+              mask: {
+                type: "boolean",
+                description: "Mask sensitive values (default: true)",
+              },
+              maskPatterns: {
+                type: "array",
+                items: { type: "string" },
+                description:
+                  "Custom patterns to mask (in addition to defaults: PASSWORD, SECRET, TOKEN, KEY, API_KEY, PRIVATE, CREDENTIALS, AUTH)",
+              },
+              includeProcessEnv: {
+                type: "boolean",
+                description: "Include process.env variables (default: false)",
+              },
+              directory: {
+                type: "string",
+                description: "Working directory (default: current directory)",
+              },
+            },
+          },
+        },
+
         // Git and Code Review tools
         {
           name: "code_review",
@@ -2530,6 +2567,19 @@ class MCPDevToolsServer {
                 {
                   type: "text",
                   text: this.formatEnsureNewlineResult(result),
+                },
+              ],
+            };
+          }
+
+          // Environment variable tools
+          case "dotenv_environment": {
+            const result = await EnvTools.dotenvEnvironment(args);
+            return {
+              content: [
+                {
+                  type: "text",
+                  text: result,
                 },
               ],
             };
