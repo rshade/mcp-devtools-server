@@ -479,6 +479,89 @@ mcp-devtools detect_project
   - **Git Diffs:** Missing newlines create "No newline at end of file" warnings
   - **AI Assistants:** Common issue when AI tools generate or modify files
 
+### DateTime Tools
+
+The `get_current_datetime` tool provides rich temporal context optimized for LLM awareness. This helps AI
+assistants understand the current date and time with confidence, especially when the system date is near or
+past the LLM's training cutoff.
+
+**Key Features:**
+
+- **Human-Readable Format:** Clear datetime string optimized for LLM consumption
+- **Calendar Context:** Quarter, ISO week number, day of year
+- **Timezone Support:** IANA timezone identifiers with DST detection
+- **Relative Calculations:** Days/weeks remaining in year, quarter boundaries
+- **Zero Dependencies:** Pure JavaScript Date/Intl APIs for fast synchronous operation
+- **Cross-Platform:** Works on Windows, macOS, and Linux
+
+**Use Cases:**
+
+1. **Verify System Context:** When LLMs doubt the date in environment variables
+2. **Milestone Planning:** "What quarter are we in? How many weeks until year-end?"
+3. **Relative Time:** "How many days until Q4 ends?"
+4. **Timezone Awareness:** Check time across multiple timezones for distributed teams
+
+**Example Usage:**
+
+```typescript
+// Get current datetime with full context
+{
+  "timezone": "America/Chicago"
+}
+```
+
+**Example Output:**
+
+```text
+## Current Date & Time
+
+**Tuesday, November 12, 2025 at 7:21 PM CST**
+
+### Date Information
+- **Year:** 2025
+- **Quarter:** Q4 (October 1, 2025 - December 31, 2025)
+- **Month:** November (11)
+- **Day:** Tuesday, November 12
+- **Day of Year:** 316 of 365
+- **ISO Week:** 46
+
+### Time Information
+- **Time:** 19:21:00
+- **Timezone:** America/Chicago (CST)
+- **UTC Offset:** -06:00
+- **DST Active:** No
+
+### Relative Information
+- **Days Remaining in Year:** 49
+- **Weeks Remaining in Year:** 7
+- **Days in Current Month:** 30
+
+### Technical Details
+- **ISO 8601:** 2025-11-12T19:21:00.000Z
+- **Unix Timestamp:** 1762994460
+```
+
+**Parameters:**
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `timezone` | string | System timezone | IANA timezone (e.g., 'America/New_York', 'UTC', 'Asia/Tokyo') |
+| `include_calendar` | boolean | `true` | Include calendar information (quarter, week, etc.) |
+
+**Supported Timezones:**
+
+All IANA timezone identifiers are supported, including:
+
+- `UTC` - Coordinated Universal Time
+- `America/New_York` - US Eastern
+- `America/Chicago` - US Central
+- `America/Los_Angeles` - US Pacific
+- `Europe/London` - UK
+- `Europe/Paris` - Central European
+- `Asia/Tokyo` - Japan Standard Time
+- `Asia/Shanghai` - China Standard Time
+- And 400+ more IANA timezones
+
 ### Security Features
 
 - Input sanitization to prevent command injection

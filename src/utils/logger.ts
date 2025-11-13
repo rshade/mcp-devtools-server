@@ -19,7 +19,7 @@ const LOG_LEVEL_PRIORITY = {
   [LogLevel.DEBUG]: 3,
 };
 
-class Logger {
+export class Logger {
   private currentLevel: LogLevel;
 
   constructor(level: LogLevel = LogLevel.INFO) {
