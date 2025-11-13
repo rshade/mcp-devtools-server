@@ -331,6 +331,103 @@ mcp-devtools detect_project
   .github/workflows/ci.yml:42:9: shellcheck reported issue SC2086: Double quote to prevent globbing [shellcheck]
   ```
 
+#### JSON Processing Tools
+
+- **jq_query** - Process JSON data using jq filter syntax without requiring approval
+
+  **Use this instead of `Bash(jq ...)` for all JSON processing.** This tool provides the full power
+  of jq for JSON manipulation without requiring user approval for each query, making it perfect for
+  parsing API responses, extracting fields, filtering arrays, and transforming data structures.
+
+  **Why Use jq_query:**
+
+  1. **No Approval Required** - Runs without user confirmation, enabling seamless AI workflows
+  2. **Faster Development** - Eliminates repetitive approval dialogs for JSON operations
+  3. **Better Error Handling** - Clear, actionable error messages for invalid filters or JSON
+  4. **Input Flexibility** - Accepts both JSON strings and already-parsed objects/arrays
+  5. **Safe Operation** - jq only processes data, no code execution risk
+
+  **Parameters:**
+
+  - `input` - JSON string or already-parsed object/array (required)
+  - `filter` - jq filter expression (required), e.g., `".[] | .name"`
+  - `compact` - Output compact JSON (default: false)
+  - `raw_output` - Output raw strings without JSON quotes (default: false)
+  - `sort_keys` - Sort object keys alphabetically (default: false)
+
+  **Common Patterns:**
+
+  ```typescript
+  // Extract array of field values
+  jq_query({ input: data, filter: '.[] | .name' })
+
+  // Filter by condition
+  jq_query({ input: data, filter: '.[] | select(.status == "active")' })
+
+  // Transform structure
+  jq_query({ input: data, filter: '{name, id}' })
+
+  // Pretty-print minified JSON
+  jq_query({ input: minifiedJSON, filter: '.' })
+
+  // Get array length
+  jq_query({ input: data, filter: 'length' })
+
+  // Complex transformations
+  jq_query({
+    input: apiResponse,
+    filter: '.data.users | map({name: .user_name, id: .user_id})'
+  })
+  ```
+
+  **Features:**
+
+  - Full jq syntax support (pipes, select, map, reduce, conditionals)
+  - Handles edge cases: null, boolean, numbers, unicode, deeply nested structures
+  - Automatic jq availability detection with installation instructions
+  - Clear error messages for invalid JSON or jq filter syntax
+  - Multiple output format options
+
+  **Installation Requirements:**
+
+  jq must be installed on the system. If not found, the tool provides installation instructions:
+
+  ```bash
+  # macOS
+  brew install jq
+
+  # Ubuntu/Debian
+  apt-get install jq
+
+  # Fedora/RHEL
+  dnf install jq
+
+  # Windows
+  choco install jq
+  ```
+
+  **Real-World Examples:**
+
+  ```typescript
+  // Parse GitHub API response
+  jq_query({
+    input: milestones,
+    filter: '.[] | select(.title | contains("2025-Q2")) | .number'
+  })
+
+  // Extract specific fields from array
+  jq_query({
+    input: issues,
+    filter: '[.[] | {title, number, state}]'
+  })
+
+  // Count matching items
+  jq_query({
+    input: data,
+    filter: '[.[] | select(.status == "open")] | length'
+  })
+  ```
+
 #### Git and Code Review
 
 - **code_review** - Automated code review analysis on Git changes

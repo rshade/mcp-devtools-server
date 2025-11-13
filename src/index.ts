@@ -59,6 +59,7 @@ import {
 import { ValidationResult } from "./utils/onboarding-wizard.js";
 import { DateTimeTools, DateTimeResult } from "./tools/datetime-tools.js";
 import { Logger, LogLevel } from "./utils/logger.js";
+import { JQTools, JQQueryResult } from "./tools/jq-tools.js";
 
 // Import plugin system
 import { PluginManager } from "./plugins/plugin-manager.js";
@@ -113,6 +114,7 @@ class MCPDevToolsServer {
   private smartSuggestionsTools: SmartSuggestionsTools;
   private onboardingTools: OnboardingTools;
   private dateTimeTools: DateTimeTools;
+  private jqTools: JQTools;
   private pluginManager!: PluginManager;
 
   constructor() {
@@ -156,6 +158,7 @@ class MCPDevToolsServer {
     this.onboardingTools = new OnboardingTools(projectRoot);
     const logLevel = (process.env.LOG_LEVEL?.toUpperCase() as LogLevel) || LogLevel.INFO;
     this.dateTimeTools = new DateTimeTools(new Logger(logLevel));
+    this.jqTools = new JQTools(projectRoot);
 
     // Plugin manager will be initialized in run() after loading config
   }
@@ -1495,6 +1498,41 @@ class MCPDevToolsServer {
           },
         },
 
+        // JSON Processing tools
+        {
+          name: "jq_query",
+          description:
+            "Process JSON data using jq filter syntax without requiring approval. " +
+            "Perfect for parsing API responses, extracting fields, filtering arrays, " +
+            "and transforming data structures. Supports full jq syntax including pipes, " +
+            "select, map, and reduce operations.",
+          inputSchema: {
+            type: "object",
+            properties: {
+              input: {
+                description: "JSON string or already-parsed object/array",
+              },
+              filter: {
+                type: "string",
+                description: 'jq filter expression (e.g., ".[] | .name")',
+              },
+              compact: {
+                type: "boolean",
+                description: "Compact output (default: false)",
+              },
+              raw_output: {
+                type: "boolean",
+                description: "Raw strings without JSON quotes (default: false)",
+              },
+              sort_keys: {
+                type: "boolean",
+                description: "Sort object keys (default: false)",
+              },
+            },
+            required: ["input", "filter"],
+          },
+        },
+
         // File validation tools
         {
           name: "ensure_newline",
@@ -2468,6 +2506,20 @@ class MCPDevToolsServer {
             };
           }
 
+          // JSON Processing tools
+          case "jq_query": {
+            const validatedArgs = JQTools.validateQueryArgs(args);
+            const result = await this.jqTools.queryJSON(validatedArgs);
+            return {
+              content: [
+                {
+                  type: "text",
+                  text: this.formatJQQueryResult(result),
+                },
+              ],
+            };
+          }
+
           // File validation tools
           case "ensure_newline": {
             const result = await this.fileValidationTools.ensureNewline(
@@ -2929,6 +2981,26 @@ class MCPDevToolsServer {
         output += `- ${suggestion}\n`;
       }
       output += `\n`;
+    }
+
+    return output;
+  }
+
+  private formatJQQueryResult(result: JQQueryResult): string {
+    let output = `## jq Query Results\n\n`;
+    output += `**Status:** ${result.success ? "✅ Success" : "❌ Failed"}\n`;
+    output += `**Filter:** \`${result.filter}\`\n`;
+    output += `**Input Type:** ${result.input_type}\n\n`;
+
+    if (result.error) {
+      output += `**Error:** ${result.error}\n\n`;
+      return output;
+    }
+
+    if (result.result !== null && result.result !== undefined) {
+      output += `**Result:**\n\`\`\`json\n${result.result_json}\n\`\`\`\n\n`;
+    } else {
+      output += `**Result:** (null or empty)\n\n`;
     }
 
     return output;

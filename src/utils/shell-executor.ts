@@ -64,6 +64,7 @@ const ALLOWED_COMMANDS = new Set([
   "actionlint",
   "git",
   "gs", // git-spice plugin support
+  "jq", // JSON processor - safe, no code execution
   "cargo",
   "mvn",
   "gradle",
