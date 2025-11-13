@@ -57,6 +57,8 @@ import {
   RollbackResult,
 } from "./tools/onboarding-tools.js";
 import { ValidationResult } from "./utils/onboarding-wizard.js";
+import { DateTimeTools, DateTimeResult } from "./tools/datetime-tools.js";
+import { Logger, LogLevel } from "./utils/logger.js";
 
 // Import plugin system
 import { PluginManager } from "./plugins/plugin-manager.js";
@@ -110,6 +112,7 @@ class MCPDevToolsServer {
   private gitTools: GitTools;
   private smartSuggestionsTools: SmartSuggestionsTools;
   private onboardingTools: OnboardingTools;
+  private dateTimeTools: DateTimeTools;
   private pluginManager!: PluginManager;
 
   constructor() {
@@ -151,6 +154,8 @@ class MCPDevToolsServer {
     this.gitTools = new GitTools(projectRoot);
     this.smartSuggestionsTools = new SmartSuggestionsTools(projectRoot);
     this.onboardingTools = new OnboardingTools(projectRoot);
+    const logLevel = (process.env.LOG_LEVEL?.toUpperCase() as LogLevel) || LogLevel.INFO;
+    this.dateTimeTools = new DateTimeTools(new Logger(logLevel));
 
     // Plugin manager will be initialized in run() after loading config
   }
@@ -1881,6 +1886,28 @@ class MCPDevToolsServer {
             required: ["backupPath"],
           },
         },
+
+        // DateTime tools
+        {
+          name: "get_current_datetime",
+          description:
+            "Get current date and time with rich temporal context for LLM awareness. Provides human-readable format, timezone info, calendar context (quarter, week, day-of-year), and relative calculations.",
+          inputSchema: {
+            type: "object",
+            properties: {
+              timezone: {
+                type: "string",
+                description:
+                  "IANA timezone identifier (e.g., 'America/New_York', 'UTC'). Defaults to system timezone.",
+              },
+              include_calendar: {
+                type: "boolean",
+                description:
+                  "Include calendar information like quarter, week, etc. (default: true)",
+              },
+            },
+          },
+        },
       ];
 
       // Get plugin tools
@@ -2616,6 +2643,19 @@ class MCPDevToolsServer {
                 {
                   type: "text",
                   text: this.formatRollbackResult(result),
+                },
+              ],
+            };
+          }
+
+          // DateTime tools
+          case "get_current_datetime": {
+            const result = await this.dateTimeTools.getCurrentDateTime(args);
+            return {
+              content: [
+                {
+                  type: "text",
+                  text: this.formatDateTimeResult(result),
                 },
               ],
             };
@@ -3602,6 +3642,59 @@ class MCPDevToolsServer {
     if (result.error) {
       output += `**Error:** ${result.error}\n`;
     }
+
+    return output;
+  }
+
+  private formatDateTimeResult(result: DateTimeResult): string {
+    let output = `## Current Date & Time\n\n`;
+
+    // Primary timestamp (human-readable)
+    output += `**${result.human}**\n\n`;
+
+    // Date information
+    output += `### Date Information\n`;
+    output += `- **Year:** ${result.year}${result.relative?.is_leap_year ? " (Leap Year)" : ""}\n`;
+    if (result.quarter !== undefined) {
+      output += `- **Quarter:** Q${result.quarter}`;
+      if (result.relative) {
+        output += ` (${result.relative.quarter_start} - ${result.relative.quarter_end})`;
+      }
+      output += `\n`;
+    }
+    output += `- **Month:** ${result.month_name} (${result.month})\n`;
+    output += `- **Day:** ${result.day_of_week}, ${result.month_name} ${result.day}\n`;
+    if (result.day_of_year !== undefined) {
+      output += `- **Day of Year:** ${result.day_of_year}`;
+      if (result.relative) {
+        output += ` of ${result.relative.days_in_year}`;
+      }
+      output += `\n`;
+    }
+    if (result.week_of_year !== undefined) {
+      output += `- **ISO Week:** ${result.week_of_year}\n`;
+    }
+    output += `\n`;
+
+    // Time information
+    output += `### Time Information\n`;
+    output += `- **Time:** ${result.hour.toString().padStart(2, "0")}:${result.minute.toString().padStart(2, "0")}:${result.second.toString().padStart(2, "0")}\n`;
+    output += `- **Timezone:** ${result.timezone} (${result.timezone_abbr})\n`;
+    output += `- **UTC Offset:** ${result.utc_offset}\n`;
+    output += `- **DST Active:** ${result.is_dst ? "Yes" : "No"}\n\n`;
+
+    // Relative information (only if calendar is included)
+    if (result.relative) {
+      output += `### Relative Information\n`;
+      output += `- **Days Remaining in Year:** ${result.relative.days_remaining_in_year}\n`;
+      output += `- **Weeks Remaining in Year:** ${result.relative.weeks_remaining_in_year}\n`;
+      output += `- **Days in Current Month:** ${result.relative.days_in_month}\n\n`;
+    }
+
+    // Technical timestamps
+    output += `### Technical Details\n`;
+    output += `- **ISO 8601:** ${result.timestamp}\n`;
+    output += `- **Unix Timestamp:** ${result.unix_timestamp}\n`;
 
     return output;
   }
