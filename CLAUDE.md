@@ -98,6 +98,182 @@ npm run clean
 - All Makefile targets should delegate to npm (no duplicate logic)
 - The Makefile is just a convenience wrapper - npm is the source of truth
 
+## Documentation and GitHub Pages
+
+This project uses VitePress for documentation hosted on GitHub Pages at <https://rshade.github.io/mcp-devtools-server/>
+
+### Local Documentation Development
+
+```bash
+# Install dependencies first
+npm install
+
+# Start development server (hot reload)
+npm run docs:dev
+# Visit http://localhost:5173/mcp-devtools-server/
+
+# Build documentation
+npm run docs:build
+
+# Preview built documentation (simulates GitHub Pages)
+npm run docs:preview
+# Visit http://localhost:4173/mcp-devtools-server/
+```
+
+### VitePress Configuration Requirements
+
+**CRITICAL**: The VitePress configuration MUST be properly structured for GitHub Pages deployment:
+
+1. **Directory Structure**:
+   - VitePress config: `docs/.vitepress/config.ts`
+   - Content files: `docs/*.md` and `docs/*/`
+   - Build output: `docs/.vitepress/dist`
+   - ❌ **INCORRECT**: `docs/docs/.vitepress/` (nested docs directory causes 404s)
+
+2. **Base Path Configuration**:
+
+   ```typescript
+   // docs/.vitepress/config.ts
+   export default defineConfig({
+     base: '/mcp-devtools-server/',  // MUST match GitHub repo name
+     // ... other config
+   })
+   ```
+
+3. **GitHub Actions Workflow**:
+   - Workflow file: `.github/workflows/docs-deploy.yml`
+   - Build command: `npm run docs:build`
+   - Upload path: `docs/.vitepress/dist` (MUST match VitePress output directory)
+
+### Common GitHub Pages Issues and Solutions
+
+#### Issue: Site Shows Unstyled HTML (No CSS/JS)
+
+**Symptoms**:
+
+- Console shows 404 errors for CSS/JS assets
+- Page title shows "VitePress" (default)
+- Navigation and styling completely broken
+- Content is readable but completely unstyled
+
+**Root Causes**:
+
+1. `.vitepress` directory in wrong location (e.g., `docs/docs/.vitepress/` instead of `docs/.vitepress/`)
+2. `base` path mismatch in config.ts
+3. GitHub Actions uploading wrong directory
+4. Build command not running in correct directory
+
+**Solution Steps**:
+
+1. Verify VitePress config location:
+
+   ```bash
+   # Should exist:
+   ls -la docs/.vitepress/config.ts
+
+   # Should NOT exist:
+   ls -la docs/docs/.vitepress/
+   ```
+
+2. Check base path in config:
+
+   ```bash
+   grep "base:" docs/.vitepress/config.ts
+   # Should show: base: '/mcp-devtools-server/',
+   ```
+
+3. Verify build output:
+
+   ```bash
+   npm run docs:build
+   ls -la docs/.vitepress/dist/
+   # Should contain: index.html, assets/, mcp-devtools-server/, etc.
+   ```
+
+4. Test locally with preview (mimics GitHub Pages):
+
+   ```bash
+   npm run docs:preview
+   # Visit http://localhost:4173/mcp-devtools-server/
+   ```
+
+5. Use Playwright to debug:
+
+   ```bash
+   # Start preview server in background
+   npm run docs:preview &
+
+   # Open Playwright and navigate to local site
+   # Compare with production site to identify differences
+   ```
+
+#### Issue: Links Broken After Deployment
+
+**Solution**: Ensure all internal links include the base path or use relative paths:
+
+- ✅ `/mcp-devtools-server/getting-started/installation.html`
+- ✅ `./installation.html` (relative)
+- ❌ `/getting-started/installation.html` (missing base)
+
+#### Issue: Images Not Loading
+
+**Solution**: Place images in `docs/public/` directory:
+
+- `docs/public/logo.svg` → Available at `/mcp-devtools-server/logo.svg`
+- Reference in markdown: `![Logo](/mcp-devtools-server/logo.svg)`
+
+### GitHub Pages Deployment Process
+
+1. **Commit changes to docs/**:
+
+   ```bash
+   git add docs/
+   git commit -m "docs: update documentation"
+   ```
+
+2. **GitHub Actions automatically**:
+   - Triggers on push to main (if docs/** files changed)
+   - Runs `npm ci && npm run docs:build`
+   - Uploads `docs/.vitepress/dist` as artifact
+   - Deploys to GitHub Pages
+
+3. **Verify deployment**:
+   - Check Actions tab: <https://github.com/rshade/mcp-devtools-server/actions>
+   - Visit site: <https://rshade.github.io/mcp-devtools-server/>
+   - Open browser console to check for 404 errors
+
+### Using Playwright for Debugging
+
+When GitHub Pages site isn't working:
+
+1. **Start local preview**:
+
+   ```bash
+   npm run docs:preview
+   ```
+
+2. **Navigate with Playwright** (via Claude Code):
+
+   ```text
+   Navigate to http://localhost:4173/mcp-devtools-server/
+   Take full-page screenshot
+   Check console messages for errors
+   ```
+
+3. **Compare with production**:
+
+   ```text
+   Navigate to https://rshade.github.io/mcp-devtools-server/
+   Take full-page screenshot
+   Compare with local version
+   ```
+
+4. **Common Playwright checks**:
+   - Verify CSS loads: Check for style elements in snapshot
+   - Verify navigation works: Click links and check URLs
+   - Verify images load: Check for img elements with valid src
+   - Check console: Look for 404s or other errors
+
 ## Development Workflow
 
 1. **Security-First** - All shell commands go through secure validation in `ShellExecutor`
@@ -113,6 +289,9 @@ npm run clean
 
 **CRITICAL**: If you edit ANY markdown file (*.md), you MUST run `make lint-md` before considering the
 task complete. Do not claim success until all linting passes.
+
+**NOTE**: CHANGELOG.md is excluded from markdown linting (in `.markdownlintignore`) because it's
+auto-generated by release-please and should not be manually edited.
 
 ## Dogfooding Principle
 
