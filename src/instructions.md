@@ -16,6 +16,8 @@ equivalents.
 
 **Analysis:** Use `project_status`, `go_project_info`, `nodejs_project_info` instead of reading files manually.
 
+**Environment:** Use `dotenv_environment` to load and analyze environment variables from .env files.
+
 **Error Handling:** Use `analyze_command` to execute commands with automatic error analysis instead of raw Bash.
 
 ## Auto-Onboarding
@@ -66,6 +68,8 @@ nodejs_install_deps, nodejs_version, nodejs_security, nodejs_build, nodejs_scrip
 
 **File Validation (1):** ensure_newline
 
+**Environment (1):** dotenv_environment
+
 **Status (2):** project_status, test_status
 
 **Onboarding (4):** onboarding_wizard, detect_project, generate_config, validate_setup
@@ -90,3 +94,4 @@ for proactive analysis.
 | Generate PR | `generate_pr_message` |
 | Validate workflows | `actionlint` |
 | Fix newlines | `ensure_newline` |
+| Load env vars | `dotenv_environment` |
