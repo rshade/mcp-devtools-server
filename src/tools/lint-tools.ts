@@ -102,7 +102,7 @@ export class LintTools {
   }
 
   /**
-   * Run yamllint on YAML files using js-yaml-cli
+   * Run yamllint on YAML files
    */
   async yamllint(args: LintToolArgs): Promise<LintResult> {
     const files = await this.findYamlFiles(args);
@@ -128,7 +128,7 @@ export class LintTools {
     // Add files
     commandArgs.push(...files);
 
-    const result = await this.executor.execute("js-yaml-cli", {
+    const result = await this.executor.execute("yamllint", {
       cwd: args.directory,
       args: commandArgs,
     });
@@ -425,8 +425,8 @@ export class LintTools {
         return (output.match(/MD\d+/g) || []).length;
 
       case "yamllint":
-        // Count lines with file:line:column format
-        return (output.match(/^[^:]+:\d+:\d+:/gm) || []).length;
+        // Count lines with format: "  line:column  severity  message"
+        return (output.match(/^\s+\d+:\d+\s+(error|warning)/gm) || []).length;
 
       case "commitlint":
         // commitlint shows errors for invalid commit messages

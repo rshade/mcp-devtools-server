@@ -711,6 +711,45 @@ npm run build
 npm start
 ```
 
+#### Optional: Installing Linting Tools
+
+Most linting tools are installed automatically via npm. However, some tools require separate installation:
+
+**yamllint** (Python-based YAML linter):
+
+```bash
+# macOS (via Homebrew)
+brew install yamllint
+
+# Linux (Ubuntu/Debian)
+sudo apt-get install yamllint
+
+# Linux (Fedora/RHEL)
+sudo dnf install yamllint
+
+# Any platform (via pip)
+pip install yamllint
+
+# Verify installation
+yamllint --version
+```
+
+**actionlint** (GitHub Actions workflow validator):
+
+```bash
+# macOS (via Homebrew)
+brew install actionlint
+
+# Linux (download binary)
+bash <(curl https://raw.githubusercontent.com/rhysd/actionlint/main/scripts/download-actionlint.bash)
+
+# Or via go install
+go install github.com/rhysd/actionlint/cmd/actionlint@latest
+
+# Verify installation
+actionlint --version
+```
+
 ### Development
 
 You can use either `make` commands or `npm` scripts (Makefile is a thin wrapper around npm):
@@ -805,16 +844,16 @@ For local development with hot-reload:
 
 ```bash
 # Start development server
-docker-compose up mcp-devtools-dev
+docker compose up mcp-devtools-dev
 
 # Run tests
-docker-compose run --rm mcp-devtools-test
+docker compose run --rm mcp-devtools-test
 
 # Run linters
-docker-compose run --rm mcp-devtools-lint
+docker compose run --rm mcp-devtools-lint
 
 # Production-like testing
-docker-compose up mcp-devtools
+docker compose up mcp-devtools
 ```
 
 **docker-compose.yml features:**

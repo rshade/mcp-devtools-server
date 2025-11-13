@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   # Development service with hot-reload
   mcp-devtools-dev:

@@ -1494,19 +1494,53 @@ export class NodejsTools {
       `View CPU profiles with Chrome DevTools (chrome://inspect)`,
     ].join("\n");
 
+    // Generate appropriate suggestions based on success/failure
+    const suggestions = result.success
+      ? [
+          `Open ${outputDir} to view profile files`,
+          "Import .cpuprofile files into Chrome DevTools",
+          "Use clinic.js for more advanced profiling: npm install -g clinic",
+        ]
+      : [
+          `Check if script "${script}" exists in package.json`,
+          "Verify Node.js has permissions to write to the output directory",
+          "Ensure the application can start successfully",
+          "Try running without profiling first: npm run " + script,
+        ];
+
+    // Enhance error message for common failure scenarios
+    let errorMessage = result.error;
+    if (!result.success) {
+      if (result.error) {
+        const errorLower = result.error.toLowerCase();
+        if (
+          errorLower.includes("eacces") ||
+          errorLower.includes("eperm") ||
+          errorLower.includes("permission denied")
+        ) {
+          errorMessage = `Permission error while profiling: ${result.error}. Check permissions for output directory: ${outputDir}`;
+        } else if (errorLower.includes("enoent")) {
+          errorMessage = `Script not found: ${result.error}. Verify "${script}" exists in package.json scripts.`;
+        } else if (
+          errorLower.includes("command exited") ||
+          errorLower.includes("exit code")
+        ) {
+          // Generic error - provide context about what we were trying to do
+          errorMessage = `Profiling failed: ${result.error}. This could be due to permissions, missing script, or application startup issues.`;
+        }
+      } else {
+        // No error message provided - create a helpful one
+        errorMessage = `Profiling command failed. Check if script "${script}" exists and output directory ${outputDir} is writable.`;
+      }
+    }
+
     return {
       success: result.success,
       output,
       command: `${packageManager} ${commandArgs.join(" ")} (with profiling)`,
       duration: result.duration,
-      error: result.error,
-      suggestions: result.success
-        ? [
-            `Open ${outputDir} to view profile files`,
-            "Import .cpuprofile files into Chrome DevTools",
-            "Use clinic.js for more advanced profiling: npm install -g clinic",
-          ]
-        : [],
+      error: errorMessage,
+      suggestions,
     };
   }
 

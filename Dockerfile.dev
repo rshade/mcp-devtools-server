@@ -8,7 +8,8 @@ RUN apk add --no-cache \
     curl \
     bash \
     python3 \
-    py3-pip
+    py3-pip \
+    jq
 
 # Create app directory
 WORKDIR /app
@@ -17,7 +18,8 @@ WORKDIR /app
 COPY package*.json ./
 
 # Install all dependencies (including dev dependencies)
-RUN npm install
+# Skip prepare script to avoid husky git hooks setup in Docker
+RUN npm install --ignore-scripts
 
 # Copy all source files
 COPY . .
