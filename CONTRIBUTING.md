@@ -63,6 +63,29 @@ guidelines and instructions for contributing to the project.
    npm run dev
    ```
 
+### NPM Version Consistency
+
+**Important:** Use a consistent npm version across your development environment to avoid unnecessary
+`package-lock.json` changes:
+
+- **Recommended:** npm 10.x (matches CI/CD environment)
+- **Check your version:** `npm --version`
+- **Upgrade if needed:** `npm install -g npm@latest`
+
+**Why this matters:**
+
+- Different npm versions format `package-lock.json` differently
+- Version mismatches cause cosmetic changes (e.g., `"peer": true` additions/removals)
+- These changes add noise to PRs without affecting functionality
+- Consistent versions keep diffs clean and reviewable
+
+**If you see large package-lock.json changes:**
+
+1. Verify your npm version matches the recommended version
+2. Delete `node_modules/` and `package-lock.json`
+3. Run `npm install` to regenerate with consistent npm version
+4. Commit only the actual dependency changes
+
 ### Recommended Tools
 
 - **ESLint** - Linting JavaScript/TypeScript
