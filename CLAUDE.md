@@ -385,6 +385,33 @@ This validates that:
 - If an error message is unclear, fix it
 - If you find yourself using Bash instead, consider why
 
+### Dogfooding Error Reporting Protocol
+
+**CRITICAL:** When encountering MCP tool failures during dogfooding, follow this protocol:
+
+1. **STOP** - Do not silently fall back to Bash commands
+2. **ALERT USER** - Immediately report the issue with:
+   - What tool failed and how it was invoked
+   - Expected behavior vs actual behavior
+   - Hidden error details (exit codes, stderr, etc.)
+   - Impact on user experience
+3. **CREATE GITHUB ISSUE** - Document with:
+   - Complete reproduction steps
+   - Code references (file:line)
+   - Proposed fix with rationale
+   - Priority based on UX impact
+   - Labels: `bug`, `ux`, appropriate priority
+4. **ONLY THEN** proceed with workaround if user approves
+
+**Example:**
+
+When yamllint MCP tool returned "undefined" exit code (Issue #208):
+
+- ❌ **Bad:** Silently fell back to `Bash(yamllint)` without reporting
+- ✅ **Good:** Alerted user, created issue #208, documented in Epic #210, then used workaround
+
+This ensures knowledge capture and continuous improvement of the dogfooding experience.
+
 ## Test Quality Standards
 
 **CRITICAL**: We are burning cycles fixing low-quality tests. Tests MUST be:

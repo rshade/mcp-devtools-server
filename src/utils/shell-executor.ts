@@ -47,7 +47,6 @@ const ALLOWED_COMMANDS = new Set([
   "node",
   "markdownlint",
   "yamllint",
-  "js-yaml-cli",
   "commitlint",
   "eslint",
   "prettier",

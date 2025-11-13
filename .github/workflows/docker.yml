@@ -103,8 +103,8 @@ jobs:
 
       - name: Test development Docker image
         run: |
-          docker-compose -f docker-compose.yml build mcp-devtools-dev
-          docker-compose -f docker-compose.yml run --rm mcp-devtools-test
+          docker compose -f docker-compose.yml build mcp-devtools-dev
+          docker compose -f docker-compose.yml run --rm mcp-devtools-test
 
   security-scan:
     runs-on: ubuntu-latest
