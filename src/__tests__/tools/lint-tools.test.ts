@@ -436,4 +436,159 @@ describe("LintTools", () => {
       expect(result.issuesFound).toBe(3);
     });
   });
+
+  describe("Error Handling", () => {
+    describe("command not found errors", () => {
+      it("should provide installation suggestions when yamllint is not found", async () => {
+        mockScan.mockResolvedValue(["/test/config.yml"]);
+        mockExecute.mockResolvedValue({
+          success: false,
+          stdout: "",
+          stderr: "yamllint: command not found",
+          exitCode: 127,
+          duration: 50,
+          command: "yamllint",
+          error: "Command failed",
+        });
+
+        const result = await tools.yamllint({ files: ["config.yml"] });
+
+        expect(result.success).toBe(false);
+        expect(result.suggestions).toBeDefined();
+        // Generic "command not found" check triggers first
+        expect(result.suggestions).toContain("yamllint is not installed");
+        expect(result.suggestions).toContain("Install yamllint using: npm install -g yamllint");
+      });
+
+      it("should provide installation suggestions when markdownlint is not found", async () => {
+        mockScan.mockResolvedValue(["/test/README.md"]);
+        mockExecute.mockResolvedValue({
+          success: false,
+          stdout: "",
+          stderr: "Error: ENOENT: no such file or directory",
+          exitCode: 1,
+          duration: 50,
+          command: "markdownlint",
+          error: "Command failed",
+        });
+
+        const result = await tools.markdownlint({ files: ["README.md"] });
+
+        expect(result.success).toBe(false);
+        expect(result.suggestions).toBeDefined();
+        expect(result.suggestions).toContain(
+          "Install markdownlint-cli: npm install -g markdownlint-cli",
+        );
+      });
+
+      it("should provide installation suggestions when eslint config is missing", async () => {
+        mockScan.mockResolvedValue(["/test/index.js"]);
+        mockExecute.mockResolvedValue({
+          success: false,
+          stdout: "",
+          stderr: "Error: No ESLint configuration found in /test",
+          exitCode: 1,
+          duration: 100,
+          command: "eslint",
+          error: "Command failed",
+        });
+
+        const result = await tools.eslint({ files: ["index.js"] });
+
+        expect(result.success).toBe(false);
+        expect(result.suggestions).toBeDefined();
+        expect(result.suggestions).toContain(
+          "Create an ESLint configuration file (.eslintrc.js, .eslintrc.json, etc.)",
+        );
+        expect(result.suggestions).toContain("Run `npx eslint --init` to set up configuration");
+      });
+
+      it("should provide commitlint installation suggestions", async () => {
+        mockExecute.mockResolvedValue({
+          success: false,
+          stdout: "",
+          stderr: "commitlint: command not found",
+          exitCode: 127,
+          duration: 50,
+          command: "commitlint",
+          error: "Command failed",
+        });
+
+        const result = await tools.commitlint({});
+
+        expect(result.success).toBe(false);
+        expect(result.suggestions).toBeDefined();
+        // Generic "command not found" check triggers first
+        expect(result.suggestions).toContain("commitlint is not installed");
+        expect(result.suggestions).toContain("Install commitlint using: npm install -g commitlint");
+      });
+
+      it("should provide suggestions for invalid commit message format", async () => {
+        mockExecute.mockResolvedValue({
+          success: false,
+          stdout: "✖   type may not be empty [type-empty]",
+          stderr: "",
+          exitCode: 1,
+          duration: 100,
+          command: "commitlint",
+          error: "Command failed",
+        });
+
+        const result = await tools.commitlint({});
+
+        expect(result.success).toBe(false);
+        expect(result.suggestions).toBeDefined();
+        expect(result.suggestions).toContain(
+          "Use conventional commit format: type(scope): description",
+        );
+        expect(result.suggestions).toContain(
+          "Valid types: feat, fix, docs, style, refactor, test, chore",
+        );
+      });
+    });
+
+    describe("file not found errors", () => {
+      it("should provide helpful suggestions when files don't exist", async () => {
+        mockScan.mockResolvedValue(["/test/nonexistent.yml"]);
+        mockExecute.mockResolvedValue({
+          success: false,
+          stdout: "",
+          stderr: "yamllint: error: No such file or directory: '/test/nonexistent.yml'",
+          exitCode: 1,
+          duration: 50,
+          command: "yamllint",
+          error: "Command failed",
+        });
+
+        const result = await tools.yamllint({ files: ["nonexistent.yml"] });
+
+        expect(result.success).toBe(false);
+        expect(result.suggestions).toBeDefined();
+        expect(result.suggestions).toContain("Check if the specified files exist");
+        expect(result.suggestions).toContain("Verify the working directory is correct");
+      });
+    });
+
+    describe("generic command errors", () => {
+      it("should handle generic command not found errors", async () => {
+        mockScan.mockResolvedValue(["/test/file.yml"]);
+        mockExecute.mockResolvedValue({
+          success: false,
+          stdout: "",
+          stderr: "bash: some-linter: command not found",
+          exitCode: 127,
+          duration: 50,
+          command: "some-linter",
+          error: "Command failed",
+        });
+
+        const result = await tools.yamllint({ files: ["file.yml"] });
+
+        expect(result.success).toBe(false);
+        expect(result.suggestions).toBeDefined();
+        expect(result.suggestions?.length).toBeGreaterThan(0);
+        expect(result.suggestions?.[0]).toContain("is not installed");
+      });
+    });
+  });
 });
