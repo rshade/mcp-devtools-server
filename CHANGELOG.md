@@ -5,6 +5,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.0](https://github.com/rshade/mcp-devtools-server/compare/mcp-devtools-server-v0.0.1...mcp-devtools-server-v0.1.0) (2025-11-14)
+
+
+### Added
+
+* add dotenv_environment tool to load environment variables into MCP context ([#213](https://github.com/rshade/mcp-devtools-server/issues/213)) ([b248503](https://github.com/rshade/mcp-devtools-server/commit/b248503201843ecbe9a52db7e8809679d5e4e888)), closes [#196](https://github.com/rshade/mcp-devtools-server/issues/196)
+* **datetime:** implement get_current_datetime tool for LLM temporal awareness ([#209](https://github.com/rshade/mcp-devtools-server/issues/209)) ([ec270d6](https://github.com/rshade/mcp-devtools-server/commit/ec270d6c922d0362cf6e58d60cb20255cce5ae93))
+
+
+### Fixed
+
+* **docker:** update docker-compose to v2 syntax and fix yamllint tool ([#211](https://github.com/rshade/mcp-devtools-server/issues/211)) ([c51d6ed](https://github.com/rshade/mcp-devtools-server/commit/c51d6ed94e85ad95ad8b2e048807df981eb81e98))
+* **docs:** correct VitePress directory structure for GitHub Pages deployment ([#198](https://github.com/rshade/mcp-devtools-server/issues/198)) ([9df75fd](https://github.com/rshade/mcp-devtools-server/commit/9df75fd49c7ef8c1f2394d4fb1c9e2e80ac3df3b))
+
+
+### Documentation
+
+* adding in validate, and updating docs ([#202](https://github.com/rshade/mcp-devtools-server/issues/202)) ([faa2a33](https://github.com/rshade/mcp-devtools-server/commit/faa2a330b747c0423edd8e88f2e9174bc006492c))
+* complete comprehensive documentation for v0.0.1 release ([#206](https://github.com/rshade/mcp-devtools-server/issues/206)) ([66f8eea](https://github.com/rshade/mcp-devtools-server/commit/66f8eead325a46373c18ca4ab8d624144685d5a6))
+* fix claude.md to be cleaner ([#220](https://github.com/rshade/mcp-devtools-server/issues/220)) ([0a6fb4f](https://github.com/rshade/mcp-devtools-server/commit/0a6fb4fa12ed5e8381e786b199905c899888b9e9))
+
 ## 0.0.1 (2025-11-12)
 
 
