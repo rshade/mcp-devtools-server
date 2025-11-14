@@ -17,14 +17,14 @@ This project has custom agents in `.claude/` for common tasks. **Use these inste
 
 ### Implementation Agents
 
-**`/implement-python-tool [issue-number]`** (Haiku, ~$0.10-0.25, 1.5-3 hours)
+**`/implement-python-tool [issue-number]`**
 
 - Implements Python tools from Epic #131
 - Follows Go tools pattern with cache optimization
 - Enforces 85-90%+ test coverage
 - Runs all quality gates
 
-**`/quick-fix [issue-number]`** (Haiku, ~$0.10-0.25, 30-60 min)
+**`/quick-fix [issue-number]`**
 
 - Fast bug fixes (<1 hour, <50 lines)
 - Best for linting errors, test failures, docs
@@ -32,7 +32,7 @@ This project has custom agents in `.claude/` for common tasks. **Use these inste
 
 ### Issue Management
 
-**`/triage-issues [filter]`** (Haiku, ~$0.05-0.10/issue, 5-10 min)
+**`/triage-issues [filter]`**
 
 - Categorizes and labels issues using `gh issue list/view/edit`
 - Assigns priorities (P0-P3)
@@ -41,7 +41,7 @@ This project has custom agents in `.claude/` for common tasks. **Use these inste
 
 ### Code Review
 
-**`/review-pr [pr-number] [--fix]`** (Sonnet, ~$2-5, 30-60 min)
+**`/review-pr [pr-number] [--fix]`**
 
 - Deep review across 5 dimensions (correctness, security, performance, maintainability, best practices)
 - Uses `gh pr view/diff/checks`
@@ -54,9 +54,6 @@ This project has custom agents in `.claude/` for common tasks. **Use these inste
 - ✅ Quick bug fixes
 - ✅ Issue triage before sprint planning
 - ✅ Comprehensive PR reviews
-
-**Cost efficiency:** Haiku is 95% cheaper than Sonnet for straightforward tasks.
-Use Sonnet only for deep reasoning (code reviews).
 
 See `.claude/README.md` for complete documentation.
 
@@ -87,6 +84,12 @@ npm run lint:md
 npm run lint:yaml
 npm test
 npm run clean
+
+# Run single test file
+npm test -- src/__tests__/tools/make-tools.test.ts
+
+# Run tests matching a pattern
+npm test -- --testNamePattern="make_lint"
 ```
 
 ## Makefile Maintenance
@@ -280,7 +283,12 @@ When GitHub Pages site isn't working:
 
 1. **Security-First** - All shell commands go through secure validation in `ShellExecutor`
 2. **Comprehensive Testing** - Add tests for all new tools and utilities (90%+ coverage goal)
-3. **Documentation** - Include JSDoc comments for all public APIs
+3. **Documentation** - Update all relevant documentation when adding features:
+   - **JSDoc comments** for all public APIs
+   - **instructions.md** (`src/instructions.md`) - Update when adding new tools or changing behavior
+   - **VitePress docs** (`docs/`) - Add/update tool reference pages and guides
+   - **README.md** - Update if adding major features or changing setup
+   - Ensure documentation stays in sync with code
 4. **Linting** - **ALWAYS RUN BEFORE FINISHING ANY TASK**:
    - `make lint` (or `npm run lint`) - TypeScript/JavaScript linting
    - `make lint-md` (or `npm run lint:md`) - Markdown linting (REQUIRED for all .md file changes)
@@ -417,10 +425,17 @@ This ensures knowledge capture and continuous improvement of the dogfooding expe
 **CRITICAL**: We are burning cycles fixing low-quality tests. Tests MUST be:
 
 1. **Well thought through** - Not AI slop. Think about edge cases, error conditions, and real usage
-2. **Fast execution** - Tests that take too long are a productivity killer
+2. **Fast execution** - Tests should be concise and not consume excessive CPU time
+   - Mock external calls (file system, network, processes) aggressively
+   - Avoid spawning real processes when mocks suffice
+   - Tests taking >1 second should be rare and justified
 3. **Focused and purposeful** - Test one thing clearly, not everything vaguely
 4. **Meaningful assertions** - Don't just check `toBeDefined()`, verify actual behavior
-5. **Minimal mocking** - Only mock external dependencies, not the code under test
+5. **Well mocked** - Mock all external dependencies properly
+   - Mock file system operations (fs.readFile, fs.writeFile, etc.)
+   - Mock shell execution (ShellExecutor.execute)
+   - Mock network calls
+   - Never mock the code under test itself
 6. **No flaky tests** - Tests must be deterministic and reliable
 
 **BAD TEST (AI slop):**
@@ -648,9 +663,6 @@ Epic #64: Plugin Architecture
 ├── Issue #65: Plugin interface and base classes (8-12 hours)
 ├── Issue #66: Plugin discovery and loading (6-8 hours)
 ├── Issue #67: Tool registration and routing (8-12 hours)
-├── Issue #90: Plugin CLI scaffolding tool (8-12 hours)
-├── Issue #91: Plugin testing infrastructure (6-8 hours)
-└── Issue #92: Hot-reloading support (8-12 hours)
 ```
 
 **When Converting Large Issues to Epics:**
@@ -671,6 +683,13 @@ Epic #64: Plugin Architecture
 - ✅ Better prioritization (high-priority sub-tasks first)
 - ✅ Reduced merge conflicts
 - ✅ Faster feedback cycles
+
+**Project Conventions:**
+
+- **Milestone naming:** Always use year-first format (YYYY-Q[1-4]) for proper sorting
+  - Example: `2025-Q2 - Plugin Architecture`, `2025-Q3 - Enhanced Usability`
+- **Label management:** Create labels before creating issues that reference them
+- **GitHub CLI:** Use heredocs for multi-line issue/PR bodies with `gh` to avoid escaping issues
 
 ## Community Documentation
 
@@ -710,7 +729,8 @@ This project has comprehensive community documentation:
 
 - **Shell Executor** (`src/utils/shell-executor.ts`) - Secure command execution with validation
 - **Project Detector** (`src/utils/project-detector.ts`) - Auto-detection of project types and tools
-- **Main Server** (`src/index.ts`) - MCP server implementation with 40+ tool registrations
+- **Main Server** (`src/index.ts`) - MCP server implementation with 50+ tool registrations
+- **Cache Manager** (`src/utils/cache-manager.ts`) - Multi-namespace LRU caching with file invalidation
 
 ### Tool Classes (Specialized Handlers)
 
@@ -718,26 +738,55 @@ This project has comprehensive community documentation:
 - `src/tools/lint-tools.ts` - Multi-linter support (ESLint, markdownlint, yamllint, commitlint)
 - `src/tools/test-tools.ts` - Test framework integration with coverage reporting
 - `src/tools/go-tools.ts` - Comprehensive Go language support (13 tools)
-- `src/tools/nodejs-tools.ts` - **NEW** Node.js/TypeScript language support (6 Phase 1 tools)
+- `src/tools/nodejs-tools.ts` - Node.js/TypeScript language support (14 tools)
 - `src/tools/git-tools.ts` - Git workflow tools (code review, PR generation)
 - `src/tools/actionlint-tools.ts` - GitHub Actions workflow validation
 - `src/tools/file-validation-tools.ts` - File validation (POSIX newline compliance)
 - `src/tools/smart-suggestions-tools.ts` - AI-powered command analysis and suggestions
+- `src/tools/onboarding-tools.ts` - Zero-config project setup and wizard
+- `src/tools/env-tools.ts` - Environment variable management (dotenv integration)
+- `src/tools/datetime-tools.ts` - Current datetime for temporal awareness
+- `src/tools/jq-tools.ts` - JSON processing and querying
 
 ### Utility Classes
 
 - `src/utils/newline-checker.ts` - Pure Node.js POSIX newline compliance checker
 - `src/utils/file-scanner.ts` - Glob-based file pattern matching
-- `src/utils/failure-analyzer.ts` - **NEW** Error pattern analysis (15+ built-in patterns)
-- `src/utils/knowledge-base.ts` - **NEW** Smart suggestions database by category
-- `src/utils/suggestion-engine.ts` - **NEW** Context-aware recommendation engine
-- `src/utils/mcp-recommendations.ts` - **NEW** MCP server recommendations
+- `src/utils/failure-analyzer.ts` - Error pattern analysis (15+ built-in patterns)
+- `src/utils/knowledge-base.ts` - Smart suggestions database by category
+- `src/utils/suggestion-engine.ts` - Context-aware recommendation engine
+- `src/utils/mcp-recommendations.ts` - MCP server recommendations
+- `src/utils/onboarding-wizard.ts` - Complete project setup automation
 
 ## Configuration
 
 - `.mcp-devtools.json` - Project-specific configuration
 - `examples/` - Configuration examples for different project types (Node.js, Python, Go)
 - `.mcp-devtools.schema.json` - JSON Schema for configuration validation
+
+**MCP Server Integration:**
+
+- The `.mcp.json` file MUST use the `mcpServers` key (not `mcp`) for Claude Desktop integration
+- Each server entry needs `command` and `args` arrays, not a single command array
+- Example configuration in `examples/claude-desktop-config.json`
+
+## Cache Architecture
+
+Multi-namespace LRU cache with file-based invalidation provides 3-5x performance improvements:
+
+**Key Namespaces:**
+
+- `projectDetection` (60s TTL) - Project type/framework detection
+- `gitOperations` (30s TTL) - Git status, branches, diffs
+- `goModules` (5min TTL) - Go module information
+- `nodeModules` (5min TTL) - npm package information
+- `commandAvailability` (1hr TTL) - External tool availability checks
+
+**Invalidation Strategy:**
+
+- Checksum-based tracking for file changes (package.json, go.mod, etc.)
+- Automatic cache invalidation when source files modified
+- Per-namespace TTL with configurable expiration
 
 ## Security Model
 
@@ -771,44 +820,22 @@ When working with Go tools:
 
 When working with Node.js tools (`src/tools/nodejs-tools.ts`):
 
-1. **All Phases Complete** (14 tools total) - Epic #155 ✅:
-   - **Phase 1 - Core Tools:** nodejs_project_info, nodejs_test, nodejs_lint, nodejs_format, nodejs_check_types, nodejs_install_deps
-   - **Phase 2 - Advanced Tools:** nodejs_version, nodejs_security, nodejs_build, nodejs_scripts, nodejs_benchmark
-   - **Phase 3 - Specialized Tools:** nodejs_update_deps, nodejs_compatibility, nodejs_profile
-
-2. **Architecture Patterns**:
-   - Follows Go tools pattern exactly (same structure, caching, error handling)
+1. **Architecture Patterns**:
+   - Follows Go tools pattern (same structure, caching, error handling)
    - All commands must be in `ALLOWED_COMMANDS` in `shell-executor.ts`
    - Uses `nodeModules` cache namespace (5min TTL) and `commandAvailability` (1hr TTL)
    - Auto-detects package manager from lockfiles (priority: bun → pnpm → yarn → npm)
    - Auto-detects test framework from devDependencies
 
-3. **Framework Detection Priority**:
+2. **Framework Detection Priority**:
    - Meta-frameworks first: Next.js, Nuxt.js
    - UI frameworks: Angular, React, Vue, Svelte
    - Backend frameworks: NestJS, Express, Fastify
 
-4. **Test Framework Behavior**:
-   - Returns error (not default) when no framework detected
-   - Provides installation suggestions
-   - Coverage extraction regex works for Jest (Vitest/Mocha may vary)
-
-5. **Error Handling Requirements**:
+3. **Error Handling Requirements**:
    - Malformed package.json must be caught and logged
    - Missing test framework must return helpful suggestions
    - All errors should provide actionable next steps
-
-6. **Smart Caching** (4 tools with intelligent caching):
-   - nodejs_project_info: 5min TTL, invalidates on package.json changes
-   - nodejs_version: 1hr TTL, invalidates on .nvmrc changes
-   - nodejs_scripts: 5min TTL, invalidates on package.json scripts changes
-   - nodejs_compatibility: 2hr TTL, invalidates on package.json/engines changes
-
-7. **Known Technical Debt** (non-blocking, tracked in GitHub issues):
-   - Test file discovery implementation can be enhanced (#180)
-   - Coverage regex pattern works best for Jest (#180)
-   - Cache invalidation for package.json changes in checkCompatibility (#183)
-   - Empty catch block needs logging in checkCompatibility (#181)
 
 ## File Validation Tools
 
@@ -844,445 +871,73 @@ See [README.md](README.md#roadmap) for detailed quarterly milestones and
 [GitHub Milestones](https://github.com/rshade/mcp-devtools-server/milestones) for current
 progress.
 
-## Session Learnings & Important Notes
+## Updating CLAUDE.md - Strategic Guidelines
 
-### Recent Fixes (2025-11-06)
+**When asked to document learnings in CLAUDE.md, follow these principles:**
 
-- **GitTools Test Fixes**: Fixed failing tests by resetting CacheManager in test setup to prevent
-  cached results from interfering between tests
-- **Diff Size Limit**: Updated MAX_DIFF_SIZE_BYTES from 1MB to 10MB to match test expectations
-- **Test Isolation**: Added CacheManager.resetInstance() in beforeEach to ensure clean test state
+### What TO Include (Strategic, Long-Term Value)
 
-### Critical Implementation Details
+**Architectural Patterns:**
 
-#### MCP Protocol Integration
+- Core design principles that apply across the codebase
+- Security patterns (e.g., "All commands must go through ShellExecutor allowlist")
+- Testing patterns (e.g., "Mock external dependencies, never mock code under test")
+- Integration requirements (e.g., "New Go tools must be in ALLOWED_COMMANDS")
 
-- The `.mcp.json` file MUST use the `mcpServers` key (not `mcp`) for Claude Desktop integration
-- Each server entry needs `command` and `args` arrays, not a single command array
-- Context7 integration enhances project understanding and should remain enabled
+**Build/Development Workflows:**
 
-#### Go Tool Integration Specifics
+- Essential commands for common tasks
+- Non-obvious setup requirements
+- Tool interactions that aren't discoverable from file names
 
-- Always add new Go tools to `ALLOWED_COMMANDS` in `shell-executor.ts`
-- Go test coverage extraction regex: `/coverage: ([\d.]+)% of statements/`
-- Support both Go modules and GOPATH projects for backward compatibility
-- Handle build tags properly for conditional compilation
-- Race detection flags significantly increase test execution time
+**Persistent Technical Constraints:**
 
-#### Package Management
+- Performance requirements (e.g., "Tests should be fast, mock aggressively")
+- Documentation requirements (e.g., "Update instructions.md when adding tools")
+- Quality gates (e.g., "Must pass lint, test, build before PR")
 
-- The project uses both npm scripts and could benefit from a Makefile
-- Added `markdownlint-cli` and `js-yaml-cli` as dev dependencies for linting
-- Consider using `npm run lint:md` and `npm run lint:yaml` for documentation quality
+### What NOT to Include (Roadmap Bloat)
 
-#### GitHub Project Management
+**❌ Daily Logs / Session Notes:**
 
-- Always use year-first format for milestones (YYYY-Q[1-4]) for proper sorting
-- Create labels before creating issues that reference them
-- Use heredocs for multi-line issue/PR bodies with `gh` CLI
+- "Recent Fixes (2025-XX-XX)" - This becomes stale immediately
+- Specific bug fix details - Track in GitHub issues instead
+- Version-specific information - Belongs in CHANGELOG.md
 
-### Missing Critical Components (Status Updated: 2025-11-03)
+**❌ Status Updates:**
 
-#### Testing Infrastructure ⚠️ **PARTIALLY ADDRESSED**
+- "Phase 1 complete", "Epic #XXX done" - Use GitHub for tracking
+- Tool counts that change frequently - Discoverable via code
+- "NEW" markers - Everything is new at some point
 
-- ✅ **Test suite established** - Multiple test files now exist with comprehensive coverage
-- ✅ Tests added for: Git tools, Go tools, File validation, Actionlint, Smart suggestions
-- ✅ Test fixtures created for different scenarios (workflows, binary files, text files)
-- ⏳ **Still needed**: More unit tests for ShellExecutor, ProjectDetector
-- ⏳ **Still needed**: E2E tests for MCP protocol compliance
-- **Current Coverage**: Growing but not yet at 80%+ target
+**❌ Temporary Information:**
 
-#### CI/CD Pipeline ✅ **IMPLEMENTED**
+- Specific test failures and fixes - Should be in commit messages
+- Implementation details of closed issues - Should be in issue/PR history
+- Work-in-progress notes - Should be in active issues
 
-- ✅ **GitHub Actions workflow exists** - Comprehensive CI pipeline in place
-- ✅ Multi-job workflow: lint, test, build, security, integration
-- ✅ Multi-version Node.js testing (18, 20, 22)
-- ✅ Cross-platform testing (Ubuntu, Windows, macOS)
-- ✅ Security auditing (npm audit, Snyk)
-- ✅ Code coverage upload (Codecov)
-- ✅ **release-please workflow** - Automated CHANGELOG and version management
-- ⏳ **Still needed**: Automated releases to npm registry (can be added to release-please workflow)
+### How to Update Strategically
 
-#### Development Tooling ⚠️ **PARTIALLY ADDRESSED**
+**Before adding to CLAUDE.md, ask:**
 
-- ✅ **commitlint configured** - Validates commit messages (dependency exists)
-- ✅ **TypeDoc configured** - API documentation generation via `npm run docs`
-- ✅ **release-please** - Automated CHANGELOG and release management
-- **No Makefile** for the project itself (ironic for a make-tools server!)
-- **No pre-commit hooks** - Should run linting and tests
-- Consider using Husky for git hooks
+1. **Will this be true in 6 months?** If not, it's roadmap bloat
+2. **Can this be discovered via `gh issue list` or README?** If yes, don't duplicate it
+3. **Does this explain architecture/patterns?** If yes, include it
+4. **Is this a quality standard or constraint?** If yes, include it
 
-#### Error Handling Patterns
+**Good additions:**
 
-- MCP protocol errors need consistent handling
-- Tool timeout errors should provide recovery suggestions
-- Network errors for Context7 should fail gracefully
-- File system errors need better user messaging
+- "Always update instructions.md when adding tools" (evergreen principle)
+- "Cache uses checksum-based invalidation" (architectural pattern)
+- "Tests must be fast and well-mocked" (quality standard)
 
-#### Performance Considerations
+**Bad additions:**
 
-- No rate limiting on command execution
-- No command queuing for long-running operations
-- Cache invalidation strategies not fully implemented
-- Resource limits not configurable per tool
+- "Fixed bug #123 on 2025-11-06" (daily log)
+- "Phase 2 tools complete" (roadmap status)
+- "Updated cache TTL from 30s to 60s" (implementation detail)
 
-#### Security Enhancements
+### Keep CLAUDE.md Focused
 
-- Environment variable sanitization needed
-- Secrets should never appear in logs
-- Consider adding audit logging for all commands
-- Need configurable resource limits (CPU, memory, timeout)
-
-#### Platform Compatibility
-
-- Windows path handling needs testing (especially spaces in paths)
-- Shell command differences between platforms not documented
-- Go tool behavior varies between OS (especially file paths)
-
-#### Documentation Gaps ✅ **FULLY ADDRESSED**
-
-- ✅ **CONTRIBUTING.md** - Comprehensive 400+ line contributing guide
-- ✅ **PR template exists** - `.github/pull_request_template.md`
-- ✅ **Issue templates exist** - `.github/ISSUE_TEMPLATE/`
-- ✅ **SECURITY.md** - 220+ line security policy with vulnerability reporting
-- ✅ **CODE_OF_CONDUCT.md** - Contributor Covenant 2.1 community standards
-- ✅ **TypeDoc configured** - API documentation generation via `npm run docs`
-- ✅ **Architecture documentation** - `docs/architecture.md` added (comprehensive system architecture)
-- ✅ **Roadmap documentation** - `docs/roadmap.md` added (quarterly milestones and progress)
-- ✅ **release-please** - Automated CHANGELOG management
-
-### Development Workflow Recommendations
-
-1. **Always run before committing:**
-
-   ```bash
-   npm run lint
-   npm run lint:md  
-   npm run lint:yaml
-   npm test
-   npm run build
-   ```
-
-2. **When adding new Go tools:**
-   - Update `ALLOWED_COMMANDS` in shell-executor.ts
-   - Add to GoTools class with proper error handling
-   - Update index.ts with tool registration and handler
-   - Add usage examples to README.md
-   - Update golang-project.json example
-
-3. **For debugging MCP issues:**
-   - Set `LOG_LEVEL=debug` environment variable
-   - Check Claude Desktop logs at: `~/Library/Logs/Claude/`
-   - Use `console.error` for critical debugging (appears in Claude logs)
-   - Test with standalone MCP client before Claude integration
-
-4. **Performance testing:**
-   - Use `console.time()` and `console.timeEnd()` for benchmarking
-   - Monitor memory usage with `process.memoryUsage()`
-   - Consider implementing telemetry early for production insights
-
-### Production Deployment Considerations
-
-- **Docker support needed** for consistent deployment
-- **Health check endpoint** for monitoring
-- **Graceful shutdown** handling for long-running commands
-- **Connection pooling** for Context7 integration
-- **Retry logic** for transient failures
-- **Circuit breaker** pattern for external dependencies
-
-### Next Session Priorities (Updated 2025-11-03)
-
-#### Completed ✅
-
-1. ~~Create comprehensive test suite~~ - **DONE** (3,700+ lines of tests added)
-2. ~~Set up GitHub Actions CI/CD pipeline~~ - **DONE** (Full CI with multi-platform testing)
-3. ~~Create .github/ templates for issues and PRs~~ - **DONE** (Templates exist)
-
-#### High Priority (P1)
-
-1. **Increase test coverage to 80%+** - Add more unit tests for core utilities
-2. **Configure pre-commit hooks with Husky** - Prevent broken commits
-3. **Add Makefile for project development** - Standardize commands
-4. **Implement rate limiting and resource management** - Prevent abuse
-
-#### Medium Priority (P2)
-
-1. **Add Docker support for containerized deployment** - Container images
-2. **Create performance benchmarking suite** - Track performance over time
-3. ~~**Add CONTRIBUTING.md and SECURITY.md**~~ - ✅ Completed
-4. ~~**TypeDoc generation**~~ - ✅ Completed
-
-### Known Issues & Workarounds
-
-- `npm run lint:yaml` uses js-yaml-cli instead of yamllint (platform compatibility)
-- Context7 integration may timeout on first run (cold start)
-- Go module detection fails if go.mod is in subdirectory
-- Parallel make jobs (-j) can cause output interleaving
-
-## Recent Major Updates
-
-### 2025-11-06: Python Support Epic & Specialized Agents
-
-**Epic #131** - Python Language Support with Modern Tooling (pyright, ruff, uv, pytest)
-
-**GitHub Issues Created:**
-
-- Phase 1 (Core): #132-137 - project_info, test, lint/format, check_types, install_deps, version detection
-- Phase 2 (Advanced): #138-141 - security, build, venv, benchmark
-- Phase 3 (Specialized): #142-144 - update_deps, compatibility, profile
-
-**Key Features:**
-
-- All 13 tools include **cache optimization from the start** (not optional)
-- Follows Go tools pattern (src/tools/go-tools.ts)
-- Modern Python stack: uv, ruff, pyright (not mypy), pytest
-- Python 3.9 upgrade recommendations built-in
-- Cache TTLs: 5min (quick ops) to 2hr (dep checks)
-
-**Specialized Agents Created:**
-
-- `.claude/agents/python-implementation.md` - Haiku agent for Python tool implementation
-- `.claude/agents/issue-triage.md` - Haiku agent for issue categorization using gh CLI
-- `.claude/agents/code-review-fix.md` - Sonnet agent for comprehensive PR review
-
-**Slash Commands:**
-
-- `/implement-python-tool [issue]` - Implement Python tool (Haiku, $0.10-0.25)
-- `/quick-fix [issue]` - Fast bug fixes (Haiku, $0.10-0.25)
-- `/triage-issues [filter]` - Categorize issues (Haiku, $0.05-0.10)
-- `/review-pr [number] [--fix]` - Code review (Sonnet, $2-5)
-
-**Cost Efficiency:**
-
-- Haiku: 95% cheaper than Sonnet for straightforward tasks
-- Strategic Sonnet use only for deep reasoning (code reviews)
-- Estimated savings: $25-62 for 13 Python tools
-
-**Documentation:**
-
-- `.claude/README.md` - Complete agent documentation
-- Cache optimization requirements in all issue comments
-- Integration with GitHub CLI (gh issue/pr commands)
-
-### 2025-11-09: Node.js Language Support - Phase 1
-
-**PR #171** - Implemented Phase 1 of Node.js language support with 6 core tools
-
-**New Tools:**
-
-- `nodejs_project_info` - Comprehensive project analysis (639 lines total in nodejs-tools.ts)
-- `nodejs_test` - Test execution (Jest, Vitest, Mocha)
-- `nodejs_lint` - ESLint integration
-- `nodejs_format` - Prettier formatting
-- `nodejs_check_types` - TypeScript type checking
-- `nodejs_install_deps` - Dependency installation (npm/yarn/pnpm/bun)
-
-**Key Features:**
-
-1. **Smart Detection**
-   - Auto-detects package manager from lockfiles (bun → pnpm → yarn → npm)
-   - Framework detection (React, Vue, Angular, Next.js, NestJS, Express, etc.)
-   - Test framework detection (Jest, Vitest, Mocha)
-   - Build tool detection (Vite, Webpack, Rollup, esbuild, tsup)
-
-2. **Architecture**
-   - Follows Go tools pattern exactly (same structure, caching, error handling)
-   - Uses `nodeModules` cache namespace (5min TTL)
-   - All 6 tools integrated with intelligent caching
-   - Zod schemas for input validation
-
-3. **Testing**
-   - 48% line coverage (8 test cases)
-   - Tests cover: package manager detection, framework detection, error handling
-   - Known gaps: lint/format/checkTypes tools, cache behavior, edge cases
-
-**Key Learnings:**
-
-1. **Test Framework Fallback**
-   - Don't default to 'jest' silently - return error with suggestions
-   - Provide actionable installation instructions
-   - Check for framework in devDependencies before defaulting
-
-2. **Package.json Parsing**
-   - Always wrap JSON.parse() in try-catch
-   - Log errors but continue gracefully
-   - Set hasPackageJson: false on parse failure
-
-3. **Known Limitations** (to address in future PRs):
-   - Test file discovery stubbed (testFiles array empty)
-   - Coverage regex only reliable for Jest (not Vitest/Mocha)
-   - Cache doesn't invalidate on package.json changes
-   - Glob patterns may need shell quoting
-
-**Files Changed:**
-
-- Added: `src/tools/nodejs-tools.ts` (639 lines)
-- Added: `src/__tests__/tools/nodejs-tools.test.ts` (87 lines)
-- Updated: `src/utils/cache-manager.ts` - Added nodeModules namespace
-- Updated: `src/utils/shell-executor.ts` - Added Node.js commands to allowlist
-- Updated: `src/index.ts` - Registered 6 new tools with schemas and handlers
-
-**Epic Progress:**
-
-- Part of Epic #155 (14 tools total)
-- Phase 1 complete: 6/14 tools (43%)
-- Closes: #156, #157, #158, #159, #160, #161
-- Remaining: Phase 2 (5 tools), Phase 3 (3 tools)
-
-### 2025-11-04: Intelligent Caching System (Phases 1-2)
-
-**PR #78** - Implemented intelligent in-process LRU caching with file-based invalidation
-
-**Core Components:**
-
-- `src/utils/cache-manager.ts` (347 lines) - Multi-namespace LRU cache
-- `src/utils/checksum-tracker.ts` (260 lines) - SHA-256 file change detection
-- `src/utils/logger.ts` (77 lines) - Shared logging utility
-- 60+ comprehensive tests with 100% coverage
-
-**Key Learnings:**
-
-1. **MCP Caching Best Practices**
-   - Use in-process L1 caching (no external dependencies like Redis)
-   - External caching adds too many hops and latency
-   - LRU eviction with TTL is sufficient for development tools
-   - File-based invalidation is more reliable than polling intervals
-
-2. **Performance Optimization Patterns**
-   - Fast-path checks before expensive operations (mtime + size before checksum)
-   - Sampling for memory estimation (10 entries) to avoid full iteration
-   - Skip checksums for files >100MB to prevent memory issues
-   - Mutex flags to prevent concurrent expensive operations
-
-3. **Logger Design**
-   - Created shared logger utility to avoid duplication
-   - ProjectDetector was creating its own Winston logger (anti-pattern)
-   - Centralized logger allows consistent configuration and formatting
-   - All utilities should import and use shared logger
-
-4. **Race Condition Protection**
-   - `checkAll()` can take longer than `watchIntervalMs` causing overlaps
-   - Simple mutex flag (`isCheckingAll`) prevents concurrent calls
-   - Alternative: use debouncing or queue-based approach for more complexity
-
-5. **Memory Estimation Trade-offs**
-   - Fixed 1KB per entry is too inaccurate
-   - `JSON.stringify()` provides better estimates but still 20-50% off
-   - True memory tracking requires native modules (not worth the complexity)
-   - Sampling approach balances accuracy vs. performance
-
-**Performance Impact:**
-
-- Project detection: 50-200ms → <1ms (5-10x speedup)
-- Expected hit rate: 90%+ after warmup
-- Memory overhead: <2MB for current implementation
-
-**Architecture Decisions:**
-
-- Multi-namespace design allows different TTLs per data type
-- Singleton pattern with reset capability for testing
-- Configuration-driven with `.mcp-devtools.json` schema
-- LRU eviction prevents unbounded growth
-
-**Known Issues Documented:**
-
-- Memory estimates are approximations (acceptable for development tools)
-- Large files (>100MB) use mtime + size only (no checksum)
-- Race conditions between TTL and file-based invalidation (minor)
-- Cache keys must include all parameters (documented pattern)
-**Documentation:**
-
-- Complete implementation guide in `CACHING.md` (550+ lines)
-- Known issues and limitations section
-- Troubleshooting guide
-- Roadmap for Phases 3-4 (Git/Go tools, file scanning)
-
-### 2025-11-03: AI-Powered Smart Suggestions
-
-**New Features Added:**
-
-#### 1. AI-Powered Smart Suggestions System
-
-- **Tools Added**: `analyze_command`, `analyze_result`, `get_knowledge_base_stats`, `recommend_mcp_servers`
-- **New Files**:
-  - `src/tools/smart-suggestions-tools.ts` (312 lines)
-  - `src/utils/failure-analyzer.ts` (298 lines)
-  - `src/utils/knowledge-base.ts` (382 lines)
-  - `src/utils/suggestion-engine.ts` (358 lines)
-  - `src/utils/mcp-recommendations.ts` (416 lines)
-- **Features**:
-  - Automatic failure pattern recognition (15+ built-in patterns)
-  - Context-aware suggestions based on project type and language
-  - Security vulnerability detection
-  - Performance issue identification
-  - Workflow optimization recommendations
-  - Confidence scoring and priority assignment
-  - MCP server recommendations (Sequential Thinking, Context7, Playwright, etc.)
-
-#### 2. Git Workflow Integration
-
-- **Tools Added**: `code_review`, `generate_pr_message`
-- **New File**: `src/tools/git-tools.ts` (813 lines)
-- **Features**:
-  - Automated code review analysis on Git changes
-  - Security, performance, and maintainability analysis
-  - Severity-based issue categorization (high, medium, low)
-  - PR message generation with conventional commit format
-  - GitHub PR template integration (auto-detects templates)
-  - Breaking changes and issue reference support
-
-#### 3. GitHub Actions Validation
-
-- **Tool Added**: `actionlint`
-- **New File**: `src/tools/actionlint-tools.ts` (360 lines)
-- **Features**:
-  - Validates GitHub Actions workflow files
-  - Syntax error detection
-  - Action parameter validation
-  - shellcheck integration for run blocks
-  - pyflakes support for Python scripts
-  - Multiple output formats (default, JSON, SARIF)
-
-### Test Coverage Improvements
-
-New test files added with comprehensive coverage:
-
-- `src/__tests__/tools/smart-suggestions-tools.test.ts` (498 lines)
-- `src/__tests__/tools/git-tools.test.ts` (817 lines)
-- `src/__tests__/tools/actionlint-tools.test.ts` (362 lines)
-- `src/__tests__/utils/failure-analyzer.test.ts` (278 lines)
-- `src/__tests__/utils/knowledge-base.test.ts` (169 lines)
-- `src/__tests__/utils/suggestion-engine.test.ts` (348 lines)
-- `src/__tests__/utils/mcp-recommendations.test.ts` (408 lines)
-
-**Total new test lines**: ~3,700+ lines of test code added
-
-### CI/CD Updates
-
-- Updated to Node.js 24 in CI pipeline
-- Updated GitHub Actions:
-  - `actions/setup-node@v6`
-  - `actions/upload-artifact@v5`
-- Updated dependencies via Renovate:
-  - `@modelcontextprotocol/sdk@1.21.0`
-  - `eslint@9.39.1`
-  - `@typescript-eslint/*@8.46.3`
-  - `@commitlint/*@20.0.0`
-
-### Documentation Enhancements
-
-- Architecture documentation added (`docs/architecture.md` - comprehensive system design)
-- Roadmap documentation added (`docs/roadmap.md` - quarterly milestones on GitHub Pages)
-- README.md significantly expanded with:
-  - Smart suggestions documentation
-  - Git tools usage examples
-  - Actionlint usage guide
-  - File validation examples
-
-### Tool Count Growth
-
-- **Previous**: ~30 tools
-- **Current**: 40+ tools registered in index.ts
-- **New categories**: AI-powered analysis, Git workflows, CI/CD validation
-
-Remember: This project prioritizes Go support, security, and developer experience in that order.
+CLAUDE.md should be a **strategic guide for working in this codebase**, not a **historical log of changes**.
+For history, use git log, GitHub issues, and CHANGELOG.md.
