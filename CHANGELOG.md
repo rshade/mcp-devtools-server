@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.0](https://github.com/rshade/mcp-devtools-server/compare/mcp-devtools-server-v0.1.0...mcp-devtools-server-v0.2.0) (2025-11-15)
+
+
+### Added
+
+* add StandardError utility module and align FailureAnalyzer codes ([#229](https://github.com/rshade/mcp-devtools-server/issues/229)) ([ad3ed9c](https://github.com/rshade/mcp-devtools-server/commit/ad3ed9c7e27e990b309d692c94e9bc36c6b495cb))
+
 ## [0.1.0](https://github.com/rshade/mcp-devtools-server/compare/mcp-devtools-server-v0.0.1...mcp-devtools-server-v0.1.0) (2025-11-14)
 
 
