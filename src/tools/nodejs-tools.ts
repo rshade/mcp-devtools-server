@@ -178,6 +178,18 @@ const NodejsProfileArgsSchema = z.object({
   timeout: z.number().optional().describe("Command timeout in milliseconds"),
 });
 
+const NodejsPackageInfoArgsSchema = z.object({
+  packageName: z.string().describe("Package name to look up"),
+  versionLimit: z
+    .number()
+    .optional()
+    .describe("Maximum number of recent versions to include (default: 5)"),
+  includeDeprecations: z
+    .boolean()
+    .optional()
+    .describe("Include deprecation warnings (default: true)"),
+});
+
 export type NodejsToolArgs = z.infer<typeof NodejsToolArgsSchema>;
 export type NodejsTestArgs = z.infer<typeof NodejsTestArgsSchema>;
 export type NodejsLintArgs = z.infer<typeof NodejsLintArgsSchema>;
@@ -194,6 +206,7 @@ export type NodejsCompatibilityArgs = z.infer<
   typeof NodejsCompatibilityArgsSchema
 >;
 export type NodejsProfileArgs = z.infer<typeof NodejsProfileArgsSchema>;
+export type NodejsPackageInfoArgs = z.infer<typeof NodejsPackageInfoArgsSchema>;
 
 export interface NodejsToolResult {
   success: boolean;
@@ -1545,6 +1558,217 @@ export class NodejsTools {
   }
 
   /**
+   * Get package information from npm registry
+   * Prioritizes latest versions to help avoid audit issues
+   */
+  async getPackageInfo(args: NodejsPackageInfoArgs): Promise<NodejsToolResult> {
+    const packageName = args.packageName;
+    const versionLimit = args.versionLimit || 5;
+    const includeDeprecations = args.includeDeprecations !== false;
+
+    // Try cache first
+    const cacheKey = this.buildNodejsCacheKey("package-info", { packageName });
+    const cached = this.cacheManager.get<NodejsToolResult>(
+      "nodeModules",
+      cacheKey,
+    );
+    if (cached) {
+      return cached;
+    }
+
+    try {
+      // Fetch package info from npm registry
+      const result = await this.executor.execute("npm", {
+        cwd: this.projectRoot,
+        args: ["view", packageName, "--json"],
+        timeout: 15000,
+      });
+
+      if (!result.success) {
+        return {
+          success: false,
+          command: `npm view ${packageName} --json`,
+          output: "",
+          error: `Failed to fetch package info: ${result.error || result.stderr}`,
+          duration: result.duration,
+          suggestions: [
+            `Check package name is correct: "${packageName}"`,
+            "Ensure npm registry is accessible",
+            "Try: npm view package.name",
+          ],
+        };
+      }
+
+      let packageData: Record<string, unknown>;
+      try {
+        packageData = JSON.parse(result.stdout);
+      } catch {
+        return {
+          success: false,
+          command: `npm view ${packageName} --json`,
+          output: "",
+          error: "Failed to parse npm registry response",
+          duration: result.duration,
+          suggestions: [
+            "npm registry may be temporarily unavailable",
+            "Try again in a few moments",
+          ],
+        };
+      }
+
+      // Extract key information
+      const latestVersion = (packageData["dist-tags"] as Record<string, string>)
+        ?.latest;
+      const allVersions = (packageData.versions as string[]) || [];
+      const versions = allVersions.slice(-versionLimit).reverse(); // Latest first
+      const description = packageData.description as string;
+      const homepage = packageData.homepage as string | undefined;
+      const license = packageData.license as string | undefined;
+      const keywords = packageData.keywords as string[] | undefined;
+
+      // Get metadata for the latest version
+      const latestVersionData =
+        packageData.time && typeof packageData.time === "object"
+          ? ((packageData.time as Record<string, string>) || {})
+          : {};
+      const latestPublishedDate =
+        latestVersionData[latestVersion || ""] || "unknown";
+
+      // Check if package is stale (no updates in 6+ months)
+      let staleWarning = "";
+      let isStale = false;
+      try {
+        if (
+          latestPublishedDate &&
+          latestPublishedDate !== "unknown" &&
+          typeof latestPublishedDate === "string"
+        ) {
+          const publishedDate = new Date(latestPublishedDate);
+          const now = new Date();
+          const daysSinceUpdate = Math.floor(
+            (now.getTime() - publishedDate.getTime()) / (1000 * 60 * 60 * 24),
+          );
+
+          // Flag as stale if > 180 days (6 months) without update
+          if (daysSinceUpdate > 180) {
+            isStale = true;
+            const yearsOld =
+              daysSinceUpdate > 365
+                ? `${Math.floor(daysSinceUpdate / 365)} year${Math.floor(daysSinceUpdate / 365) > 1 ? "s" : ""}`
+                : `${daysSinceUpdate} days`;
+            staleWarning = `⚠️  STALE PACKAGE: Last update was ${yearsOld} ago (${latestPublishedDate}). Consider if this package is still actively maintained.`;
+          }
+        }
+      } catch {
+        // Silently ignore date parsing errors
+      }
+
+      // Build formatted output
+      const output = [
+        `📦 Package: ${packageName}`,
+        `Latest Version: ${latestVersion || "unknown"}`,
+        `Published: ${latestPublishedDate}`,
+        staleWarning,
+        "",
+        description ? `Description: ${description}` : "",
+        "",
+        `Recent Versions (Latest First):`,
+        versions
+          .map((v, idx) => {
+            const published = latestVersionData[v] || "unknown";
+            const marker = idx === 0 ? "✓ (latest)" : "";
+            return `  ${v} ${marker} - ${published}`;
+          })
+          .join("\n"),
+        "",
+      ];
+
+      // Add peer dependencies if available
+      const versionMetadata = packageData[latestVersion || ""] as
+        | Record<string, unknown>
+        | undefined;
+      if (
+        versionMetadata &&
+        typeof versionMetadata === "object" &&
+        versionMetadata.peerDependencies
+      ) {
+        const peerDeps = versionMetadata.peerDependencies as Record<
+          string,
+          string
+        >;
+        output.push("Peer Dependencies (can cause audit conflicts):");
+        Object.entries(peerDeps).forEach(([pkg, version]) => {
+          output.push(`  ${pkg}: ${version}`);
+        });
+        output.push("");
+      }
+
+      // Add deprecation warnings if requested
+      if (includeDeprecations && packageData.deprecated) {
+        output.push(`⚠️  DEPRECATION WARNING:`);
+        output.push(`${packageData.deprecated}`);
+        output.push("");
+      }
+
+      // Add helpful metadata
+      if (license) {
+        output.push(`License: ${license}`);
+      }
+      if (keywords && keywords.length > 0) {
+        output.push(`Keywords: ${keywords.slice(0, 5).join(", ")}`);
+      }
+      if (homepage) {
+        output.push(`Homepage: ${homepage}`);
+      }
+
+      output.push("");
+      output.push(
+        `💡 Tip: Install with: npm install ${packageName}@${latestVersion}`,
+      );
+
+      const suggestions: string[] = [];
+      if (isStale) {
+        suggestions.push(
+          `⚠️  Package is stale (${staleWarning.split("ago")[0].replace("⚠️  STALE PACKAGE: Last update was ", "")}). Verify this is the right choice or look for maintained alternatives.`,
+        );
+      }
+      suggestions.push(
+        `Use latest version to avoid audit issues: npm install ${packageName}@${latestVersion}`,
+      );
+      suggestions.push(
+        "Check peer dependencies compatibility with your current packages",
+      );
+      suggestions.push("Run npm audit after installing to verify compatibility");
+
+      const toolResult: NodejsToolResult = {
+        success: true,
+        output: output.filter(Boolean).join("\n"),
+        command: `npm view ${packageName}`,
+        duration: result.duration,
+        suggestions,
+      };
+
+      // Cache result
+      this.cacheManager.set("nodeModules", cacheKey, toolResult);
+
+      return toolResult;
+    } catch (error) {
+      return {
+        success: false,
+        command: `npm view ${packageName}`,
+        output: "",
+        error: `Error fetching package info: ${(error as Error).message}`,
+        duration: 0,
+        suggestions: [
+          "Ensure npm is installed and working",
+          "Check internet connection",
+          "Verify package name spelling",
+        ],
+      };
+    }
+  }
+
+  /**
    * Validate Node.js tool arguments
    */
   static validateArgs(args: unknown): NodejsToolArgs {
@@ -1640,5 +1864,12 @@ export class NodejsTools {
    */
   static validateProfileArgs(args: unknown): NodejsProfileArgs {
     return NodejsProfileArgsSchema.parse(args);
+  }
+
+  /**
+   * Validate Node.js package info arguments
+   */
+  static validatePackageInfoArgs(args: unknown): NodejsPackageInfoArgs {
+    return NodejsPackageInfoArgsSchema.parse(args);
   }
 }
