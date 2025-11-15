@@ -1,6 +1,14 @@
-import { describe, it, expect, beforeEach, afterEach } from "@jest/globals";
+import {
+  describe,
+  it,
+  expect,
+  beforeEach,
+  afterEach,
+  jest,
+} from "@jest/globals";
 import { NodejsTools } from "../../tools/nodejs-tools.js";
 import { CacheManager } from "../../utils/cache-manager.js";
+import type { ExecutionResult } from "../../utils/shell-executor.js";
 
 /**
  * Unit tests for Phase 3 Node.js tools
@@ -23,6 +31,28 @@ describe("NodejsTools - Phase 3 Unit Tests", () => {
   });
 
   describe("updateDependencies - validation and errors", () => {
+    type MockFn = ReturnType<typeof jest.fn>;
+    let mockExecute: MockFn;
+
+    beforeEach(() => {
+      const mockExecutor = {
+        execute: jest.fn(
+          async () =>
+            ({
+              success: true,
+              stdout: "Dependencies updated",
+              stderr: "",
+              exitCode: 0,
+              duration: 50,
+              command: "mock update",
+            } satisfies ExecutionResult),
+        ),
+      };
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (tools as any).executor = mockExecutor;
+      mockExecute = mockExecutor.execute as MockFn;
+    });
+
     it("should provide guidance for npm latest updates", async () => {
       // Note: packageManager is auto-detected from project
       const result = await tools.updateDependencies({
@@ -46,6 +76,7 @@ describe("NodejsTools - Phase 3 Unit Tests", () => {
       // Verify it detected and used a package manager
       expect(result.command).toBeDefined();
       expect(result.command).toMatch(/^(npm|yarn|pnpm|bun)\s+(update|upgrade)/);
+      expect(mockExecute).toHaveBeenCalled();
 
       // For npm, it should not use 'latest' flag
       if (result.command.startsWith("npm")) {

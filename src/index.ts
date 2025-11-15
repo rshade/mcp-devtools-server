@@ -1407,6 +1407,31 @@ class MCPDevToolsServer {
             },
           },
         },
+        {
+          name: "nodejs_package_info",
+          description:
+            "Fetch package information from npm registry including latest versions, compatibility, and peer dependencies to help avoid audit issues",
+          inputSchema: {
+            type: "object",
+            properties: {
+              packageName: {
+                type: "string",
+                description: "Package name to look up (e.g., 'lru-cache', '@types/node')",
+              },
+              versionLimit: {
+                type: "number",
+                description:
+                  "Maximum number of recent versions to include (default: 5, shows latest first)",
+              },
+              includeDeprecations: {
+                type: "boolean",
+                description:
+                  "Include deprecation warnings for older versions (default: true)",
+              },
+            },
+            required: ["packageName"],
+          },
+        },
 
         // Status and analysis tools
         {
@@ -2519,6 +2544,19 @@ class MCPDevToolsServer {
           case "nodejs_profile": {
             const validatedArgs = NodejsTools.validateProfileArgs(args);
             const result = await this.nodejsTools.runProfile(validatedArgs);
+            return {
+              content: [
+                {
+                  type: "text",
+                  text: this.formatNodejsToolResult(result),
+                },
+              ],
+            };
+          }
+
+          case "nodejs_package_info": {
+            const validatedArgs = NodejsTools.validatePackageInfoArgs(args);
+            const result = await this.nodejsTools.getPackageInfo(validatedArgs);
             return {
               content: [
                 {
