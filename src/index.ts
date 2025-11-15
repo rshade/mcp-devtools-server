@@ -33,6 +33,11 @@ import {
   NodejsProjectInfo,
 } from "./tools/nodejs-tools.js";
 import {
+  PythonTools,
+  PythonToolResult,
+  PythonProjectInfo,
+} from "./tools/python-tools.js";
+import {
   FileValidationTools,
   EnsureNewlineResult,
 } from "./tools/file-validation-tools.js";
@@ -109,6 +114,7 @@ class MCPDevToolsServer {
   private testTools: TestTools;
   private goTools: GoTools;
   private nodejsTools: NodejsTools;
+  private pythonTools: PythonTools;
   private fileValidationTools: FileValidationTools;
   private actionlintTools: ActionlintTools;
   private gitTools: GitTools;
@@ -152,6 +158,7 @@ class MCPDevToolsServer {
     this.testTools = new TestTools(projectRoot);
     this.goTools = new GoTools(projectRoot);
     this.nodejsTools = new NodejsTools(projectRoot);
+    this.pythonTools = new PythonTools(projectRoot);
     this.fileValidationTools = new FileValidationTools();
     this.actionlintTools = new ActionlintTools(projectRoot);
     this.gitTools = new GitTools(projectRoot);
@@ -2008,6 +2015,224 @@ class MCPDevToolsServer {
             },
           },
         },
+
+        // Python tools
+        {
+          name: "python_project_info",
+          description:
+            "Analyze Python project configuration, dependencies, and structure (pyproject.toml, setup.py, requirements.txt detection with caching)",
+          inputSchema: {
+            type: "object",
+            properties: {
+              directory: {
+                type: "string",
+                description: "Working directory for the command",
+              },
+            },
+          },
+        },
+        {
+          name: "python_test",
+          description:
+            "Run Python tests using pytest with coverage reporting and test selection",
+          inputSchema: {
+            type: "object",
+            properties: {
+              directory: {
+                type: "string",
+                description: "Working directory for the command",
+              },
+              testPath: {
+                type: "string",
+                description: "Specific test file or directory to run",
+              },
+              pattern: {
+                type: "string",
+                description: "Test file pattern to match using -k flag (e.g., test_foo)",
+              },
+              coverage: {
+                type: "boolean",
+                description: "Enable coverage reporting",
+              },
+              verbose: {
+                type: "boolean",
+                description: "Enable verbose output",
+              },
+              markers: {
+                type: "string",
+                description: "Run tests matching given mark expression (-m)",
+              },
+              args: {
+                type: "array",
+                items: { type: "string" },
+                description: "Additional arguments",
+              },
+              timeout: {
+                type: "number",
+                description: "Command timeout in milliseconds",
+              },
+            },
+          },
+        },
+        {
+          name: "python_lint",
+          description:
+            "Lint Python code using ruff check with auto-fix support",
+          inputSchema: {
+            type: "object",
+            properties: {
+              directory: {
+                type: "string",
+                description: "Working directory",
+              },
+              fix: {
+                type: "boolean",
+                description: "Automatically fix issues",
+              },
+              check: {
+                type: "boolean",
+                description: "Check only, don't modify files",
+              },
+              files: {
+                type: "array",
+                items: { type: "string" },
+                description: "Specific files to lint/format",
+              },
+              args: {
+                type: "array",
+                items: { type: "string" },
+                description: "Additional arguments",
+              },
+              timeout: {
+                type: "number",
+                description: "Command timeout in milliseconds",
+              },
+            },
+          },
+        },
+        {
+          name: "python_format",
+          description:
+            "Format Python code using ruff format with check mode support",
+          inputSchema: {
+            type: "object",
+            properties: {
+              directory: {
+                type: "string",
+                description: "Working directory",
+              },
+              check: {
+                type: "boolean",
+                description: "Check without modifying files",
+              },
+              files: {
+                type: "array",
+                items: { type: "string" },
+                description: "Specific files to format",
+              },
+              args: {
+                type: "array",
+                items: { type: "string" },
+                description: "Additional arguments",
+              },
+              timeout: {
+                type: "number",
+                description: "Command timeout in milliseconds",
+              },
+            },
+          },
+        },
+        {
+          name: "python_check_types",
+          description:
+            "Check Python types using pyright with watch and verbose mode support",
+          inputSchema: {
+            type: "object",
+            properties: {
+              directory: {
+                type: "string",
+                description: "Working directory",
+              },
+              watch: {
+                type: "boolean",
+                description: "Watch mode",
+              },
+              verbose: {
+                type: "boolean",
+                description: "Enable verbose output",
+              },
+              args: {
+                type: "array",
+                items: { type: "string" },
+                description: "Additional arguments",
+              },
+              timeout: {
+                type: "number",
+                description: "Command timeout in milliseconds",
+              },
+            },
+          },
+        },
+        {
+          name: "python_install_deps",
+          description:
+            "Install Python dependencies using uv, poetry, pipenv, or pip with package manager auto-detection",
+          inputSchema: {
+            type: "object",
+            properties: {
+              directory: {
+                type: "string",
+                description: "Working directory",
+              },
+              packageManager: {
+                type: "string",
+                enum: ["auto", "uv", "poetry", "pipenv", "pip"],
+                description: "Package manager to use (auto-detected by default)",
+              },
+              dev: {
+                type: "boolean",
+                description: "Install development dependencies too",
+              },
+              args: {
+                type: "array",
+                items: { type: "string" },
+                description: "Additional arguments",
+              },
+              timeout: {
+                type: "number",
+                description: "Command timeout in milliseconds",
+              },
+            },
+          },
+        },
+        {
+          name: "python_version",
+          description:
+            "Get version information for Python tools (python, pip, uv, poetry, pyright, ruff, pytest) with caching",
+          inputSchema: {
+            type: "object",
+            properties: {
+              directory: {
+                type: "string",
+                description: "Working directory",
+              },
+              tool: {
+                type: "string",
+                enum: [
+                  "python",
+                  "pip",
+                  "uv",
+                  "poetry",
+                  "pyright",
+                  "ruff",
+                  "pytest",
+                  "all",
+                ],
+                description: "Tool to check version for (default: all)",
+              },
+            },
+          },
+        },
       ];
 
       // Get plugin tools
@@ -2801,6 +3026,97 @@ class MCPDevToolsServer {
             };
           }
 
+          case "python_project_info": {
+            const validatedArgs = PythonTools.validateProjectInfoArgs(args);
+            const result = await this.pythonTools.pythonProjectInfo(validatedArgs);
+            return {
+              content: [
+                {
+                  type: "text",
+                  text: this.formatPythonProjectInfo(result),
+                },
+              ],
+            };
+          }
+
+          case "python_test": {
+            const validatedArgs = PythonTools.validateTestArgs(args);
+            const result = await this.pythonTools.pythonTest(validatedArgs);
+            return {
+              content: [
+                {
+                  type: "text",
+                  text: this.formatPythonToolResult("Python Test", result),
+                },
+              ],
+            };
+          }
+
+          case "python_lint": {
+            const validatedArgs = PythonTools.validateLintArgs(args);
+            const result = await this.pythonTools.pythonLint(validatedArgs);
+            return {
+              content: [
+                {
+                  type: "text",
+                  text: this.formatPythonToolResult("Python Lint", result),
+                },
+              ],
+            };
+          }
+
+          case "python_format": {
+            const validatedArgs = PythonTools.validateLintArgs(args);
+            const result = await this.pythonTools.pythonFormat(validatedArgs);
+            return {
+              content: [
+                {
+                  type: "text",
+                  text: this.formatPythonToolResult("Python Format", result),
+                },
+              ],
+            };
+          }
+
+          case "python_check_types": {
+            const validatedArgs = PythonTools.validateTypeCheckArgs(args);
+            const result = await this.pythonTools.pythonCheckTypes(validatedArgs);
+            return {
+              content: [
+                {
+                  type: "text",
+                  text: this.formatPythonToolResult("Python Check Types", result),
+                },
+              ],
+            };
+          }
+
+          case "python_install_deps": {
+            const validatedArgs = PythonTools.validateInstallDepsArgs(args);
+            const result = await this.pythonTools.pythonInstallDeps(validatedArgs);
+            return {
+              content: [
+                {
+                  type: "text",
+                  text: this.formatPythonToolResult("Python Install Deps", result),
+                },
+              ],
+            };
+          }
+
+          case "python_version": {
+            const validatedArgs = PythonTools.validateVersionArgs(args);
+            const result = await this.pythonTools.pythonVersion(validatedArgs);
+            return {
+              content: [
+                {
+                  type: "text",
+                  text: this.formatPythonToolResult("Python Version", result),
+                },
+              ],
+            };
+          }
+
           default:
             // Check if this is a plugin tool
             const pluginTools = await this.pluginManager.getAllTools();
@@ -3042,6 +3358,84 @@ class MCPDevToolsServer {
       output += `**Suggestions:**\n`;
       for (const suggestion of result.suggestions) {
         output += `- ${suggestion}\n`;
+      }
+    }
+
+    return output;
+  }
+
+  private formatPythonToolResult(
+    toolName: string,
+    result: PythonToolResult,
+  ): string {
+    let output = `## ${toolName} Results\n\n`;
+    output += `**Status:** ${result.success ? "✅ Success" : "❌ Failed"}\n`;
+    output += `**Duration:** ${result.duration}ms\n`;
+    output += `**Command:** ${result.command}\n`;
+
+    if (result.coverage !== undefined) {
+      output += `**Coverage:** ${result.coverage}%\n`;
+    }
+
+    output += `\n`;
+
+    if (result.output) {
+      output += `**Output:**\n\`\`\`\n${result.output}\n\`\`\`\n\n`;
+    }
+
+    if (result.error) {
+      output += `**Error:** ${result.error}\n\n`;
+    }
+
+    if (result.suggestions && result.suggestions.length > 0) {
+      output += `**Suggestions:**\n`;
+      for (const suggestion of result.suggestions) {
+        output += `- ${suggestion}\n`;
+      }
+    }
+
+    return output;
+  }
+
+  private formatPythonProjectInfo(result: PythonProjectInfo): string {
+    let output = `## Python Project Information\n\n`;
+
+    // Project metadata
+    if (result.projectName) {
+      output += `**Project Name:** ${result.projectName}\n`;
+    }
+    if (result.projectVersion) {
+      output += `**Project Version:** ${result.projectVersion}\n`;
+    }
+    if (result.pythonVersion) {
+      output += `**Python Version:** ${result.pythonVersion}\n`;
+    }
+    if (result.packageManager) {
+      output += `**Package Manager:** ${result.packageManager}\n`;
+    }
+
+    output += "\n### Configuration Files\n\n";
+    output += `- **pyproject.toml:** ${result.hasPyprojectToml ? "✅ Found" : "❌ Not found"}\n`;
+    output += `- **setup.py:** ${result.hasSetupPy ? "✅ Found" : "❌ Not found"}\n`;
+    output += `- **requirements.txt:** ${result.hasRequirementsTxt ? "✅ Found" : "❌ Not found"}\n`;
+
+    if (result.dependencies && result.dependencies.length > 0) {
+      output += `\n### Dependencies (${result.dependencies.length})\n\n`;
+      for (const dep of result.dependencies.slice(0, 10)) {
+        output += `- ${dep}\n`;
+      }
+      if (result.dependencies.length > 10) {
+        output += `- ... and ${result.dependencies.length - 10} more\n`;
+      }
+    }
+
+    if (result.testFiles && result.testFiles.length > 0) {
+      output += `\n### Test Files (${result.testFiles.length})\n\n`;
+      for (const testFile of result.testFiles.slice(0, 10)) {
+        output += `- ${testFile}\n`;
+      }
+      if (result.testFiles.length > 10) {
+        output += `- ... and ${result.testFiles.length - 10} more\n`;
       }
     }
 

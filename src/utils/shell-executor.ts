@@ -54,7 +54,18 @@ const ALLOWED_COMMANDS = new Set([
   "jest",
   "vitest",
   "mocha",
+  // Python tools
+  "python",
+  "python3",
+  "pip",
+  "pip3",
+  "uv",
+  "poetry",
+  "pipenv",
+  "ruff",
+  "pyright",
   "pytest",
+  // Go tools
   "go",
   "gofmt",
   "golangci-lint",
