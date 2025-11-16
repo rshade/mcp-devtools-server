@@ -32,5 +32,9 @@ export default {
     'html'
   ],
   setupFilesAfterEnv: ['<rootDir>/src/__tests__/setup.ts'],
-  testTimeout: 30000
+  testTimeout: 30000,
+  // Disable git-based changed files detection to avoid issues in worktrees
+  changedFilesWithAncestor: false,
+  lastCommit: false,
+  onlyChanged: false
 };
