@@ -3066,7 +3066,7 @@ class MCPDevToolsServer {
           }
 
           case "python_format": {
-            const validatedArgs = PythonTools.validateLintArgs(args);
+            const validatedArgs = PythonTools.validateFormatArgs(args);
             const result = await this.pythonTools.pythonFormat(validatedArgs);
             return {
               content: [
