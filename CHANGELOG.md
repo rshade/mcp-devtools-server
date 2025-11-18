@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.0](https://github.com/rshade/mcp-devtools-server/compare/mcp-devtools-server-v0.2.0...mcp-devtools-server-v0.3.0) (2025-11-18)
+
+
+### Added
+
+* implement ErrorEnricher service for error analysis (Issue [#217](https://github.com/rshade/mcp-devtools-server/issues/217)) ([#236](https://github.com/rshade/mcp-devtools-server/issues/236)) ([cefcd0b](https://github.com/rshade/mcp-devtools-server/commit/cefcd0ba9e8bfdc08b667e695ac636b6010170e3)), closes [#222](https://github.com/rshade/mcp-devtools-server/issues/222)
+* implement Phase 1 Python language support with modern tooling ([#238](https://github.com/rshade/mcp-devtools-server/issues/238)) ([ddfc3ae](https://github.com/rshade/mcp-devtools-server/commit/ddfc3ae303a3e2643a7bd9260791efbb9956c253))
+
 ## [0.2.0](https://github.com/rshade/mcp-devtools-server/compare/mcp-devtools-server-v0.1.0...mcp-devtools-server-v0.2.0) (2025-11-16)
 
 
