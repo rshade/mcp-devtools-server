@@ -36,6 +36,19 @@ const PythonTestArgsSchema = z.object({
     .string()
     .optional()
     .describe("Run tests matching given mark expression (-m)"),
+  parallel: z
+    .boolean()
+    .optional()
+    .describe("Run tests in parallel with pytest-xdist"),
+  maxWorkers: z
+    .number()
+    .optional()
+    .describe("Number of parallel workers (default: auto)"),
+  failFast: z
+    .boolean()
+    .optional()
+    .describe("Stop on first failure (-x)"),
+  junitXml: z.string().optional().describe("Output JUnit XML to file"),
   args: z.array(z.string()).optional().describe("Additional arguments"),
   timeout: z.number().optional().describe("Command timeout in milliseconds"),
 });
@@ -48,12 +61,56 @@ const PythonLintArgsSchema = z.object({
     .array(z.string())
     .optional()
     .describe("Specific files to lint/format"),
+  select: z
+    .array(z.string())
+    .optional()
+    .describe('Rule codes to enable (e.g., ["E", "F", "I"])'),
+  ignore: z.array(z.string()).optional().describe("Rule codes to ignore"),
+  outputFormat: z
+    .enum(["text", "json", "github"])
+    .optional()
+    .describe("Output format"),
+  showFixes: z.boolean().optional().describe("Show available fixes"),
+  args: z.array(z.string()).optional().describe("Additional arguments"),
+  timeout: z.number().optional().describe("Command timeout in milliseconds"),
+});
+
+const PythonFormatArgsSchema = z.object({
+  directory: z.string().optional().describe("Working directory"),
+  check: z
+    .boolean()
+    .optional()
+    .describe("Check without modifying"),
+  files: z.array(z.string()).optional().describe("Specific files to format"),
+  lineLength: z.number().optional().describe("Max line length"),
+  preview: z
+    .boolean()
+    .optional()
+    .describe("Enable preview style"),
   args: z.array(z.string()).optional().describe("Additional arguments"),
   timeout: z.number().optional().describe("Command timeout in milliseconds"),
 });
 
 const PythonTypeCheckArgsSchema = z.object({
   directory: z.string().optional().describe("Working directory"),
+  files: z.array(z.string()).optional().describe("Specific files to check"),
+  level: z
+    .enum(["basic", "standard", "strict"])
+    .optional()
+    .describe("Type checking strictness level"),
+  outputFormat: z
+    .enum(["text", "json"])
+    .optional()
+    .describe("Output format"),
+  createStubs: z
+    .boolean()
+    .optional()
+    .describe("Create type stubs for untyped libraries"),
+  pythonVersion: z
+    .string()
+    .optional()
+    .describe('Target Python version (e.g., "3.11")'),
+  showStats: z.boolean().optional().describe("Show statistics"),
   watch: z.boolean().optional().describe("Watch mode"),
   verbose: z.boolean().optional().describe("Enable verbose output"),
   args: z.array(z.string()).optional().describe("Additional arguments"),
@@ -62,6 +119,14 @@ const PythonTypeCheckArgsSchema = z.object({
 
 const PythonInstallDepsArgsSchema = z.object({
   directory: z.string().optional().describe("Working directory"),
+  mode: z
+    .enum(["install", "sync", "update", "add", "remove"])
+    .optional()
+    .describe("Installation mode"),
+  packages: z
+    .array(z.string())
+    .optional()
+    .describe("Packages to add/remove (for add/remove modes)"),
   packageManager: z
     .enum(["auto", "uv", "poetry", "pipenv", "pip"])
     .optional()
@@ -70,6 +135,19 @@ const PythonInstallDepsArgsSchema = z.object({
     .boolean()
     .optional()
     .describe("Install development dependencies too"),
+  upgrade: z.boolean().optional().describe("Upgrade packages"),
+  prerelease: z
+    .enum(["allow", "if-necessary", "disallow"])
+    .optional()
+    .describe("Pre-release handling (uv only)"),
+  system: z
+    .boolean()
+    .optional()
+    .describe("Install to system Python (uv only)"),
+  editable: z
+    .boolean()
+    .optional()
+    .describe("Install in editable mode"),
   args: z.array(z.string()).optional().describe("Additional arguments"),
   timeout: z.number().optional().describe("Command timeout in milliseconds"),
 });
@@ -89,6 +167,7 @@ const PythonVersionArgsSchema = z.object({
 export type PythonProjectInfoArgs = z.infer<typeof PythonProjectInfoSchema>;
 export type PythonTestArgs = z.infer<typeof PythonTestArgsSchema>;
 export type PythonLintArgs = z.infer<typeof PythonLintArgsSchema>;
+export type PythonFormatArgs = z.infer<typeof PythonFormatArgsSchema>;
 export type PythonTypeCheckArgs = z.infer<typeof PythonTypeCheckArgsSchema>;
 export type PythonInstallDepsArgs = z.infer<typeof PythonInstallDepsArgsSchema>;
 export type PythonVersionArgs = z.infer<typeof PythonVersionArgsSchema>;
@@ -107,11 +186,20 @@ export interface PythonToolResult {
   suggestions?: string[];
 }
 
+export interface PythonVersionInfo {
+  current: string;
+  required?: string;
+  isEOL: boolean;
+  recommendation: string | null;
+  upgradeReason?: string;
+}
+
 export interface PythonProjectInfo {
   hasPyprojectToml: boolean;
   hasSetupPy: boolean;
   hasRequirementsTxt: boolean;
   pythonVersion?: string;
+  pythonVersionInfo?: PythonVersionInfo;
   packageManager?: string;
   projectName?: string;
   projectVersion?: string;
@@ -229,6 +317,110 @@ export class PythonTools {
   }
 
   /**
+   * Check if Python version is End of Life
+   */
+  private isPythonEOL(major: number, minor: number): boolean {
+    const eolVersions = [
+      { major: 3, minor: 7, eolDate: "2023-06-27" },
+      { major: 3, minor: 8, eolDate: "2024-10-14" },
+      { major: 3, minor: 9, eolDate: "2025-10-05" },
+    ];
+
+    return eolVersions.some(
+      (v) =>
+        v.major === major &&
+        v.minor === minor &&
+        new Date() > new Date(v.eolDate),
+    );
+  }
+
+  /**
+   * Get required Python version from pyproject.toml
+   */
+  private async getRequiredPythonVersion(
+    directory: string,
+  ): Promise<string | undefined> {
+    const pyprojectPath = path.join(directory, "pyproject.toml");
+    try {
+      await fs.access(pyprojectPath);
+      const content = await fs.readFile(pyprojectPath, "utf-8");
+      const match = content.match(/requires-python\s*=\s*"([^"]+)"/);
+      return match ? match[1] : undefined;
+    } catch {
+      return undefined;
+    }
+  }
+
+  /**
+   * Check Python version and generate PythonVersionInfo
+   */
+  private async checkPythonVersion(
+    directory: string,
+  ): Promise<PythonVersionInfo | undefined> {
+    try {
+      const pythonExecutable = await this.detectPythonExecutable();
+      if (!pythonExecutable) {
+        return undefined;
+      }
+
+      const versionResult = await this.executor.execute(pythonExecutable, {
+        cwd: directory,
+        args: ["--version"],
+        timeout: PythonTools.TIMEOUT_VERSION_CHECK,
+      });
+
+      if (!versionResult.success) {
+        return undefined;
+      }
+
+      const versionMatch = versionResult.stdout.match(/Python (\d+\.\d+\.\d+)/);
+      const current = versionMatch ? versionMatch[1] : "unknown";
+
+      if (current === "unknown") {
+        return {
+          current,
+          isEOL: false,
+          recommendation: null,
+        };
+      }
+
+      // Parse version
+      const [major, minor] = current.split(".").map(Number);
+
+      // Check if EOL
+      const isEOL = this.isPythonEOL(major, minor);
+
+      // Get required version from pyproject.toml
+      const required = await this.getRequiredPythonVersion(directory);
+
+      // Generate recommendation (using existing method)
+      const recommendation = this.shouldRecommendUpgrade(current)
+        ? this.getUpgradeRecommendation(current)
+        : null;
+
+      // Get upgrade reason
+      const upgradeReason =
+        major !== 3
+          ? undefined
+          : minor <= 9
+            ? "Security updates discontinued, performance improvements available"
+            : minor === 10
+              ? "Approaching end of life"
+              : undefined;
+
+      return {
+        current,
+        required,
+        isEOL,
+        recommendation,
+        upgradeReason,
+      };
+    } catch {
+      return undefined;
+    }
+  }
+
+  /**
    * Get Python project information
    * Detects Python version, package manager, dependencies, and project structure
    */
@@ -237,10 +429,10 @@ export class PythonTools {
   ): Promise<PythonProjectInfo> {
     const dir = args.directory || this.projectRoot;
 
-    // Try cache first
+    // Try cache first (uses projectDetection namespace: 60s TTL)
     const cacheKey = this.buildPythonCacheKey("project-info", { directory: dir });
     const cached = this.cacheManager.get<PythonProjectInfo>(
-      "pythonTools",
+      "projectDetection",
       cacheKey,
     );
     if (cached) {
@@ -357,37 +549,18 @@ export class PythonTools {
         }
       }
 
-      // Detect Python version using the cached detection method
-      let pythonVersion: string | undefined;
+      // Detect Python version and generate version info
       const pythonExecutable = await this.detectPythonExecutable();
+      const versionInfo = await this.checkPythonVersion(dir);
 
-      if (pythonExecutable) {
-        const versionResult = await this.executor.execute(pythonExecutable, {
-          cwd: dir,
-          args: ["--version"],
-          timeout: PythonTools.TIMEOUT_VERSION_CHECK,
-        });
-
-        if (versionResult.success) {
-          // Output format: "Python 3.9.18"
-          const match = versionResult.stdout.match(/Python\s+([\d.]+)/);
-          if (match) {
-            pythonVersion = match[1];
-          }
-        }
-      }
-
-      if (pythonVersion && pythonExecutable) {
-        info.pythonVersion = pythonVersion;
+      if (versionInfo && pythonExecutable) {
+        info.pythonVersion = versionInfo.current;
+        info.pythonVersionInfo = versionInfo;
         info.pythonExecutable = pythonExecutable;
-        info.supportsModernFeatures = !this.shouldRecommendUpgrade(
-          pythonVersion,
-        );
+        info.supportsModernFeatures = !versionInfo.isEOL && !versionInfo.recommendation;
 
-        if (this.shouldRecommendUpgrade(pythonVersion)) {
-          info.upgradeRecommendation = this.getUpgradeRecommendation(
-            pythonVersion,
-          );
+        if (versionInfo.recommendation) {
+          info.upgradeRecommendation = versionInfo.recommendation;
         }
       }
 
@@ -470,8 +643,8 @@ export class PythonTools {
         }
       }
 
-      // Cache the result with 5-minute TTL
-      this.cacheManager.set("pythonTools", cacheKey, info);
+      // Cache the result (uses projectDetection namespace: 60s TTL)
+      this.cacheManager.set("projectDetection", cacheKey, info);
 
       return info;
     } catch (error) {
@@ -518,6 +691,19 @@ export class PythonTools {
     const dir = args.directory || this.projectRoot;
     const validated = PythonTestArgsSchema.parse(args);
 
+    // Check cache (uses testResults namespace: 60s TTL)
+    const cacheKey = this.buildPythonCacheKey("test", args);
+    const cached = this.cacheManager.get<PythonToolResult>(
+      "testResults",
+      cacheKey,
+    );
+    if (cached) {
+      return {
+        ...cached,
+        command: cached.command + " (cached)",
+      };
+    }
+
     const startTime = performance.now();
 
     try {
@@ -533,6 +719,21 @@ export class PythonTools {
       // Add verbose flag
       if (validated.verbose) {
         commandArgs.push("-vv");
+      }
+
+      // Add parallel execution
+      if (validated.parallel) {
+        commandArgs.push("-n", validated.maxWorkers?.toString() || "auto");
+      }
+
+      // Add fail fast
+      if (validated.failFast) {
+        commandArgs.push("-x");
+      }
+
+      // Add JUnit XML output
+      if (validated.junitXml) {
+        commandArgs.push(`--junit-xml=${validated.junitXml}`);
       }
 
       // Add markers (e.g., -m "unit" to run tests marked as unit tests)
@@ -565,7 +766,14 @@ export class PythonTools {
       });
 
       const duration = performance.now() - startTime;
-      return this.processPythonResult(result, "pytest", duration);
+      const pythonResult = this.processPythonResult(result, "pytest", duration);
+
+      // Cache successful test results (uses testResults namespace: 60s TTL)
+      if (pythonResult.success) {
+        this.cacheManager.set("testResults", cacheKey, pythonResult);
+      }
+
+      return pythonResult;
     } catch (error) {
       const duration = performance.now() - startTime;
       const errorMsg = error instanceof Error ? error.message : String(error);
@@ -612,6 +820,26 @@ export class PythonTools {
       // Add fix flag (auto-fix issues)
       if (validated.fix) {
         commandArgs.push("--fix");
+      }
+
+      // Add output format
+      if (validated.outputFormat && validated.outputFormat !== "text") {
+        commandArgs.push("--output-format", validated.outputFormat);
+      }
+
+      // Add rule selection
+      if (validated.select && validated.select.length > 0) {
+        commandArgs.push("--select", validated.select.join(","));
+      }
+
+      // Add rule ignores
+      if (validated.ignore && validated.ignore.length > 0) {
+        commandArgs.push("--ignore", validated.ignore.join(","));
+      }
+
+      // Add show fixes
+      if (validated.showFixes) {
+        commandArgs.push("--show-fixes");
       }
 
       // Add files to lint, or current directory
@@ -669,8 +897,8 @@ export class PythonTools {
    * @param args - Formatting configuration with directory, files, check, preview options
    * @returns Result with formatting output and suggestions
    */
-  async pythonFormat(args: PythonLintArgs): Promise<PythonToolResult> {
-    const validated = PythonLintArgsSchema.parse(args);
+  async pythonFormat(args: PythonFormatArgs): Promise<PythonToolResult> {
+    const validated = PythonFormatArgsSchema.parse(args);
     const directory = validated.directory || this.projectRoot;
     const startTime = performance.now();
 
@@ -680,6 +908,16 @@ export class PythonTools {
       // Add check flag (verify without modifying)
       if (validated.check) {
         commandArgs.push("--check");
+      }
+
+      // Add line length
+      if (validated.lineLength) {
+        commandArgs.push("--line-length", validated.lineLength.toString());
+      }
+
+      // Add preview mode
+      if (validated.preview) {
+        commandArgs.push("--preview");
       }
 
       // Add files to format, or current directory
@@ -756,6 +994,34 @@ export class PythonTools {
       // Build pyright command
       const commandArgs: string[] = [];
 
+      // Add output format
+      if (validated.outputFormat === "json") {
+        commandArgs.push("--outputjson");
+      }
+
+      // Add strictness level (default: standard)
+      const level = validated.level || "standard";
+      if (level === "strict") {
+        commandArgs.push("--level", "error");
+      } else if (level === "basic") {
+        commandArgs.push("--level", "warning");
+      }
+
+      // Add Python version
+      if (validated.pythonVersion) {
+        commandArgs.push("--pythonversion", validated.pythonVersion);
+      }
+
+      // Add stats
+      if (validated.showStats) {
+        commandArgs.push("--stats");
+      }
+
+      // Add create stubs
+      if (validated.createStubs) {
+        commandArgs.push("--createstub");
+      }
+
       // Add watch mode
       if (validated.watch) {
         commandArgs.push("--watch");
@@ -764,6 +1030,12 @@ export class PythonTools {
       // Add verbose output
       if (validated.verbose) {
         commandArgs.push("--verbose");
+      }
+
+      // Add specific files to check
+      if (validated.files && validated.files.length > 0) {
+        this.validateFilePaths(validated.files);
+        commandArgs.push(...validated.files);
       }
 
       // Add any additional arguments
@@ -1050,26 +1322,75 @@ export class PythonTools {
   }
 
   /**
-   * Build uv install command
-   * uv pip install [--all-extras] [--upgrade] [--prerelease {allow,if-necessary,disallow}]
+   * Build uv command based on mode
+   * Supports: install, sync, update, add, remove
    */
   private buildUvCommand(args: PythonInstallDepsArgs): string[] {
-    const commandArgs = ["pip", "install"];
+    const mode = args.mode || "install";  // Default: install
+    const commandArgs = ["pip"];
+
+    switch (mode) {
+      case "install":
+        commandArgs.push("install");
+        break;
+      case "sync":
+        commandArgs.push("sync");
+        if (args.packages && args.packages.length > 0) {
+          commandArgs.push(...args.packages);
+        } else {
+          commandArgs.push("requirements.txt");
+        }
+        return commandArgs;
+      case "update":
+        commandArgs.push("install", "--upgrade");
+        break;
+      case "add":
+        commandArgs.push("install");
+        break;
+      case "remove":
+        commandArgs.push("uninstall");
+        if (args.packages && args.packages.length > 0) {
+          commandArgs.push(...args.packages);
+        }
+        return commandArgs;
+    }
+
+    // Add upgrade flag
+    if (args.upgrade && mode !== "update") {
+      commandArgs.push("--upgrade");
+    }
+
+    // Add prerelease handling
+    if (args.prerelease) {
+      commandArgs.push("--prerelease", args.prerelease);
+    }
+
+    // Add system flag
+    if (args.system) {
+      commandArgs.push("--system");
+    }
+
+    // Add editable flag
+    if (args.editable) {
+      commandArgs.push("-e");
+    }
 
     // Install dev dependencies (extras)
-    if (args.dev) {
+    if (args.dev && mode === "install") {
       commandArgs.push("--all-extras");
+    }
+
+    // Add packages or install from project
+    if (args.packages && args.packages.length > 0) {
+      commandArgs.push(...args.packages);
+    } else if (mode === "install" || mode === "update") {
+      // Install from pyproject.toml or requirements.txt
+      commandArgs.push(".");
     }
 
     // Add any additional arguments
     if (args.args && args.args.length > 0) {
       commandArgs.push(...args.args);
-    }
-
-    // If no specific arguments, install from requirements.txt or pyproject.toml
-    if (!args.args || args.args.length === 0) {
-      // Try to install from pyproject.toml (modern Python projects)
-      commandArgs.push(".");
     }
 
     return commandArgs;
@@ -1120,40 +1441,70 @@ export class PythonTools {
   }
 
   /**
-   * Build pip install command
-   * pip install [-r requirements.txt] [--upgrade] [--pre]
+   * Build pip command based on mode
+   * Supports: install, sync, update, add, remove
    */
   private buildPipCommand(args: PythonInstallDepsArgs): string[] {
-    const commandArgs = ["install"];
+    const mode = args.mode || "install";  // Default: install
     const dir = args.directory || this.projectRoot;
+    const commandArgs = [];
 
-    // Check for requirements.txt before adding it
-    const reqPath = path.join(dir, "requirements.txt");
-    const reqDevPath = path.join(dir, "requirements-dev.txt");
+    switch (mode) {
+      case "install":
+      case "sync":
+        commandArgs.push("install");
+        break;
+      case "update":
+        commandArgs.push("install", "--upgrade");
+        break;
+      case "add":
+        commandArgs.push("install");
+        break;
+      case "remove":
+        commandArgs.push("uninstall", "-y");
+        if (args.packages && args.packages.length > 0) {
+          commandArgs.push(...args.packages);
+        }
+        return commandArgs;
+    }
 
-    try {
-      // Check if requirements.txt exists
-      const hasRequirements = existsSync(reqPath);
-      if (hasRequirements) {
+    // Add upgrade flag
+    if (args.upgrade && mode !== "update") {
+      commandArgs.push("--upgrade");
+    }
+
+    // Add editable flag
+    if (args.editable) {
+      commandArgs.push("-e");
+    }
+
+    // Add packages or install from requirements
+    if (args.packages && args.packages.length > 0) {
+      commandArgs.push(...args.packages);
+    } else if (mode === "install" || mode === "sync" || mode === "update") {
+      // Check for requirements.txt
+      const reqPath = path.join(dir, "requirements.txt");
+      const reqDevPath = path.join(dir, "requirements-dev.txt");
+
+      try {
+        const hasRequirements = existsSync(reqPath);
+        if (hasRequirements) {
+          commandArgs.push("-r", "requirements.txt");
+        }
+
+        // Handle dev dependencies
+        if (args.dev) {
+          const hasDevRequirements = existsSync(reqDevPath);
+          if (hasDevRequirements) {
+            commandArgs.push("-r", "requirements-dev.txt");
+          }
+        }
+      } catch {
+        // If file system check fails, proceed with defaults
         commandArgs.push("-r", "requirements.txt");
-      } else {
-        // If no requirements.txt, still continue (pip will handle it)
-        // but log a warning suggestion
-      }
-
-      // Handle dev dependencies
-      if (args.dev) {
-        const hasDevRequirements = existsSync(reqDevPath);
-        if (hasDevRequirements) {
+        if (args.dev) {
           commandArgs.push("-r", "requirements-dev.txt");
         }
-      }
-    } catch {
-      // If file system check fails, proceed with defaults
-      // pip will provide appropriate error messages
-      commandArgs.push("-r", "requirements.txt");
-      if (args.dev) {
-        commandArgs.push("-r", "requirements-dev.txt");
       }
     }
 
@@ -1304,6 +1655,10 @@ Installation:
 
   static validateLintArgs(args: unknown): PythonLintArgs {
     return PythonLintArgsSchema.parse(args);
+  }
+
+  static validateFormatArgs(args: unknown): PythonFormatArgs {
+    return PythonFormatArgsSchema.parse(args);
   }
 
   static validateTypeCheckArgs(args: unknown): PythonTypeCheckArgs {

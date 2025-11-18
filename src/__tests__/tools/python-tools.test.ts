@@ -445,4 +445,31 @@ describe("PythonTools", () => {
       expect(result).toContain("--pre");
     });
   });
+
+  describe("Phase 1 enhancements: uv command building with mode support", () => {
+    it("should build uv command with system and editable flags", () => {
+      const pythonTools = new PythonTools();
+      const buildCommand = (pythonTools as any).buildUvCommand.bind(
+        pythonTools,
+      );
+
+      const resultSystem = buildCommand({ mode: "install", system: true });
+      expect(resultSystem).toContain("--system");
+
+      const resultEditable = buildCommand({ mode: "install", editable: true });
+      expect(resultEditable).toContain("-e");
+    });
+
+    it("should build uv install command with upgrade flag for update mode", () => {
+      const pythonTools = new PythonTools();
+      const buildCommand = (pythonTools as any).buildUvCommand.bind(
+        pythonTools,
+      );
+
+      const result = buildCommand({ mode: "update" });
+      expect(result).toContain("pip");
+      expect(result).toContain("install");
+      expect(result).toContain("--upgrade");
+    });
+  });
 });
