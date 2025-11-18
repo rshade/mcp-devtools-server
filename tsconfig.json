@@ -18,8 +18,15 @@
     "noImplicitReturns": true,
     "noFallthroughCasesInSwitch": true,
     "moduleResolution": "node",
-    "allowSyntheticDefaultImports": true
+    "allowSyntheticDefaultImports": true,
+    "baseUrl": ".",
+    "paths": {
+      "@modelcontextprotocol/sdk/server/index.js": ["types/mcp-sdk-server-index.d.ts"],
+      "@modelcontextprotocol/sdk/server/stdio.js": ["types/mcp-sdk-server-stdio.d.ts"],
+      "@modelcontextprotocol/sdk/types.js": ["types/mcp-sdk-types.d.ts"]
+    },
+    "typeRoots": ["./types", "./node_modules/@types"]
   },
-  "include": ["src/**/*"],
+  "include": ["src/**/*", "types/**/*.d.ts"],
   "exclude": ["node_modules", "dist", "**/*.test.ts", "**/*.spec.ts"]
 }
