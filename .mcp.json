@@ -1,5 +1,12 @@
 {
   "mcpServers": {
+    "mcp-devtools": {
+      "command": "./start-mcp.sh",
+      "args": [],
+      "env": {
+        "LOG_LEVEL": "info"
+      }
+    },
     "context7": {
       "command": "npx",
       "args": ["-y", "@upstash/context7-mcp"]
