@@ -2234,6 +2234,301 @@ class MCPDevToolsServer {
             },
           },
         },
+        {
+          name: "python_security",
+          description:
+            "Scan for known vulnerabilities using bandit (code issues) and pip-audit (dependencies)",
+          inputSchema: {
+            type: "object",
+            properties: {
+              directory: {
+                type: "string",
+                description: "Working directory",
+              },
+              tool: {
+                type: "string",
+                enum: ["bandit", "pip-audit", "both"],
+                description: "Security tool to use (default: both)",
+              },
+              severity: {
+                type: "string",
+                enum: ["low", "medium", "high", "all"],
+                description: "Minimum severity level (default: all)",
+              },
+              format: {
+                type: "string",
+                enum: ["text", "json", "sarif"],
+                description: "Output format (default: text)",
+              },
+              fix: {
+                type: "boolean",
+                description: "Fix vulnerabilities automatically",
+              },
+              args: {
+                type: "array",
+                items: { type: "string" },
+                description: "Additional arguments",
+              },
+              timeout: {
+                type: "number",
+                description: "Command timeout in milliseconds",
+              },
+            },
+          },
+        },
+        {
+          name: "python_build",
+          description:
+            "Build Python packages (wheels and sdists) using modern python -m build",
+          inputSchema: {
+            type: "object",
+            properties: {
+              directory: {
+                type: "string",
+                description: "Working directory",
+              },
+              sdist: {
+                type: "boolean",
+                description: "Build source distribution (default: true)",
+              },
+              wheel: {
+                type: "boolean",
+                description: "Build wheel (default: true)",
+              },
+              outdir: {
+                type: "string",
+                description: "Output directory (default: dist/)",
+              },
+              noBuildIsolation: {
+                type: "boolean",
+                description: "Disable build isolation",
+              },
+              skipDependencyCheck: {
+                type: "boolean",
+                description: "Skip dependency checks",
+              },
+              args: {
+                type: "array",
+                items: { type: "string" },
+                description: "Additional arguments",
+              },
+              timeout: {
+                type: "number",
+                description: "Command timeout in milliseconds",
+              },
+            },
+          },
+        },
+        {
+          name: "python_venv",
+          description:
+            "Manage Python virtual environments (create, delete, info, list packages)",
+          inputSchema: {
+            type: "object",
+            properties: {
+              directory: {
+                type: "string",
+                description: "Working directory",
+              },
+              action: {
+                type: "string",
+                enum: ["create", "delete", "info", "list"],
+                description: "Virtual environment action (default: info)",
+              },
+              venvPath: {
+                type: "string",
+                description: "Path to virtual environment (default: .venv)",
+              },
+              python: {
+                type: "string",
+                description: "Python interpreter to use",
+              },
+              systemSitePackages: {
+                type: "boolean",
+                description: "Give access to system site-packages",
+              },
+              clear: {
+                type: "boolean",
+                description: "Delete venv contents if it exists",
+              },
+              args: {
+                type: "array",
+                items: { type: "string" },
+                description: "Additional arguments",
+              },
+              timeout: {
+                type: "number",
+                description: "Command timeout in milliseconds",
+              },
+            },
+          },
+        },
+        {
+          name: "python_benchmark",
+          description:
+            "Run performance benchmarks using pytest-benchmark with statistical analysis",
+          inputSchema: {
+            type: "object",
+            properties: {
+              directory: {
+                type: "string",
+                description: "Working directory",
+              },
+              benchmarks: {
+                type: "string",
+                description: "Benchmark pattern to run (e.g., test_benchmark_)",
+              },
+              compare: {
+                type: "string",
+                description: "Compare against saved baseline",
+              },
+              save: {
+                type: "string",
+                description: "Save results to baseline",
+              },
+              json: {
+                type: "boolean",
+                description: "Output results as JSON",
+              },
+              warmup: {
+                type: "number",
+                description: "Number of warmup iterations",
+              },
+              args: {
+                type: "array",
+                items: { type: "string" },
+                description: "Additional arguments",
+              },
+              timeout: {
+                type: "number",
+                description: "Command timeout in milliseconds",
+              },
+            },
+          },
+        },
+        {
+          name: "python_update_deps",
+          description:
+            "Check for outdated packages and update dependencies safely with compatibility checking",
+          inputSchema: {
+            type: "object",
+            properties: {
+              directory: {
+                type: "string",
+                description: "Working directory",
+              },
+              mode: {
+                type: "string",
+                enum: ["check", "update-patch", "update-minor", "update-major"],
+                description: "Update mode (default: check)",
+              },
+              packages: {
+                type: "array",
+                items: { type: "string" },
+                description: "Specific packages to update",
+              },
+              dryRun: {
+                type: "boolean",
+                description: "Dry run mode",
+              },
+              interactive: {
+                type: "boolean",
+                description: "Interactive mode",
+              },
+              args: {
+                type: "array",
+                items: { type: "string" },
+                description: "Additional arguments",
+              },
+              timeout: {
+                type: "number",
+                description: "Command timeout in milliseconds",
+              },
+            },
+          },
+        },
+        {
+          name: "python_compatibility",
+          description:
+            "Check Python version compatibility using vermin and suggest syntax upgrades with pyupgrade",
+          inputSchema: {
+            type: "object",
+            properties: {
+              directory: {
+                type: "string",
+                description: "Working directory",
+              },
+              targetVersion: {
+                type: "string",
+                description: 'Target Python version (e.g., "3.9")',
+              },
+              suggest: {
+                type: "boolean",
+                description: "Suggest syntax upgrades",
+              },
+              files: {
+                type: "array",
+                items: { type: "string" },
+                description: "Specific files to check",
+              },
+              args: {
+                type: "array",
+                items: { type: "string" },
+                description: "Additional arguments",
+              },
+              timeout: {
+                type: "number",
+                description: "Command timeout in milliseconds",
+              },
+            },
+          },
+        },
+        {
+          name: "python_profile",
+          description:
+            "Profile Python code performance using cProfile, py-spy, or memray",
+          inputSchema: {
+            type: "object",
+            required: ["command"],
+            properties: {
+              directory: {
+                type: "string",
+                description: "Working directory",
+              },
+              command: {
+                type: "string",
+                description: "Python script to profile",
+              },
+              profiler: {
+                type: "string",
+                enum: ["cprofile", "pyspy", "memray"],
+                description: "Profiler to use (default: cprofile)",
+              },
+              topN: {
+                type: "number",
+                description: "Show top N functions (default: 20)",
+              },
+              outputFile: {
+                type: "string",
+                description: "Save profile to file",
+              },
+              format: {
+                type: "string",
+                enum: ["text", "json", "flamegraph"],
+                description: "Output format (default: text)",
+              },
+              args: {
+                type: "array",
+                items: { type: "string" },
+                description: "Additional arguments",
+              },
+              timeout: {
+                type: "number",
+                description: "Command timeout in milliseconds",
+              },
+            },
+          },
+        },
       ];
 
       // Get plugin tools
@@ -3113,6 +3408,97 @@ class MCPDevToolsServer {
                 {
                   type: "text",
                   text: this.formatPythonToolResult("Python Version", result),
+                },
+              ],
+            };
+          }
+
+          case "python_security": {
+            const validatedArgs = PythonTools.validateSecurityArgs(args);
+            const result = await this.pythonTools.pythonSecurity(validatedArgs);
+            return {
+              content: [
+                {
+                  type: "text",
+                  text: this.formatPythonToolResult("Python Security", result),
+                },
+              ],
+            };
+          }
+
+          case "python_build": {
+            const validatedArgs = PythonTools.validateBuildArgs(args);
+            const result = await this.pythonTools.pythonBuild(validatedArgs);
+            return {
+              content: [
+                {
+                  type: "text",
+                  text: this.formatPythonToolResult("Python Build", result),
+                },
+              ],
+            };
+          }
+
+          case "python_venv": {
+            const validatedArgs = PythonTools.validateVenvArgs(args);
+            const result = await this.pythonTools.pythonVenv(validatedArgs);
+            return {
+              content: [
+                {
+                  type: "text",
+                  text: this.formatPythonToolResult("Python Venv", result),
+                },
+              ],
+            };
+          }
+
+          case "python_benchmark": {
+            const validatedArgs = PythonTools.validateBenchmarkArgs(args);
+            const result = await this.pythonTools.pythonBenchmark(validatedArgs);
+            return {
+              content: [
+                {
+                  type: "text",
+                  text: this.formatPythonToolResult("Python Benchmark", result),
+                },
+              ],
+            };
+          }
+
+          case "python_update_deps": {
+            const validatedArgs = PythonTools.validateUpdateDepsArgs(args);
+            const result = await this.pythonTools.pythonUpdateDeps(validatedArgs);
+            return {
+              content: [
+                {
+                  type: "text",
+                  text: this.formatPythonToolResult("Python Update Deps", result),
+                },
+              ],
+            };
+          }
+
+          case "python_compatibility": {
+            const validatedArgs = PythonTools.validateCompatibilityArgs(args);
+            const result = await this.pythonTools.pythonCompatibility(validatedArgs);
+            return {
+              content: [
+                {
+                  type: "text",
+                  text: this.formatPythonToolResult("Python Compatibility", result),
+                },
+              ],
+            };
+          }
+
+          case "python_profile": {
+            const validatedArgs = PythonTools.validateProfileArgs(args);
+            const result = await this.pythonTools.pythonProfile(validatedArgs);
+            return {
+              content: [
+                {
+                  type: "text",
+                  text: this.formatPythonToolResult("Python Profile", result),
                 },
               ],
             };
