@@ -65,6 +65,12 @@ const ALLOWED_COMMANDS = new Set([
   "ruff",
   "pyright",
   "pytest",
+  "bandit", // Python security scanning
+  "pip-audit", // Python dependency vulnerability scanning
+  "vermin", // Python version compatibility checking
+  "pyupgrade", // Python syntax upgrade suggestions
+  "py-spy", // Python performance profiling
+  "memray", // Python memory profiling
   // Go tools
   "go",
   "gofmt",

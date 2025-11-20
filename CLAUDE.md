@@ -148,6 +148,31 @@ npm run docs:preview
    - Build command: `npm run docs:build`
    - Upload path: `docs/.vitepress/dist` (MUST match VitePress output directory)
 
+### Documentation Structure
+
+**Tool Documentation** (`docs/tools/`):
+
+- Each tool category has its own markdown file
+- Follow `actionlint-tools.md` or `make-tools.md` as comprehensive examples
+- Include: Overview, Parameters table, Returns interface, Usage examples
+- Add new tools to `docs/tools/overview.md` summary
+- **IMPORTANT**: Update `docs/tools/` when adding new MCP tools, not README.md
+
+**Directory Structure**:
+
+```text
+docs/
+├── tools/              # Tool reference documentation
+│   ├── overview.md     # All tools summary
+│   ├── go-tools.md     # Go language tools
+│   ├── python-tools.md # Python language tools
+│   ├── nodejs-tools.md # Node.js tools
+│   └── ...
+├── guides/             # How-to guides and workflows
+├── api/                # API reference and schemas
+└── getting-started/    # Installation, quick start
+```
+
 ### Common GitHub Pages Issues and Solutions
 
 #### Issue: Site Shows Unstyled HTML (No CSS/JS)
@@ -836,6 +861,44 @@ When working with Node.js tools (`src/tools/nodejs-tools.ts`):
    - Malformed package.json must be caught and logged
    - Missing test framework must return helpful suggestions
    - All errors should provide actionable next steps
+
+### Python Language Support
+
+When working with Python tools (`src/tools/python-tools.ts`):
+
+1. **Architecture Patterns**:
+   - Follows Go tools pattern (same structure, caching, error handling)
+   - All commands must be in `ALLOWED_COMMANDS` in `shell-executor.ts`
+   - Uses `pythonModules` cache namespace (5min TTL) and `commandAvailability` (1hr TTL)
+   - Auto-detects package manager from lockfiles/config (priority: uv → poetry → pipenv → pip)
+   - Prefers modern tools (uv, ruff, pyright) over legacy alternatives
+
+2. **Tool Implementation Pattern**:
+   - 14 total tools: 7 Phase 1 (core), 7 Phase 2/3 (advanced)
+   - Each tool returns unified `PythonToolResult` interface
+   - Comprehensive Zod schemas for validation
+   - Helper method `generateSuggestions()` for context-aware error messages
+
+3. **Modern Python Stack (2025)**:
+   - **uv** - Ultra-fast package manager (10-100x faster than pip)
+   - **ruff** - All-in-one linter/formatter (replaces flake8, black, isort)
+   - **pyright** - Static type checker (faster than mypy)
+   - **pytest** - Testing with coverage and benchmarking support
+
+4. **Phase 2/3 Tools (Security & Advanced)**:
+   - **python_security** - Dual-tool scanning (bandit + pip-audit)
+   - **python_build** - Modern package building (PEP 517/518)
+   - **python_venv** - Virtual environment management
+   - **python_benchmark** - Performance testing with pytest-benchmark
+   - **python_update_deps** - Safe dependency updates
+   - **python_compatibility** - Version compatibility checking (vermin + pyupgrade)
+   - **python_profile** - Performance profiling (cProfile/py-spy/memray)
+
+5. **Error Handling Requirements**:
+   - Python version detection with upgrade recommendations (Python ≤3.9)
+   - Missing tool detection with installation instructions
+   - Virtual environment issues with creation steps
+   - Multi-profiler support with fallback suggestions
 
 ## File Validation Tools
 

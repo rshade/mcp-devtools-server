@@ -160,6 +160,155 @@ const PythonVersionArgsSchema = z.object({
     .describe("Tool to check version for (default: all)"),
 });
 
+const PythonSecurityArgsSchema = z.object({
+  directory: z.string().optional().describe("Working directory"),
+  tool: z
+    .enum(["bandit", "pip-audit", "both"])
+    .optional()
+    .default("both")
+    .describe("Security tool to use"),
+  severity: z
+    .enum(["low", "medium", "high", "all"])
+    .optional()
+    .default("all")
+    .describe("Minimum severity level to report"),
+  format: z
+    .enum(["text", "json", "sarif"])
+    .optional()
+    .default("text")
+    .describe("Output format"),
+  fix: z.boolean().optional().describe("Fix vulnerabilities automatically"),
+  args: z.array(z.string()).optional().describe("Additional arguments"),
+  timeout: z.number().optional().describe("Command timeout in milliseconds"),
+});
+
+const PythonBuildArgsSchema = z.object({
+  directory: z.string().optional().describe("Working directory"),
+  sdist: z
+    .boolean()
+    .optional()
+    .default(true)
+    .describe("Build source distribution"),
+  wheel: z.boolean().optional().default(true).describe("Build wheel"),
+  outdir: z
+    .string()
+    .optional()
+    .default("dist/")
+    .describe("Output directory"),
+  noBuildIsolation: z
+    .boolean()
+    .optional()
+    .default(false)
+    .describe("Disable build isolation"),
+  skipDependencyCheck: z
+    .boolean()
+    .optional()
+    .default(false)
+    .describe("Skip dependency checks"),
+  args: z.array(z.string()).optional().describe("Additional arguments"),
+  timeout: z.number().optional().describe("Command timeout in milliseconds"),
+});
+
+const PythonVenvArgsSchema = z.object({
+  directory: z.string().optional().describe("Working directory"),
+  action: z
+    .enum(["create", "delete", "info", "list"])
+    .default("info")
+    .describe("Virtual environment action"),
+  venvPath: z
+    .string()
+    .optional()
+    .default(".venv")
+    .describe("Path to virtual environment"),
+  python: z.string().optional().describe("Python interpreter to use"),
+  systemSitePackages: z
+    .boolean()
+    .optional()
+    .default(false)
+    .describe("Give access to system site-packages"),
+  clear: z
+    .boolean()
+    .optional()
+    .default(false)
+    .describe("Delete venv contents if it exists"),
+  args: z.array(z.string()).optional().describe("Additional arguments"),
+  timeout: z.number().optional().describe("Command timeout in milliseconds"),
+});
+
+const PythonBenchmarkArgsSchema = z.object({
+  directory: z.string().optional().describe("Working directory"),
+  benchmarks: z
+    .string()
+    .optional()
+    .describe("Benchmark pattern to run (e.g., test_benchmark_)"),
+  compare: z
+    .string()
+    .optional()
+    .describe("Compare against saved baseline"),
+  save: z.string().optional().describe("Save results to baseline"),
+  json: z.boolean().optional().describe("Output results as JSON"),
+  warmup: z
+    .number()
+    .optional()
+    .describe("Number of warmup iterations"),
+  args: z.array(z.string()).optional().describe("Additional arguments"),
+  timeout: z.number().optional().describe("Command timeout in milliseconds"),
+});
+
+const PythonUpdateDepsArgsSchema = z.object({
+  directory: z.string().optional().describe("Working directory"),
+  mode: z
+    .enum(["check", "update-patch", "update-minor", "update-major"])
+    .default("check")
+    .describe("Update mode"),
+  packages: z
+    .array(z.string())
+    .optional()
+    .describe("Specific packages to update"),
+  dryRun: z.boolean().optional().default(false).describe("Dry run mode"),
+  interactive: z
+    .boolean()
+    .optional()
+    .default(false)
+    .describe("Interactive mode"),
+  args: z.array(z.string()).optional().describe("Additional arguments"),
+  timeout: z.number().optional().describe("Command timeout in milliseconds"),
+});
+
+const PythonCompatibilityArgsSchema = z.object({
+  directory: z.string().optional().describe("Working directory"),
+  targetVersion: z
+    .string()
+    .optional()
+    .describe('Target Python version (e.g., "3.9")'),
+  suggest: z
+    .boolean()
+    .optional()
+    .default(false)
+    .describe("Suggest syntax upgrades"),
+  files: z.array(z.string()).optional().describe("Specific files to check"),
+  args: z.array(z.string()).optional().describe("Additional arguments"),
+  timeout: z.number().optional().describe("Command timeout in milliseconds"),
+});
+
+const PythonProfileArgsSchema = z.object({
+  directory: z.string().optional().describe("Working directory"),
+  command: z.string().describe("Python script to profile"),
+  profiler: z
+    .enum(["cprofile", "pyspy", "memray"])
+    .default("cprofile")
+    .describe("Profiler to use"),
+  topN: z.number().optional().default(20).describe("Show top N functions"),
+  outputFile: z.string().optional().describe("Save profile to file"),
+  format: z
+    .enum(["text", "json", "flamegraph"])
+    .optional()
+    .default("text")
+    .describe("Output format"),
+  args: z.array(z.string()).optional().describe("Additional arguments"),
+  timeout: z.number().optional().describe("Command timeout in milliseconds"),
+});
+
 // ============================================================================
 // Type Exports
 // ============================================================================
@@ -171,6 +320,13 @@ export type PythonFormatArgs = z.infer<typeof PythonFormatArgsSchema>;
 export type PythonTypeCheckArgs = z.infer<typeof PythonTypeCheckArgsSchema>;
 export type PythonInstallDepsArgs = z.infer<typeof PythonInstallDepsArgsSchema>;
 export type PythonVersionArgs = z.infer<typeof PythonVersionArgsSchema>;
+export type PythonSecurityArgs = z.infer<typeof PythonSecurityArgsSchema>;
+export type PythonBuildArgs = z.infer<typeof PythonBuildArgsSchema>;
+export type PythonVenvArgs = z.infer<typeof PythonVenvArgsSchema>;
+export type PythonBenchmarkArgs = z.infer<typeof PythonBenchmarkArgsSchema>;
+export type PythonUpdateDepsArgs = z.infer<typeof PythonUpdateDepsArgsSchema>;
+export type PythonCompatibilityArgs = z.infer<typeof PythonCompatibilityArgsSchema>;
+export type PythonProfileArgs = z.infer<typeof PythonProfileArgsSchema>;
 
 // ============================================================================
 // Result Interfaces
@@ -1230,6 +1386,712 @@ export class PythonTools {
   }
 
   /**
+   * Python security scanning with bandit and pip-audit
+   * Issue: #138
+   */
+  async pythonSecurity(args: PythonSecurityArgs): Promise<PythonToolResult> {
+    const startTime = Date.now();
+    const directory = args.directory || this.projectRoot;
+    const tool = args.tool || "both";
+    const severity = args.severity || "all";
+    const format = args.format || "text";
+
+    const results: string[] = [];
+    let allSuccess = true;
+    let combinedOutput = "";
+
+    // Run bandit if requested
+    if (tool === "bandit" || tool === "both") {
+      const banditArgs: string[] = ["-r", "."];
+
+      // Add severity filter
+      if (severity !== "all") {
+        const severityMap = { low: "ll", medium: "lm", high: "lh" };
+        banditArgs.push("-" + severityMap[severity as keyof typeof severityMap]);
+      }
+
+      // Add format
+      if (format === "json") {
+        banditArgs.push("-f", "json");
+      } else if (format === "sarif") {
+        banditArgs.push("-f", "sarif");
+      }
+
+      if (args.args) {
+        banditArgs.push(...args.args);
+      }
+
+      const banditResult = await this.executor.execute("bandit", {
+        cwd: directory,
+        args: banditArgs,
+        timeout: args.timeout || 60000,
+      });
+
+      combinedOutput += `=== Bandit Results ===\n${banditResult.stdout || banditResult.stderr}\n\n`;
+      allSuccess = allSuccess && banditResult.success;
+      results.push(`Bandit: ${banditResult.success ? "✓ No issues" : "✗ Issues found"}`);
+    }
+
+    // Run pip-audit if requested
+    if (tool === "pip-audit" || tool === "both") {
+      const pipAuditArgs: string[] = [];
+
+      // Add format
+      if (format === "json") {
+        pipAuditArgs.push("--format", "json");
+      }
+
+      // Add fix flag
+      if (args.fix) {
+        pipAuditArgs.push("--fix");
+      }
+
+      if (args.args) {
+        pipAuditArgs.push(...args.args);
+      }
+
+      const pipAuditResult = await this.executor.execute("pip-audit", {
+        cwd: directory,
+        args: pipAuditArgs,
+        timeout: args.timeout || 60000,
+      });
+
+      combinedOutput += `=== pip-audit Results ===\n${pipAuditResult.stdout || pipAuditResult.stderr}\n`;
+      allSuccess = allSuccess && pipAuditResult.success;
+      results.push(`pip-audit: ${pipAuditResult.success ? "✓ No vulnerabilities" : "✗ Vulnerabilities found"}`);
+    }
+
+    const duration = Date.now() - startTime;
+    return {
+      success: allSuccess,
+      output: combinedOutput || results.join("\n"),
+      error: allSuccess ? undefined : "Security issues detected",
+      duration,
+      command: `python_security (${tool})`,
+      suggestions: allSuccess
+        ? undefined
+        : [
+            "Review security issues above",
+            "Update vulnerable dependencies",
+            "Consider using: pip install --upgrade <package>",
+          ],
+    };
+  }
+
+  /**
+   * Build Python packages (wheels and sdists)
+   * Issue: #139
+   */
+  async pythonBuild(args: PythonBuildArgs): Promise<PythonToolResult> {
+    const startTime = Date.now();
+    const directory = args.directory || this.projectRoot;
+    const pythonExec = await this.detectPythonExecutable();
+
+    if (!pythonExec) {
+      return {
+        success: false,
+        output: "",
+        error: "Python executable not found",
+        duration: Date.now() - startTime,
+        command: "python_build",
+        suggestions: ["Install Python 3.x", "Ensure python3 or python is in PATH"],
+      };
+    }
+
+    const buildArgs: string[] = ["-m", "build"];
+
+    // Determine build targets
+    const buildWheel = args.wheel !== false;
+    const buildSdist = args.sdist !== false;
+
+    if (buildWheel && !buildSdist) {
+      buildArgs.push("--wheel");
+    } else if (!buildWheel && buildSdist) {
+      buildArgs.push("--sdist");
+    }
+    // If both true, build both (default behavior, no flags needed)
+
+    // Output directory
+    if (args.outdir) {
+      buildArgs.push("--outdir", args.outdir);
+    }
+
+    // Build isolation
+    if (args.noBuildIsolation) {
+      buildArgs.push("--no-isolation");
+    }
+
+    // Skip dependency check
+    if (args.skipDependencyCheck) {
+      buildArgs.push("--skip-dependency-check");
+    }
+
+    // Additional args
+    if (args.args) {
+      buildArgs.push(...args.args);
+    }
+
+    const result = await this.executor.execute(pythonExec, {
+      cwd: directory,
+      args: buildArgs,
+      timeout: args.timeout || 300000, // 5 minutes default
+    });
+
+    const duration = Date.now() - startTime;
+    const suggestions = this.generateSuggestions("python -m build", result);
+
+    // Add build-specific suggestions
+    if (!result.success) {
+      if (result.stderr.includes("No module named build")) {
+        suggestions.unshift("Install build module: pip install build");
+      }
+      if (result.stderr.includes("pyproject.toml")) {
+        suggestions.unshift("Ensure pyproject.toml has valid [build-system] section");
+      }
+    }
+
+    return {
+      success: result.success,
+      output: result.stdout || result.stderr,
+      error: result.success ? undefined : result.stderr,
+      duration,
+      command: `python -m build`,
+      suggestions: suggestions.length > 0 ? suggestions : undefined,
+    };
+  }
+
+  /**
+   * Virtual environment management
+   * Issue: #140
+   */
+  async pythonVenv(args: PythonVenvArgs): Promise<PythonToolResult> {
+    const startTime = Date.now();
+    const directory = args.directory || this.projectRoot;
+    const action = args.action || "info";
+    const venvPath = args.venvPath || ".venv";
+    const fullVenvPath = path.join(directory, venvPath);
+
+    // Check if venv exists
+    const venvExists = existsSync(fullVenvPath);
+
+    switch (action) {
+      case "info": {
+        if (!venvExists) {
+          return {
+            success: true,
+            output: `Virtual environment not found at ${venvPath}`,
+            duration: Date.now() - startTime,
+            command: "python_venv info",
+            suggestions: [`Create venv: python -m venv ${venvPath}`],
+          };
+        }
+
+        // Get venv info
+        const pythonPath = path.join(
+          fullVenvPath,
+          process.platform === "win32" ? "Scripts/python.exe" : "bin/python",
+        );
+        const pipPath = path.join(
+          fullVenvPath,
+          process.platform === "win32" ? "Scripts/pip.exe" : "bin/pip",
+        );
+
+        return {
+          success: true,
+          output: `Virtual environment exists at ${venvPath}\nPython: ${pythonPath}\nPip: ${pipPath}`,
+          duration: Date.now() - startTime,
+          command: "python_venv info",
+        };
+      }
+
+      case "list": {
+        if (!venvExists) {
+          return {
+            success: false,
+            output: "",
+            error: `Virtual environment not found at ${venvPath}`,
+            duration: Date.now() - startTime,
+            command: "python_venv list",
+            suggestions: [`Create venv first: python -m venv ${venvPath}`],
+          };
+        }
+
+        const pipPath = path.join(
+          fullVenvPath,
+          process.platform === "win32" ? "Scripts/pip" : "bin/pip",
+        );
+        const result = await this.executor.execute(pipPath, {
+          cwd: directory,
+          args: ["list"],
+          timeout: args.timeout || 30000,
+        });
+
+        return {
+          success: result.success,
+          output: result.stdout || result.stderr,
+          error: result.success ? undefined : result.stderr,
+          duration: Date.now() - startTime,
+          command: "pip list",
+        };
+      }
+
+      case "create": {
+        if (venvExists && !args.clear) {
+          return {
+            success: false,
+            output: "",
+            error: `Virtual environment already exists at ${venvPath}`,
+            duration: Date.now() - startTime,
+            command: "python_venv create",
+            suggestions: ["Use clear: true to recreate", "Use a different venvPath"],
+          };
+        }
+
+        // Try using uv first (much faster)
+        let result = await this.executor.execute("uv", {
+          cwd: directory,
+          args: ["venv", venvPath],
+          timeout: args.timeout || 60000,
+        });
+
+        if (!result.success) {
+          // Fallback to python -m venv
+          const pythonExec = args.python || (await this.detectPythonExecutable()) || "python3";
+          const venvArgs = ["-m", "venv"];
+
+          if (args.systemSitePackages) {
+            venvArgs.push("--system-site-packages");
+          }
+
+          if (args.clear) {
+            venvArgs.push("--clear");
+          }
+
+          if (args.args) {
+            venvArgs.push(...args.args);
+          }
+
+          venvArgs.push(venvPath);
+
+          result = await this.executor.execute(pythonExec, {
+            cwd: directory,
+            args: venvArgs,
+            timeout: args.timeout || 60000,
+          });
+        }
+
+        return {
+          success: result.success,
+          output: result.stdout || result.stderr || `Created virtual environment at ${venvPath}`,
+          error: result.success ? undefined : result.stderr,
+          duration: Date.now() - startTime,
+          command: "python_venv create",
+        };
+      }
+
+      case "delete": {
+        if (!venvExists) {
+          return {
+            success: false,
+            output: "",
+            error: `Virtual environment not found at ${venvPath}`,
+            duration: Date.now() - startTime,
+            command: "python_venv delete",
+          };
+        }
+
+        try {
+          await fs.rm(fullVenvPath, { recursive: true, force: true });
+          return {
+            success: true,
+            output: `Deleted virtual environment at ${venvPath}`,
+            duration: Date.now() - startTime,
+            command: "python_venv delete",
+          };
+        } catch (error) {
+          return {
+            success: false,
+            output: "",
+            error: error instanceof Error ? error.message : "Failed to delete venv",
+            duration: Date.now() - startTime,
+            command: "python_venv delete",
+          };
+        }
+      }
+
+      default:
+        return {
+          success: false,
+          output: "",
+          error: `Unknown action: ${action}`,
+          duration: Date.now() - startTime,
+          command: "python_venv",
+        };
+    }
+  }
+
+  /**
+   * Python benchmarking with pytest-benchmark
+   * Issue: #141
+   */
+  async pythonBenchmark(args: PythonBenchmarkArgs): Promise<PythonToolResult> {
+    const startTime = Date.now();
+    const directory = args.directory || this.projectRoot;
+    const pythonExec = await this.detectPythonExecutable();
+
+    if (!pythonExec) {
+      return {
+        success: false,
+        output: "",
+        error: "Python executable not found",
+        duration: Date.now() - startTime,
+        command: "python_benchmark",
+        suggestions: ["Install Python 3.x", "Ensure python3 or python is in PATH"],
+      };
+    }
+
+    const pytestArgs: string[] = ["-m", "pytest", "--benchmark-only"];
+
+    // Add benchmark pattern
+    if (args.benchmarks) {
+      pytestArgs.push("-k", args.benchmarks);
+    }
+
+    // Compare against baseline
+    if (args.compare) {
+      pytestArgs.push("--benchmark-compare=" + args.compare);
+    }
+
+    // Save to baseline
+    if (args.save) {
+      pytestArgs.push("--benchmark-save=" + args.save);
+    }
+
+    // JSON output
+    if (args.json) {
+      pytestArgs.push("--benchmark-json=benchmark-results.json");
+    }
+
+    // Warmup
+    if (args.warmup) {
+      pytestArgs.push(`--benchmark-warmup=${args.warmup}`);
+    }
+
+    // Additional args
+    if (args.args) {
+      pytestArgs.push(...args.args);
+    }
+
+    const result = await this.executor.execute(pythonExec, {
+      cwd: directory,
+      args: pytestArgs,
+      timeout: args.timeout || 300000, // 5 minutes
+    });
+
+    const duration = Date.now() - startTime;
+    const suggestions = this.generateSuggestions("pytest --benchmark-only", result);
+
+    if (!result.success) {
+      if (result.stderr.includes("No module named pytest") || result.stderr.includes("No module named benchmark")) {
+        suggestions.unshift("Install pytest-benchmark: pip install pytest-benchmark");
+      }
+    }
+
+    return {
+      success: result.success,
+      output: result.stdout || result.stderr,
+      error: result.success ? undefined : result.stderr,
+      duration,
+      command: "pytest --benchmark-only",
+      suggestions: suggestions.length > 0 ? suggestions : undefined,
+    };
+  }
+
+  /**
+   * Update Python dependencies
+   * Issue: #142
+   */
+  async pythonUpdateDeps(args: PythonUpdateDepsArgs): Promise<PythonToolResult> {
+    const startTime = Date.now();
+    const directory = args.directory || this.projectRoot;
+    const mode = args.mode || "check";
+    const packageManager = await this.detectPackageManager(directory);
+
+    let command: string;
+    let commandArgs: string[];
+
+    switch (packageManager) {
+      case "uv":
+        command = "uv";
+        commandArgs = ["pip", "list", "--outdated"];
+        if (mode !== "check") {
+          commandArgs = ["pip", "install", "--upgrade"];
+          if (args.packages && args.packages.length > 0) {
+            commandArgs.push(...args.packages);
+          } else {
+            commandArgs.push(".");
+          }
+        }
+        break;
+
+      case "poetry":
+        command = "poetry";
+        commandArgs = mode === "check" ? ["show", "--outdated"] : ["update"];
+        if (args.packages && args.packages.length > 0 && mode !== "check") {
+          commandArgs.push(...args.packages);
+        }
+        break;
+
+      case "pipenv":
+        command = "pipenv";
+        commandArgs = mode === "check" ? ["update", "--dry-run"] : ["update"];
+        if (args.packages && args.packages.length > 0 && mode !== "check") {
+          commandArgs.push(...args.packages);
+        }
+        break;
+
+      default:
+        command = "pip";
+        commandArgs = ["list", "--outdated"];
+        if (mode !== "check") {
+          commandArgs = ["install", "--upgrade"];
+          if (args.packages && args.packages.length > 0) {
+            commandArgs.push(...args.packages);
+          }
+        }
+        break;
+    }
+
+    // Dry run for pip/uv
+    if (args.dryRun && (packageManager === "pip" || packageManager === "uv")) {
+      commandArgs.push("--dry-run");
+    }
+
+    // Additional args
+    if (args.args) {
+      commandArgs.push(...args.args);
+    }
+
+    const result = await this.executor.execute(command, {
+      cwd: directory,
+      args: commandArgs,
+      timeout: args.timeout || 120000,
+    });
+
+    const duration = Date.now() - startTime;
+
+    return {
+      success: result.success,
+      output: result.stdout || result.stderr,
+      error: result.success ? undefined : result.stderr,
+      duration,
+      command: `${command} ${commandArgs.join(" ")}`,
+      suggestions: result.success
+        ? undefined
+        : [
+            "Check if package manager is installed",
+            "Verify requirements.txt or pyproject.toml exists",
+          ],
+    };
+  }
+
+  /**
+   * Python version compatibility checking
+   * Issue: #143
+   */
+  async pythonCompatibility(args: PythonCompatibilityArgs): Promise<PythonToolResult> {
+    const startTime = Date.now();
+    const directory = args.directory || this.projectRoot;
+
+    // Use vermin to detect minimum Python version
+    const verminArgs: string[] = [directory];
+
+    if (args.targetVersion) {
+      verminArgs.push("-t=" + args.targetVersion);
+    }
+
+    if (args.files && args.files.length > 0) {
+      verminArgs.length = 0;
+      verminArgs.push(...args.files);
+    }
+
+    if (args.args) {
+      verminArgs.push(...args.args);
+    }
+
+    const result = await this.executor.execute("vermin", {
+      cwd: directory,
+      args: verminArgs,
+      timeout: args.timeout || 60000,
+    });
+
+    let output = result.stdout || result.stderr;
+
+    // Optionally suggest upgrades with pyupgrade
+    if (args.suggest && result.success) {
+      const pyupgradeArgs = ["--py311-plus", "--diff"];
+      if (args.files && args.files.length > 0) {
+        pyupgradeArgs.push(...args.files);
+      } else {
+        pyupgradeArgs.push(".");
+      }
+
+      const upgradeResult = await this.executor.execute("pyupgrade", {
+        cwd: directory,
+        args: pyupgradeArgs,
+        timeout: args.timeout || 60000,
+      });
+
+      if (upgradeResult.stdout) {
+        output += "\n\n=== Suggested Upgrades (pyupgrade) ===\n" + upgradeResult.stdout;
+      }
+    }
+
+    const duration = Date.now() - startTime;
+    const suggestions = this.generateSuggestions("vermin", result);
+
+    if (!result.success) {
+      if (result.stderr.includes("vermin") && result.stderr.includes("not found")) {
+        suggestions.unshift("Install vermin: pip install vermin");
+      }
+    }
+
+    return {
+      success: result.success,
+      output,
+      error: result.success ? undefined : result.stderr,
+      duration,
+      command: "vermin",
+      suggestions: suggestions.length > 0 ? suggestions : undefined,
+    };
+  }
+
+  /**
+   * Python profiling and optimization
+   * Issue: #144
+   */
+  async pythonProfile(args: PythonProfileArgs): Promise<PythonToolResult> {
+    const startTime = Date.now();
+    const directory = args.directory || this.projectRoot;
+    const profiler = args.profiler || "cprofile";
+    const topN = args.topN || 20;
+
+    let command: string;
+    let commandArgs: string[];
+
+    switch (profiler) {
+      case "cprofile": {
+        const pythonExec = await this.detectPythonExecutable();
+        if (!pythonExec) {
+          return {
+            success: false,
+            output: "",
+            error: "Python executable not found",
+            duration: Date.now() - startTime,
+            command: "python_profile",
+            suggestions: ["Install Python 3.x"],
+          };
+        }
+
+        command = pythonExec;
+        commandArgs = ["-m", "cProfile"];
+
+        if (args.outputFile) {
+          commandArgs.push("-o", args.outputFile);
+        } else {
+          commandArgs.push("-s", "cumulative");
+        }
+
+        commandArgs.push(args.command);
+
+        if (args.args) {
+          commandArgs.push(...args.args);
+        }
+        break;
+      }
+
+      case "pyspy":
+        command = "py-spy";
+        commandArgs = ["record"];
+
+        if (args.format === "flamegraph") {
+          commandArgs.push("--format", "flamegraph");
+        } else if (args.format === "json") {
+          commandArgs.push("--format", "speedscope");
+        }
+
+        if (args.outputFile) {
+          commandArgs.push("-o", args.outputFile);
+        }
+
+        commandArgs.push("--", args.command);
+
+        if (args.args) {
+          commandArgs.push(...args.args);
+        }
+        break;
+
+      case "memray":
+        command = "memray";
+        commandArgs = ["run"];
+
+        if (args.outputFile) {
+          commandArgs.push("-o", args.outputFile);
+        }
+
+        commandArgs.push(args.command);
+
+        if (args.args) {
+          commandArgs.push(...args.args);
+        }
+        break;
+
+      default:
+        return {
+          success: false,
+          output: "",
+          error: `Unknown profiler: ${profiler}`,
+          duration: Date.now() - startTime,
+          command: "python_profile",
+        };
+    }
+
+    const result = await this.executor.execute(command, {
+      cwd: directory,
+      args: commandArgs,
+      timeout: args.timeout || 300000, // 5 minutes
+    });
+
+    let output = result.stdout || result.stderr;
+
+    // For cProfile, show top N functions if not saving to file
+    if (profiler === "cprofile" && !args.outputFile && result.success) {
+      const lines = output.split("\n");
+      output = lines.slice(0, Math.min(lines.length, topN + 10)).join("\n");
+    }
+
+    const duration = Date.now() - startTime;
+    const suggestions = this.generateSuggestions(command, result);
+
+    if (!result.success) {
+      if (profiler === "pyspy" && result.stderr.includes("py-spy")) {
+        suggestions.unshift("Install py-spy: pip install py-spy");
+      } else if (profiler === "memray" && result.stderr.includes("memray")) {
+        suggestions.unshift("Install memray: pip install memray");
+      }
+    }
+
+    return {
+      success: result.success,
+      output,
+      error: result.success ? undefined : result.stderr,
+      duration,
+      command: `${command} ${commandArgs.slice(0, 3).join(" ")}`,
+      suggestions: suggestions.length > 0 ? suggestions : undefined,
+    };
+  }
+
+  /**
    * Detect package manager to use
    * Strategy: Check lockfiles/config FIRST, then command availability
    * Priority: uv.lock/pyproject[tool.uv] > poetry.lock > Pipfile > pip
@@ -1671,6 +2533,34 @@ Installation:
 
   static validateVersionArgs(args: unknown): PythonVersionArgs {
     return PythonVersionArgsSchema.parse(args);
+  }
+
+  static validateSecurityArgs(args: unknown): PythonSecurityArgs {
+    return PythonSecurityArgsSchema.parse(args);
+  }
+
+  static validateBuildArgs(args: unknown): PythonBuildArgs {
+    return PythonBuildArgsSchema.parse(args);
+  }
+
+  static validateVenvArgs(args: unknown): PythonVenvArgs {
+    return PythonVenvArgsSchema.parse(args);
+  }
+
+  static validateBenchmarkArgs(args: unknown): PythonBenchmarkArgs {
+    return PythonBenchmarkArgsSchema.parse(args);
+  }
+
+  static validateUpdateDepsArgs(args: unknown): PythonUpdateDepsArgs {
+    return PythonUpdateDepsArgsSchema.parse(args);
+  }
+
+  static validateCompatibilityArgs(args: unknown): PythonCompatibilityArgs {
+    return PythonCompatibilityArgsSchema.parse(args);
+  }
+
+  static validateProfileArgs(args: unknown): PythonProfileArgs {
+    return PythonProfileArgsSchema.parse(args);
   }
 
   /**

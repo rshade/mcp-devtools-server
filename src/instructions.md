@@ -21,7 +21,8 @@ equivalents.
 **Error Handling:** Use `analyze_command` to execute commands with automatic error analysis instead of raw Bash.
 
 **Python:** Use `python_project_info`, `python_test`, `python_lint`, `python_format`, `python_check_types`,
-`python_install_deps`, and `python_version` for Python workflows.
+`python_install_deps`, `python_version`, `python_security`, `python_build`, `python_venv`, `python_benchmark`,
+`python_update_deps`, `python_compatibility`, and `python_profile` for Python workflows.
 
 ## Auto-Onboarding
 
@@ -51,15 +52,6 @@ On first interaction in a workspace, check for `.mcp-devtools.json`:
 1. `code_review({base: "main"})` - Analyze for security, performance, maintainability
 2. `generate_pr_message({type, scope})` - Generate conventional commit format
 
-## Python Workflows
-
-- `python_project_info` summarizes pyproject/setup metadata, package manager, and dependency insights.
-- `python_test` wraps `pytest` with optional coverage, file selection, and marker filtering.
-- `python_lint` and `python_format` run Ruff/Black style checks with optional auto-fix flags.
-- `python_check_types` executes Pyright type analysis with watch/verbose switches.
-- `python_install_deps` auto-detects pip/uv/poetry/pipenv and installs prod or dev dependencies.
-- `python_version` reports versions for python, pip, uv, poetry, pyright, ruff, and pytest.
-
 ## Tool Categories
 
 **Make/Build (5):** make_lint, make_test, make_build, make_clean, make_depend
@@ -74,8 +66,9 @@ go_benchmark, go_generate, go_work, go_vulncheck, go_project_info
 **Node.js (11):** nodejs_project_info, nodejs_test, nodejs_lint, nodejs_format, nodejs_check_types,
 nodejs_install_deps, nodejs_version, nodejs_security, nodejs_build, nodejs_scripts, nodejs_benchmark
 
-**Python (7):** python_project_info, python_test, python_lint, python_format, python_check_types,
-python_install_deps, python_version
+**Python (14):** python_project_info, python_test, python_lint, python_format, python_check_types,
+python_install_deps, python_version, python_security, python_build, python_venv, python_benchmark,
+python_update_deps, python_compatibility, python_profile
 
 **Git (2):** code_review, generate_pr_message
 
@@ -111,8 +104,8 @@ for proactive analysis.
 | Fix newlines | `ensure_newline` |
 | Load env vars | `dotenv_environment` |
 | Inspect Python project | `python_project_info` |
-| Run pytest (with coverage) | `python_test` |
+| Run pytest | `python_test` |
 | Lint/format Python | `python_lint` / `python_format` |
-| Python type checks | `python_check_types` |
-| Install Python deps | `python_install_deps` |
-| Check Python tool versions | `python_version` |
+| Type check Python | `python_check_types` |
+| Security scan Python | `python_security` |
+| Build/profile Python | `python_build` / `python_profile` |
