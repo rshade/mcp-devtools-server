@@ -91,7 +91,7 @@ for proactive analysis.
 ## Quick Reference
 
 | Task | Tool |
-|------|------|
+| ---- | ---- |
 | Lint code | `lint_all` |
 | Run tests | `run_tests` |
 | Build project | `make_build` / `go_build` / `nodejs_build` |
