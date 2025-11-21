@@ -783,6 +783,12 @@ This project has comprehensive community documentation:
 - `src/utils/mcp-recommendations.ts` - MCP server recommendations
 - `src/utils/onboarding-wizard.ts` - Complete project setup automation
 
+### Error Handling Infrastructure
+
+- `src/utils/standard-error.ts` - Rich error types (ErrorCode, ErrorCategory, ErrorSeverity)
+- `src/utils/error-enricher.ts` - Error analysis and enrichment service
+- `src/utils/result-formatter.ts` - Universal result formatting
+
 ## Configuration
 
 - `.mcp-devtools.json` - Project-specific configuration
@@ -819,6 +825,233 @@ Multi-namespace LRU cache with file-based invalidation provides 3-5x performance
 - Arguments sanitized to prevent injection attacks
 - Working directories restricted to project boundaries
 - All operations have configurable timeouts
+
+## Standardized Error Handling
+
+All tools can return rich error information using `StandardError` with:
+
+- Error codes (LINT_VIOLATION, TEST_FAILED, BUILD_FAILED, etc.)
+- Categories (lint, test, security, build, etc.)
+- Severity levels (critical, error, warning, info)
+- Actionable suggestions with priority ranking
+- Execution context (tool name, working directory, affected files)
+
+### Quick Start
+
+```typescript
+import { ErrorEnricher } from "./utils/error-enricher.js";
+import { ResultFormatter } from "./utils/result-formatter.js";
+
+const enricher = new ErrorEnricher({ enabled: true });
+const formatter = new ResultFormatter();
+
+// Enrich a failed execution result
+const error = await enricher.enrich(executionResult, "my_tool");
+if (error) {
+  const output = formatter.format("my_tool", { result: executionResult, standardError: error, enriched: true });
+}
+```
+
+### Core Components
+
+#### StandardError Interface (`src/utils/standard-error.ts`)
+
+```typescript
+interface StandardError {
+  code: ErrorCode;              // LINT_VIOLATION, TEST_FAILED, etc.
+  category: ErrorCategory;      // lint, test, security, etc.
+  severity: ErrorSeverity;      // critical, error, warning, info
+  message: string;              // Human-readable summary
+  details?: string;             // Extended description
+  suggestions: ErrorSuggestion[]; // Actionable recommendations
+  context: ErrorContext;        // Execution environment
+  raw: {                        // Original execution data
+    stdout: string;
+    stderr: string;
+    exitCode: number;
+    duration: number;
+    command: string;
+  };
+  patterns?: FailurePattern[];  // Matched patterns from FailureAnalyzer
+  confidence?: number;          // 0.0-1.0 confidence score
+}
+```
+
+**Key Enums:**
+
+- `ErrorCode`: 30+ specific codes (TEST_TIMEOUT, COVERAGE_TOO_LOW, MODULE_NOT_FOUND, etc.)
+- `ErrorCategory`: 13 categories (build, test, lint, security, dependency, etc.)
+- `ErrorSeverity`: 4 levels (critical, error, warning, info)
+
+#### ErrorEnricher Service (`src/utils/error-enricher.ts`)
+
+Converts `ExecutionResult` to `StandardError` with rich metadata:
+
+```typescript
+import { ErrorEnricher } from "./utils/error-enricher.js";
+
+const enricher = new ErrorEnricher({
+  enabled: true,
+  timeout: 100,
+  includeContext: false,
+  maxSuggestions: 5,
+  confidenceThreshold: 0.7,
+});
+
+const result = await executor.execute("npm", ["test"]);
+const error = await enricher.enrich(result, "run_tests");
+
+if (error) {
+  console.log(`Error: ${error.code} (${error.severity})`);
+  console.log(`Suggestions: ${error.suggestions.length}`);
+}
+```
+
+**Features:**
+
+- Integrates with FailureAnalyzer automatically
+- Maps ErrorType to specific ErrorCode using heuristics
+- Determines severity based on patterns (security → critical)
+- Generates actionable suggestions from patterns
+- Sanitizes environment (removes secrets like TOKEN, API_KEY)
+
+#### ResultFormatter (`src/utils/result-formatter.ts`)
+
+Universal formatter for all result types:
+
+```typescript
+import { ResultFormatter } from "./utils/result-formatter.js";
+
+const formatter = new ResultFormatter({
+  includeRawOutput: true,
+  includeContext: true,
+  collapseRawOutput: true,
+});
+
+// Works with both enriched and legacy results
+const output = formatter.format("tool_name", result);
+```
+
+**Replaces:** 25+ duplicate formatter functions (~800 lines)
+
+### When to Use Error Enrichment
+
+**Use enrichment for:**
+
+- Command execution tools (make, npm, go, etc.)
+- Test runners (failures need suggestions)
+- Linters (categorization helpful)
+- Any tool where users need actionable guidance
+
+**Skip enrichment for:**
+
+- Informational tools (project_info, version checks)
+- Successful operations (no error to enrich)
+- Simple status checks
+
+### Adding Error Enrichment to Tools
+
+Tools should return ExecutionResult-compatible format from tool methods:
+
+```typescript
+async executeTool(args: MyArgs): Promise<MyResult> {
+  const result = await this.executor.execute("command", []);
+
+  // Return ExecutionResult-compatible format
+  return {
+    success: result.success,
+    error: result.error,
+    output: result.stdout,
+    duration: result.duration,
+    // ... other fields
+  };
+}
+```
+
+**Key Point:** Tools should return ExecutionResult-compatible objects.
+Enrichment can be applied by callers using ErrorEnricher.
+
+### Testing Error Handling
+
+**Test enriched errors:**
+
+```typescript
+import { ErrorEnricher } from "./utils/error-enricher.js";
+import { ErrorCode, ErrorCategory, ErrorSeverity } from "./utils/standard-error.js";
+
+it("enriches test failure with suggestions", async () => {
+  const result = {
+    success: false,
+    stdout: "Test failed",
+    stderr: "Expected 5, got 3",
+    exitCode: 1,
+    duration: 1234,
+    command: "npm test",
+  };
+
+  const enricher = new ErrorEnricher({ enabled: true });
+  const error = await enricher.enrich(result, "run_tests");
+
+  expect(error).not.toBeNull();
+  expect(error!.code).toBe(ErrorCode.TEST_FAILED);
+  expect(error!.category).toBe(ErrorCategory.TEST);
+  expect(error!.severity).toBe(ErrorSeverity.ERROR);
+  expect(error!.suggestions.length).toBeGreaterThan(0);
+});
+```
+
+**Test formatting:**
+
+```typescript
+import { ResultFormatter } from "./utils/result-formatter.js";
+
+it("formats enriched error with rich metadata", () => {
+  const formatter = new ResultFormatter();
+  const output = formatter.format("tool_name", enrichedResult);
+
+  expect(output).toContain("Error Summary");
+  expect(output).toContain("Suggestions");
+});
+```
+
+### Configuration
+
+Add to `.mcp-devtools.json`:
+
+```json
+{
+  "errorHandling": {
+    "enrichErrors": true,
+    "enrichmentTimeout": 100,
+    "includeContext": false,
+    "includeSuggestions": true,
+    "confidenceThreshold": 0.7,
+    "maxSuggestions": 5
+  },
+  "formatting": {
+    "includeRawOutput": true,
+    "includeContext": true,
+    "collapseRawOutput": true,
+    "truncateOutputAt": 10000
+  }
+}
+```
+
+### Migration Guide for New Tools
+
+1. **Return ExecutionResult-compatible format** from tool methods
+2. **Use ErrorEnricher** to enrich failures when needed
+3. **Use ResultFormatter** for consistent output formatting
+4. **Test with both success and failure scenarios**
+5. **Verify enriched errors have actionable suggestions**
+
+### Related Files
+
+- `src/utils/standard-error.ts` - Type definitions and validation
+- `src/utils/error-enricher.ts` - Error enrichment service
+- `src/utils/result-formatter.ts` - Universal formatter
+- `src/utils/failure-analyzer.ts` - Pattern matching (existing)
+- `src/utils/knowledge-base.ts` - Error patterns (existing)
 
 ## Development Notes
 

@@ -127,7 +127,7 @@ mcp-devtools detect_project
 **Configuration Options:**
 
 | Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
+| --------- | ---- | ------- | ----------- |
 | `directory` | string | `cwd` | Working directory to analyze |
 | `interactive` | boolean | `false` | Enable interactive prompts (planned) |
 | `autoInstall` | boolean | `false` | Automatically install missing tools (planned) |
@@ -641,9 +641,9 @@ past the LLM's training cutoff.
 **Parameters:**
 
 | Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `timezone` | string | System timezone | IANA timezone (e.g., 'America/New_York', 'UTC', 'Asia/Tokyo') |
-| `include_calendar` | boolean | `true` | Include calendar information (quarter, week, etc.) |
+| --------- | ---- | ------- | ----------- |
+| `timezone`         | string  | System timezone | IANA timezone (e.g., 'America/New_York', 'UTC', 'Asia/Tokyo') |
+| `include_calendar` | boolean | `true`          | Include calendar information (quarter, week, etc.)            |
 
 **Supported Timezones:**
 

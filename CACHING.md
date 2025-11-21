@@ -23,7 +23,7 @@ This document describes the intelligent caching system implemented for the MCP D
 ### Performance Impact
 
 | Component | Before | After (Cached) | Speedup |
-|-----------|--------|----------------|---------|
+| --------- | ------ | -------------- | ------- |
 | Project Detection | 50-200ms | <1ms | **5-10x** ✅ |
 | Smart Suggestions | 50-300ms | <5ms | **10-60x** ✅ |
 | Git Operations (diff, log) | 100-800ms | <5ms | **20-160x** ✅ |
@@ -293,11 +293,11 @@ private buildCacheKey(result: ExecutionResult, context?: SuggestionContext): str
 
 ### Performance Impact
 
-| Scenario | Before Cache | After Cache | Speedup |
-|----------|--------------|-------------|---------|
-| Repeated test failures | 150ms | <5ms | **30x** |
-| CI/CD failure analysis | 200ms | <5ms | **40x** |
-| Interactive debugging | 100ms | <5ms | **20x** |
+| Scenario                | Before Cache | After Cache | Speedup  |
+| ----------------------- | ------------ | ----------- | -------- |
+| Repeated test failures  | 150ms        | <5ms        | **30x**  |
+| CI/CD failure analysis  | 200ms        | <5ms        | **40x**  |
+| Interactive debugging   | 100ms        | <5ms        | **20x**  |
 
 ### Why Smart Suggestions Need Caching
 
@@ -820,7 +820,7 @@ The intelligent caching system provides **significant performance improvements**
 ### All Cached Components
 
 | Component | Status | Speedup | Memory/Entry |
-|-----------|--------|---------|--------------|
+| --------- | ------ | ------- | ------------ |
 | Project Detection | ✅ Live | 5-10x | ~1-2KB |
 | Smart Suggestions | ✅ Live | 10-60x | ~2-5KB |
 | Git Operations | ✅ Live | 20-160x | ~1-3KB |
