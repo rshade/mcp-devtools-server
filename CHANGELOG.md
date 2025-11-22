@@ -5,6 +5,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.0](https://github.com/rshade/mcp-devtools-server/compare/mcp-devtools-server-v0.2.0...mcp-devtools-server-v0.3.0) (2025-11-21)
+
+
+### Added
+
+* complete Phase 2/3 Python tools - security, building, profiling, and venv management ([#249](https://github.com/rshade/mcp-devtools-server/issues/249)) ([60ef4c0](https://github.com/rshade/mcp-devtools-server/commit/60ef4c0f8d828ba75d36345894ac5530c79fdadd))
+* implement ErrorEnricher service for error analysis (Issue [#217](https://github.com/rshade/mcp-devtools-server/issues/217)) ([#236](https://github.com/rshade/mcp-devtools-server/issues/236)) ([cefcd0b](https://github.com/rshade/mcp-devtools-server/commit/cefcd0ba9e8bfdc08b667e695ac636b6010170e3)), closes [#222](https://github.com/rshade/mcp-devtools-server/issues/222)
+* implement Phase 1 Python language support with modern tooling ([#238](https://github.com/rshade/mcp-devtools-server/issues/238)) ([ddfc3ae](https://github.com/rshade/mcp-devtools-server/commit/ddfc3ae303a3e2643a7bd9260791efbb9956c253))
+* implement universal ResultFormatter to replace duplicate formatters ([#248](https://github.com/rshade/mcp-devtools-server/issues/248)) ([da03a38](https://github.com/rshade/mcp-devtools-server/commit/da03a38e96d4241132c234c4950081372f469c53))
+
+
+### Fixed
+
+* **deps:** update dependency glob to v12 ([#243](https://github.com/rshade/mcp-devtools-server/issues/243)) ([f0dd19b](https://github.com/rshade/mcp-devtools-server/commit/f0dd19ba7e7b1b76389a05e13c912e6d937d4641))
+* **deps:** update dependency glob to v13 ([#251](https://github.com/rshade/mcp-devtools-server/issues/251)) ([6c56a25](https://github.com/rshade/mcp-devtools-server/commit/6c56a2561dd12437ef2cb940237c3ebb88ee6bea))
+
+
+### Documentation
+
+* add standardized error handling patterns to CLAUDE.md ([#260](https://github.com/rshade/mcp-devtools-server/issues/260)) ([b672ec3](https://github.com/rshade/mcp-devtools-server/commit/b672ec3790b59662675f87363d6b23c653c14aba))
+
 ## [0.2.0](https://github.com/rshade/mcp-devtools-server/compare/mcp-devtools-server-v0.1.0...mcp-devtools-server-v0.2.0) (2025-11-16)
 
 
