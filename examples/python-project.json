@@ -1,19 +1,19 @@
 {
   "$schema": "../.mcp-devtools.schema.json",
   "commands": {
-    "lint": "poetry run flake8",
-    "test": "poetry run pytest",
-    "build": "poetry build",
-    "clean": "rm -rf dist build *.egg-info",
-    "depend": "poetry install",
-    "format": "poetry run black .",
-    "typecheck": "poetry run mypy ."
+    "lint": "ruff check .",
+    "test": "pytest -v --cov=. --cov-report=term-missing",
+    "build": "python -m build",
+    "clean": "rm -rf dist build *.egg-info .pytest_cache .coverage .ruff_cache",
+    "depend": "uv pip sync requirements.txt",
+    "format": "ruff format .",
+    "typecheck": "pyright"
   },
-  "linters": ["flake8", "black", "markdownlint", "yamllint"],
+  "linters": ["ruff", "pyright", "markdownlint", "yamllint"],
   "testRunner": "pytest",
   "timeout": 300000,
   "projectType": "python",
-  "buildSystem": "poetry",
+  "buildSystem": "uv",
   "excludePaths": [
     "__pycache__/**",
     "*.pyc",
@@ -22,17 +22,44 @@
     "dist/**",
     "build/**",
     ".git/**",
-    ".pytest_cache/**"
+    ".pytest_cache/**",
+    ".ruff_cache/**",
+    ".mypy_cache/**"
   ],
   "environment": {
-    "PYTHONDONTWRITEBYTECODE": "1"
+    "PYTHONDONTWRITEBYTECODE": "1",
+    "PYTHONUNBUFFERED": "1"
   },
   "parallel": {
     "makeJobs": 1,
     "enableTestParallel": true
   },
   "security": {
-    "allowedCommands": ["flake8", "black", "mypy", "poetry"],
+    "allowedCommands": ["ruff", "pyright", "pytest", "uv", "python", "bandit", "pip-audit"],
     "restrictedPaths": ["/", "/etc", "/usr", "/bin", "/sbin"]
+  },
+  "python": {
+    "packageManager": "uv",
+    "pythonVersion": "3.11",
+    "venvPath": ".venv",
+    "testFlags": ["-v", "--cov=.", "--cov-report=term-missing", "-x"],
+    "linter": {
+      "tool": "ruff",
+      "fix": false,
+      "select": ["E", "F", "I", "UP", "B", "SIM"]
+    },
+    "formatter": {
+      "tool": "ruff",
+      "lineLength": 88
+    },
+    "typeChecker": {
+      "tool": "pyright",
+      "level": "standard"
+    },
+    "security": {
+      "enableBandit": true,
+      "enablePipAudit": true,
+      "severity": "medium"
+    }
   }
 }

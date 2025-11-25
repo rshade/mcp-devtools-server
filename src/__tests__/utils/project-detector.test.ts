@@ -66,13 +66,14 @@ describe("ProjectDetector", () => {
       expect(info.packageManager).toBe("npm");
     });
 
-    it("returns undefined when no Node.js package files exist", async () => {
+    it("returns pip for Python projects without explicit package manager", async () => {
       const detector = new ProjectDetector(
         path.join(fixturesDir, "python-project"),
       );
       const info = await detector.detectProject();
 
-      expect(info.packageManager).toBeUndefined();
+      // Python projects now detect pip as default package manager
+      expect(info.packageManager).toBe("pip");
     });
   });
 
@@ -348,14 +349,14 @@ describe("ProjectDetector", () => {
       expect(context).toContain("Build System: pip");
     });
 
-    it("omits optional fields when not present", async () => {
+    it("shows package manager for Python projects", async () => {
       const detector = new ProjectDetector(
         path.join(fixturesDir, "python-project"),
       );
       const context = await detector.getProjectContext();
 
-      // Python project shouldn't have package manager
-      expect(context).not.toContain("Package Manager:");
+      // Python projects now properly detect package manager (pip is default)
+      expect(context).toContain("Package Manager:");
       // Framework field is only for Node.js projects, so it won't appear
       // Test framework will appear since Python has pytest
     });

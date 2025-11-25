@@ -280,7 +280,11 @@ const PythonCompatibilityArgsSchema = z.object({
   targetVersion: z
     .string()
     .optional()
-    .describe('Target Python version (e.g., "3.9")'),
+    .describe('Target Python version for vermin (e.g., "3.9")'),
+  pyupgradeTargetVersion: z
+    .string()
+    .optional()
+    .describe('Target Python version for pyupgrade (e.g., "3.8", "3.11-plus")'),
   suggest: z
     .boolean()
     .optional()
@@ -470,6 +474,22 @@ export class PythonTools {
       .digest("hex")
       .substring(0, 16);
     return `${operation}:${dir}:${argsHash}`;
+  }
+
+  /**
+   * Validates package names to prevent injection attacks
+   * @param packageNames - Array of package names to validate
+   * @throws Error if any package name contains suspicious characters
+   */
+  private validatePackageNames(packageNames: string[]): void {
+    // Standard Python package name characters: alphanumeric, hyphens, underscores, periods.
+    // This regex allows for common naming conventions and disallows shell metacharacters.
+    const packageNameRegex = /^[a-zA-Z0-9._-]+$/;
+    for (const packageName of packageNames) {
+      if (!packageNameRegex.test(packageName)) {
+        throw new Error(`Invalid package name detected: '${packageName}'. Package names should only contain alphanumeric characters, hyphens, underscores, or periods.`);
+      }
+    }
   }
 
   /**
@@ -1296,6 +1316,7 @@ export class PythonTools {
     args: PythonInstallDepsArgs,
   ): Promise<PythonToolResult> {
     const dir = args.directory || this.projectRoot;
+    const startTime = performance.now(); // Use performance.now()
 
     // Determine package manager to use
     let packageManager: string = args.packageManager || "auto";
@@ -1313,7 +1334,7 @@ export class PythonTools {
     });
 
     const fullCommand = [packageManager, ...commandArgs].join(" ");
-    return this.processPythonResult(result, fullCommand);
+    return this.processPythonResult(result, fullCommand, performance.now() - startTime); // Calculate duration with performance.now()
   }
 
   /**
@@ -1328,6 +1349,7 @@ export class PythonTools {
   async pythonVersion(args: PythonVersionArgs): Promise<PythonToolResult> {
     const dir = args.directory || this.projectRoot;
     const tool = args.tool || "all";
+    const startTime = performance.now();
 
     // Try cache first (1hr TTL)
     const cacheKey = this.buildPythonCacheKey("version", {
@@ -1372,11 +1394,12 @@ export class PythonTools {
       .map(([k, v]) => `${k}: ${v}`)
       .join("\n");
 
+    const duration = performance.now() - startTime;
     const toolResult: PythonToolResult = {
       success: true,
       output,
       command: `version check for ${tool}`,
-      duration: 0,
+      duration,
     };
 
     // Cache result
@@ -1390,7 +1413,7 @@ export class PythonTools {
    * Issue: #138
    */
   async pythonSecurity(args: PythonSecurityArgs): Promise<PythonToolResult> {
-    const startTime = Date.now();
+    const startTime = performance.now(); // Use performance.now()
     const directory = args.directory || this.projectRoot;
     const tool = args.tool || "both";
     const severity = args.severity || "all";
@@ -1461,7 +1484,7 @@ export class PythonTools {
       results.push(`pip-audit: ${pipAuditResult.success ? "✓ No vulnerabilities" : "✗ Vulnerabilities found"}`);
     }
 
-    const duration = Date.now() - startTime;
+    const duration = performance.now() - startTime; // Calculate duration with performance.now()
     return {
       success: allSuccess,
       output: combinedOutput || results.join("\n"),
@@ -1483,7 +1506,7 @@ export class PythonTools {
    * Issue: #139
    */
   async pythonBuild(args: PythonBuildArgs): Promise<PythonToolResult> {
-    const startTime = Date.now();
+    const startTime = performance.now(); // Use performance.now()
     const directory = args.directory || this.projectRoot;
     const pythonExec = await this.detectPythonExecutable();
 
@@ -1492,7 +1515,7 @@ export class PythonTools {
         success: false,
         output: "",
         error: "Python executable not found",
-        duration: Date.now() - startTime,
+        duration: performance.now() - startTime, // Calculate duration with performance.now()
         command: "python_build",
         suggestions: ["Install Python 3.x", "Ensure python3 or python is in PATH"],
       };
@@ -1537,7 +1560,7 @@ export class PythonTools {
       timeout: args.timeout || 300000, // 5 minutes default
     });
 
-    const duration = Date.now() - startTime;
+    const duration = performance.now() - startTime; // Calculate duration with performance.now()
     const suggestions = this.generateSuggestions("python -m build", result);
 
     // Add build-specific suggestions
@@ -1565,7 +1588,7 @@ export class PythonTools {
    * Issue: #140
    */
   async pythonVenv(args: PythonVenvArgs): Promise<PythonToolResult> {
-    const startTime = Date.now();
+    const startTime = performance.now(); // Use performance.now()
     const directory = args.directory || this.projectRoot;
     const action = args.action || "info";
     const venvPath = args.venvPath || ".venv";
@@ -1580,7 +1603,7 @@ export class PythonTools {
           return {
             success: true,
             output: `Virtual environment not found at ${venvPath}`,
-            duration: Date.now() - startTime,
+            duration: performance.now() - startTime, // Calculate duration with performance.now()
             command: "python_venv info",
             suggestions: [`Create venv: python -m venv ${venvPath}`],
           };
@@ -1599,7 +1622,7 @@ export class PythonTools {
         return {
           success: true,
           output: `Virtual environment exists at ${venvPath}\nPython: ${pythonPath}\nPip: ${pipPath}`,
-          duration: Date.now() - startTime,
+          duration: performance.now() - startTime, // Calculate duration with performance.now()
           command: "python_venv info",
         };
       }
@@ -1610,7 +1633,7 @@ export class PythonTools {
             success: false,
             output: "",
             error: `Virtual environment not found at ${venvPath}`,
-            duration: Date.now() - startTime,
+            duration: performance.now() - startTime, // Calculate duration with performance.now()
             command: "python_venv list",
             suggestions: [`Create venv first: python -m venv ${venvPath}`],
           };
@@ -1630,7 +1653,7 @@ export class PythonTools {
           success: result.success,
           output: result.stdout || result.stderr,
           error: result.success ? undefined : result.stderr,
-          duration: Date.now() - startTime,
+          duration: performance.now() - startTime, // Calculate duration with performance.now()
           command: "pip list",
         };
       }
@@ -1641,7 +1664,7 @@ export class PythonTools {
             success: false,
             output: "",
             error: `Virtual environment already exists at ${venvPath}`,
-            duration: Date.now() - startTime,
+            duration: performance.now() - startTime, // Calculate duration with performance.now()
             command: "python_venv create",
             suggestions: ["Use clear: true to recreate", "Use a different venvPath"],
           };
@@ -1684,7 +1707,7 @@ export class PythonTools {
           success: result.success,
           output: result.stdout || result.stderr || `Created virtual environment at ${venvPath}`,
           error: result.success ? undefined : result.stderr,
-          duration: Date.now() - startTime,
+          duration: performance.now() - startTime, // Calculate duration with performance.now()
           command: "python_venv create",
         };
       }
@@ -1695,7 +1718,7 @@ export class PythonTools {
             success: false,
             output: "",
             error: `Virtual environment not found at ${venvPath}`,
-            duration: Date.now() - startTime,
+            duration: performance.now() - startTime, // Calculate duration with performance.now()
             command: "python_venv delete",
           };
         }
@@ -1705,7 +1728,7 @@ export class PythonTools {
           return {
             success: true,
             output: `Deleted virtual environment at ${venvPath}`,
-            duration: Date.now() - startTime,
+            duration: performance.now() - startTime, // Calculate duration with performance.now()
             command: "python_venv delete",
           };
         } catch (error) {
@@ -1713,7 +1736,7 @@ export class PythonTools {
             success: false,
             output: "",
             error: error instanceof Error ? error.message : "Failed to delete venv",
-            duration: Date.now() - startTime,
+            duration: performance.now() - startTime, // Calculate duration with performance.now()
             command: "python_venv delete",
           };
         }
@@ -1724,7 +1747,7 @@ export class PythonTools {
           success: false,
           output: "",
           error: `Unknown action: ${action}`,
-          duration: Date.now() - startTime,
+          duration: performance.now() - startTime, // Calculate duration with performance.now()
           command: "python_venv",
         };
     }
@@ -1735,7 +1758,7 @@ export class PythonTools {
    * Issue: #141
    */
   async pythonBenchmark(args: PythonBenchmarkArgs): Promise<PythonToolResult> {
-    const startTime = Date.now();
+    const startTime = performance.now(); // Use performance.now()
     const directory = args.directory || this.projectRoot;
     const pythonExec = await this.detectPythonExecutable();
 
@@ -1744,7 +1767,7 @@ export class PythonTools {
         success: false,
         output: "",
         error: "Python executable not found",
-        duration: Date.now() - startTime,
+        duration: performance.now() - startTime, // Calculate duration with performance.now()
         command: "python_benchmark",
         suggestions: ["Install Python 3.x", "Ensure python3 or python is in PATH"],
       };
@@ -1788,7 +1811,7 @@ export class PythonTools {
       timeout: args.timeout || 300000, // 5 minutes
     });
 
-    const duration = Date.now() - startTime;
+    const duration = performance.now() - startTime; // Calculate duration with performance.now()
     const suggestions = this.generateSuggestions("pytest --benchmark-only", result);
 
     if (!result.success) {
@@ -1812,7 +1835,7 @@ export class PythonTools {
    * Issue: #142
    */
   async pythonUpdateDeps(args: PythonUpdateDepsArgs): Promise<PythonToolResult> {
-    const startTime = Date.now();
+    const startTime = performance.now(); // Use performance.now()
     const directory = args.directory || this.projectRoot;
     const mode = args.mode || "check";
     const packageManager = await this.detectPackageManager(directory);
@@ -1827,6 +1850,7 @@ export class PythonTools {
         if (mode !== "check") {
           commandArgs = ["pip", "install", "--upgrade"];
           if (args.packages && args.packages.length > 0) {
+            this.validatePackageNames(args.packages); // Validate package names
             commandArgs.push(...args.packages);
           } else {
             commandArgs.push(".");
@@ -1838,6 +1862,7 @@ export class PythonTools {
         command = "poetry";
         commandArgs = mode === "check" ? ["show", "--outdated"] : ["update"];
         if (args.packages && args.packages.length > 0 && mode !== "check") {
+          this.validatePackageNames(args.packages); // Validate package names
           commandArgs.push(...args.packages);
         }
         break;
@@ -1846,6 +1871,7 @@ export class PythonTools {
         command = "pipenv";
         commandArgs = mode === "check" ? ["update", "--dry-run"] : ["update"];
         if (args.packages && args.packages.length > 0 && mode !== "check") {
+          this.validatePackageNames(args.packages); // Validate package names
           commandArgs.push(...args.packages);
         }
         break;
@@ -1856,6 +1882,7 @@ export class PythonTools {
         if (mode !== "check") {
           commandArgs = ["install", "--upgrade"];
           if (args.packages && args.packages.length > 0) {
+            this.validatePackageNames(args.packages); // Validate package names
             commandArgs.push(...args.packages);
           }
         }
@@ -1878,7 +1905,7 @@ export class PythonTools {
       timeout: args.timeout || 120000,
     });
 
-    const duration = Date.now() - startTime;
+    const duration = performance.now() - startTime; // Calculate duration with performance.now()
 
     return {
       success: result.success,
@@ -1900,7 +1927,7 @@ export class PythonTools {
    * Issue: #143
    */
   async pythonCompatibility(args: PythonCompatibilityArgs): Promise<PythonToolResult> {
-    const startTime = Date.now();
+    const startTime = performance.now(); // Use performance.now()
     const directory = args.directory || this.projectRoot;
 
     // Use vermin to detect minimum Python version
@@ -1911,7 +1938,8 @@ export class PythonTools {
     }
 
     if (args.files && args.files.length > 0) {
-      verminArgs.length = 0;
+      this.validateFilePaths(args.files); // Validate file paths
+      verminArgs.length = 0; // Clear directory to avoid passing it twice
       verminArgs.push(...args.files);
     }
 
@@ -1929,8 +1957,20 @@ export class PythonTools {
 
     // Optionally suggest upgrades with pyupgrade
     if (args.suggest && result.success) {
-      const pyupgradeArgs = ["--py311-plus", "--diff"];
+      const pyupgradeArgs: string[] = [];
+      const pyupgradeVersion = args.pyupgradeTargetVersion || "3.11-plus"; // Default to 3.11-plus
+
+      // Construct the pyupgrade version flag
+      if (pyupgradeVersion.includes("-plus")) {
+        pyupgradeArgs.push(`--py${pyupgradeVersion.replace("-plus", "-plus")}`);
+      } else {
+        // Assume simple major.minor version like "3.8"
+        pyupgradeArgs.push(`--py${pyupgradeVersion.replace(".", "")}`);
+      }
+
+      pyupgradeArgs.push("--diff");
       if (args.files && args.files.length > 0) {
+        this.validateFilePaths(args.files); // Validate file paths
         pyupgradeArgs.push(...args.files);
       } else {
         pyupgradeArgs.push(".");
@@ -1947,7 +1987,7 @@ export class PythonTools {
       }
     }
 
-    const duration = Date.now() - startTime;
+    const duration = performance.now() - startTime; // Calculate duration with performance.now()
     const suggestions = this.generateSuggestions("vermin", result);
 
     if (!result.success) {
@@ -1971,13 +2011,20 @@ export class PythonTools {
    * Issue: #144
    */
   async pythonProfile(args: PythonProfileArgs): Promise<PythonToolResult> {
-    const startTime = Date.now();
+    const startTime = performance.now(); // Use performance.now()
     const directory = args.directory || this.projectRoot;
     const profiler = args.profiler || "cprofile";
     const topN = args.topN || 20;
 
+    // Validate the command argument to prevent injection
+    // treat args.command as a path to a script
+    this.validateFilePaths([args.command]);
+
     let command: string;
     let commandArgs: string[];
+
+    // Resolve the script path to make it absolute and prevent path traversal
+    const scriptPath = path.resolve(directory, args.command);
 
     switch (profiler) {
       case "cprofile": {
@@ -1987,7 +2034,7 @@ export class PythonTools {
             success: false,
             output: "",
             error: "Python executable not found",
-            duration: Date.now() - startTime,
+            duration: performance.now() - startTime, // Calculate duration with performance.now()
             command: "python_profile",
             suggestions: ["Install Python 3.x"],
           };
@@ -2002,7 +2049,7 @@ export class PythonTools {
           commandArgs.push("-s", "cumulative");
         }
 
-        commandArgs.push(args.command);
+        commandArgs.push(scriptPath); // Use the validated and resolved script path
 
         if (args.args) {
           commandArgs.push(...args.args);
@@ -2024,7 +2071,7 @@ export class PythonTools {
           commandArgs.push("-o", args.outputFile);
         }
 
-        commandArgs.push("--", args.command);
+        commandArgs.push("--", scriptPath); // Use the validated and resolved script path
 
         if (args.args) {
           commandArgs.push(...args.args);
@@ -2039,7 +2086,7 @@ export class PythonTools {
           commandArgs.push("-o", args.outputFile);
         }
 
-        commandArgs.push(args.command);
+        commandArgs.push(scriptPath); // Use the validated and resolved script path
 
         if (args.args) {
           commandArgs.push(...args.args);
@@ -2051,7 +2098,7 @@ export class PythonTools {
           success: false,
           output: "",
           error: `Unknown profiler: ${profiler}`,
-          duration: Date.now() - startTime,
+          duration: performance.now() - startTime, // Calculate duration with performance.now()
           command: "python_profile",
         };
     }
@@ -2070,7 +2117,7 @@ export class PythonTools {
       output = lines.slice(0, Math.min(lines.length, topN + 10)).join("\n");
     }
 
-    const duration = Date.now() - startTime;
+    const duration = performance.now() - startTime; // Calculate duration with performance.now()
     const suggestions = this.generateSuggestions(command, result);
 
     if (!result.success) {

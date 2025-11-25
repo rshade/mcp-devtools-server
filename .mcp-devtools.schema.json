@@ -38,7 +38,7 @@
       "description": "List of linters to use for this project",
       "items": {
         "type": "string",
-        "enum": ["eslint", "markdownlint", "yamllint", "flake8", "black", "clippy", "rustfmt", "golangci-lint", "gofmt", "staticcheck"]
+        "enum": ["eslint", "markdownlint", "yamllint", "flake8", "black", "ruff", "pyright", "mypy", "bandit", "clippy", "rustfmt", "golangci-lint", "gofmt", "staticcheck"]
       },
       "uniqueItems": true
     },
@@ -61,7 +61,7 @@
     "buildSystem": {
       "type": "string",
       "description": "Override automatic build system detection",
-      "enum": ["make", "npm", "yarn", "pnpm", "pip", "poetry", "go", "cargo", "maven", "gradle", "dotnet"]
+      "enum": ["make", "npm", "yarn", "pnpm", "bun", "pip", "uv", "poetry", "pipenv", "go", "cargo", "maven", "gradle", "dotnet"]
     },
     "makeTargets": {
       "type": "array",
@@ -147,6 +147,120 @@
         }
       }
     },
+    "python": {
+      "type": "object",
+      "description": "Python-specific configuration for modern Python tooling (uv, ruff, pyright, pytest)",
+      "properties": {
+        "packageManager": {
+          "type": "string",
+          "description": "Python package manager to use",
+          "enum": ["uv", "poetry", "pipenv", "pip"],
+          "default": "uv"
+        },
+        "pythonVersion": {
+          "type": "string",
+          "description": "Target Python version (e.g., 3.11, 3.12)",
+          "pattern": "^3\\.[0-9]+$"
+        },
+        "venvPath": {
+          "type": "string",
+          "description": "Path to virtual environment",
+          "default": ".venv"
+        },
+        "testFlags": {
+          "type": "array",
+          "description": "Default flags for pytest",
+          "items": {
+            "type": "string"
+          },
+          "default": ["-v", "--cov=.", "--cov-report=term-missing"]
+        },
+        "linter": {
+          "type": "object",
+          "description": "Linter configuration (ruff preferred over flake8)",
+          "properties": {
+            "tool": {
+              "type": "string",
+              "description": "Linting tool to use",
+              "enum": ["ruff", "flake8"],
+              "default": "ruff"
+            },
+            "fix": {
+              "type": "boolean",
+              "description": "Automatically fix issues",
+              "default": false
+            },
+            "select": {
+              "type": "array",
+              "description": "Ruff rule categories to enable",
+              "items": {
+                "type": "string"
+              },
+              "default": ["E", "F", "I", "UP"]
+            }
+          }
+        },
+        "formatter": {
+          "type": "object",
+          "description": "Formatter configuration (ruff format preferred over black)",
+          "properties": {
+            "tool": {
+              "type": "string",
+              "description": "Formatting tool to use",
+              "enum": ["ruff", "black"],
+              "default": "ruff"
+            },
+            "lineLength": {
+              "type": "number",
+              "description": "Maximum line length",
+              "minimum": 79,
+              "maximum": 200,
+              "default": 88
+            }
+          }
+        },
+        "typeChecker": {
+          "type": "object",
+          "description": "Type checker configuration (pyright preferred over mypy)",
+          "properties": {
+            "tool": {
+              "type": "string",
+              "description": "Type checking tool to use",
+              "enum": ["pyright", "mypy"],
+              "default": "pyright"
+            },
+            "level": {
+              "type": "string",
+              "description": "Type checking strictness level",
+              "enum": ["basic", "standard", "strict", "all"],
+              "default": "standard"
+            }
+          }
+        },
+        "security": {
+          "type": "object",
+          "description": "Security scanning configuration",
+          "properties": {
+            "enableBandit": {
+              "type": "boolean",
+              "description": "Enable bandit security scanner",
+              "default": true
+            },
+            "enablePipAudit": {
+              "type": "boolean",
+              "description": "Enable pip-audit vulnerability scanner",
+              "default": true
+            },
+            "severity": {
+              "type": "string",
+              "description": "Minimum severity level to report",
+              "enum": ["low", "medium", "high", "all"],
+              "default": "medium"
+            }
+          }
+        }
+      }
+    },
     "fileValidation": {
       "type": "object",
       "description": "File validation and compliance settings",
@@ -226,6 +340,20 @@
               "maximum": 3600000,
               "default": 300000
             },
+            "pythonModules": {
+              "type": "number",
+              "description": "TTL for Python modules cache (default: 300000ms / 5 minutes)",
+              "minimum": 1000,
+              "maximum": 3600000,
+              "default": 300000
+            },
+            "nodeModules": {
+              "type": "number",
+              "description": "TTL for Node.js modules cache (default: 300000ms / 5 minutes)",
+              "minimum": 1000,
+              "maximum": 3600000,
+              "default": 300000
+            },
             "fileLists": {
               "type": "number",
               "description": "TTL for file list cache (default: 30000ms / 30 seconds)",
@@ -270,6 +398,20 @@
             "goModules": {
               "type": "number",
               "description": "Max items in Go modules cache (default: 50)",
+              "minimum": 10,
+              "maximum": 1000,
+              "default": 50
+            },
+            "pythonModules": {
+              "type": "number",
+              "description": "Max items in Python modules cache (default: 50)",
+              "minimum": 10,
+              "maximum": 1000,
+              "default": 50
+            },
+            "nodeModules": {
+              "type": "number",
+              "description": "Max items in Node.js modules cache (default: 50)",
               "minimum": 10,
               "maximum": 1000,
               "default": 50

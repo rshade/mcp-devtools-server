@@ -120,6 +120,7 @@ export class ProjectDetector {
       { pattern: "**/requirements.txt", type: "package" as const },
       { pattern: "**/Pipfile", type: "package" as const },
       { pattern: "**/pyproject.toml", type: "package" as const },
+      { pattern: "**/setup.py", type: "package" as const },
       { pattern: "**/go.mod", type: "package" as const },
       { pattern: "**/Cargo.toml", type: "package" as const },
       { pattern: "**/pom.xml", type: "package" as const },
@@ -341,6 +342,8 @@ export class ProjectDetector {
       markdownlint: ["**/.markdownlint*"],
       yamllint: ["**/.yamllint*"],
       flake8: ["**/.flake8", "**/setup.cfg"],
+      ruff: ["**/pyproject.toml", "**/.ruff.toml"], // Add ruff detection
+      pyright: ["**/pyproject.toml", "**/pyrightconfig.json"], // Add pyright detection
       black: ["**/pyproject.toml"],
       clippy: ["**/clippy.toml"],
       rustfmt: ["**/rustfmt.toml"],
@@ -403,10 +406,33 @@ export class ProjectDetector {
   }
 
   private detectPackageManager(configFiles: ConfigFile[]): string | undefined {
+    // Prioritize modern Python package managers
+    if (configFiles.some((cf) => cf.name === "uv.lock")) return "uv";
+    if (
+      configFiles.some(
+        (cf) => cf.name === "pyproject.toml" && cf.path.includes("[tool.uv]")
+      )
+    )
+      return "uv";
+
+    if (configFiles.some((cf) => cf.name === "poetry.lock")) return "poetry";
+    if (
+      configFiles.some(
+        (cf) => cf.name === "pyproject.toml" && cf.path.includes("[tool.poetry]")
+      )
+    )
+      return "poetry";
+
+    if (configFiles.some((cf) => cf.name === "Pipfile")) return "pipenv";
+
+    // Then check Node.js package managers
     if (configFiles.some((cf) => cf.name === "pnpm-lock.yaml")) return "pnpm";
     if (configFiles.some((cf) => cf.name === "yarn.lock")) return "yarn";
     if (configFiles.some((cf) => cf.name === "package-lock.json")) return "npm";
     if (configFiles.some((cf) => cf.name === "package.json")) return "npm";
+
+    // Fallback to pip if requirements.txt exists
+    if (configFiles.some((cf) => cf.name === "requirements.txt")) return "pip";
 
     return undefined;
   }
