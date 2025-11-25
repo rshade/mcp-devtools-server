@@ -642,8 +642,8 @@ past the LLM's training cutoff.
 
 | Parameter | Type | Default | Description |
 | --------- | ---- | ------- | ----------- |
-| `timezone`         | string  | System timezone | IANA timezone (e.g., 'America/New_York', 'UTC', 'Asia/Tokyo') |
-| `include_calendar` | boolean | `true`          | Include calendar information (quarter, week, etc.)            |
+| `timezone` | string | System timezone | IANA timezone (e.g., 'America/New_York', 'UTC', 'Asia/Tokyo') |
+| `include_calendar` | boolean | `true` | Include calendar information (quarter, week, etc.) |
 
 **Supported Timezones:**
 
