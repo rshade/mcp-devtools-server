@@ -64,7 +64,7 @@
   "devDependencies": {
     "@commitlint/cli": "^20.0.0",
     "@commitlint/config-conventional": "^20.0.0",
-    "@metamask/auto-changelog": "^5.0.0",
+    "@metamask/auto-changelog": "^5.2.0",
     "@types/jest": "^30.0.0",
     "@types/node": "^24.10.1",
     "@types/semver": "^7.7.1",
