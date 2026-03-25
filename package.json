@@ -52,7 +52,7 @@
     "@modelcontextprotocol/sdk": "^1.23.0",
     "context7": "^1.0.0",
     "dotenv": "^17.2.3",
-    "execa": "^9.0.0",
+    "execa": "^9.6.1",
     "glob": "^13.0.0",
     "lru-cache": "^11.2.2",
     "semver": "^7.7.3",
